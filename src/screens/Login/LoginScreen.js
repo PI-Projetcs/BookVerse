@@ -1,22 +1,20 @@
 import React, { useState } from 'react';
 import {
 	Alert,
-	Dimensions,
 	KeyboardAvoidingView,
 	Platform,
 	SafeAreaView,
 	ScrollView,
 	StatusBar,
-	StyleSheet,
 	Text,
 	TextInput,
 	TouchableOpacity,
 	View,
 } from 'react-native';
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-
-const { width, height } = Dimensions.get('window');
+import Header from '../../components/Header';
+import { loginStyles as styles } from '../../styles/loginStyles';
 
 export default function LoginScreen({ navigation }) {
 	const [activeTab, setActiveTab] = useState('login');
@@ -87,20 +85,7 @@ export default function LoginScreen({ navigation }) {
 				behavior={Platform.OS === 'ios' ? 'padding' : undefined}
 			>
 				<View style={styles.phoneFrame}>
-					<LinearGradient
-						colors={['#881337', '#0f172a', '#064e3b']}
-						start={{ x: 0, y: 0 }}
-						end={{ x: 1, y: 0 }}
-						style={styles.header}
-					>
-						<View style={styles.headerOverlay}>
-							<View style={styles.brandRow}>
-								<MaterialCommunityIcons name="book-open-page-variant" size={32} color="#facc15" />
-								<Text style={styles.brandTitle}>BookVerse</Text>
-							</View>
-							<Text style={styles.brandSubtitle}>Seu clube do livro digital</Text>
-						</View>
-					</LinearGradient>
+					<Header />
 
 					<ScrollView
 						contentContainerStyle={styles.content}
@@ -255,155 +240,3 @@ export default function LoginScreen({ navigation }) {
 		</SafeAreaView>
 	);
 }
-
-const styles = StyleSheet.create({
-	flex: {
-		flex: 1,
-	},
-	safeArea: {
-		flex: 1,
-		backgroundColor: '#111827',
-	},
-	phoneFrame: {
-		width: Math.min(width - 24, 428),
-		height: Math.min(height - 24, 926),
-		alignSelf: 'center',
-		marginVertical: 12,
-		borderRadius: 28,
-		backgroundColor: '#f9fafb',
-		overflow: 'hidden',
-		borderWidth: 8,
-		borderColor: '#1f2937',
-		shadowColor: '#000',
-		shadowOffset: { width: 0, height: 18 },
-		shadowOpacity: 0.35,
-		shadowRadius: 24,
-		elevation: 16,
-	},
-	header: {
-		borderBottomWidth: 3,
-		borderBottomColor: 'rgba(202, 138, 4, 0.75)',
-	},
-	headerOverlay: {
-		paddingVertical: 24,
-		paddingHorizontal: 18,
-		backgroundColor: 'rgba(0, 0, 0, 0.1)',
-	},
-	brandRow: {
-		flexDirection: 'row',
-		justifyContent: 'center',
-		alignItems: 'center',
-		gap: 8,
-		marginBottom: 6,
-	},
-	brandTitle: {
-		color: '#fefce8',
-		fontSize: 30,
-		fontWeight: '800',
-		letterSpacing: 0.6,
-	},
-	brandSubtitle: {
-		color: 'rgba(253, 230, 138, 0.85)',
-		textAlign: 'center',
-		fontSize: 12,
-	},
-	content: {
-		paddingHorizontal: 20,
-		paddingTop: 24,
-		paddingBottom: 32,
-	},
-	tabsContainer: {
-		flexDirection: 'row',
-		borderRadius: 10,
-		backgroundColor: '#f3f4f6',
-		marginBottom: 20,
-		padding: 4,
-	},
-	tabButton: {
-		flex: 1,
-		alignItems: 'center',
-		justifyContent: 'center',
-		paddingVertical: 10,
-		borderRadius: 8,
-	},
-	tabButtonActive: {
-		backgroundColor: '#ffffff',
-		shadowColor: '#000',
-		shadowOffset: { width: 0, height: 1 },
-		shadowOpacity: 0.08,
-		shadowRadius: 3,
-		elevation: 1,
-	},
-	tabText: {
-		color: '#4b5563',
-		fontWeight: '700',
-	},
-	tabTextActive: {
-		color: '#111827',
-	},
-	form: {
-		gap: 12,
-	},
-	label: {
-		fontWeight: '700',
-		color: '#111827',
-		fontSize: 14,
-		marginBottom: 6,
-	},
-	inputWrapper: {
-		borderWidth: 2,
-		borderColor: '#d1d5db',
-		borderRadius: 10,
-		backgroundColor: '#ffffff',
-		flexDirection: 'row',
-		alignItems: 'center',
-		paddingHorizontal: 10,
-		height: 46,
-	},
-	inputIcon: {
-		marginRight: 8,
-	},
-	input: {
-		flex: 1,
-		color: '#111827',
-		fontSize: 14,
-	},
-	buttonTouch: {
-		marginTop: 12,
-		borderRadius: 10,
-		overflow: 'hidden',
-	},
-	primaryButton: {
-		borderRadius: 10,
-		paddingVertical: 13,
-		alignItems: 'center',
-	},
-	secondaryButton: {
-		borderRadius: 10,
-		paddingVertical: 13,
-		alignItems: 'center',
-	},
-	primaryButtonText: {
-		color: '#fefce8',
-		fontWeight: '800',
-		fontSize: 15,
-	},
-	infoBox: {
-		marginTop: 16,
-		borderRadius: 10,
-		borderWidth: 2,
-		borderColor: '#fcd34d',
-		backgroundColor: '#fffbeb',
-		padding: 12,
-		gap: 4,
-	},
-	infoTitle: {
-		color: '#92400e',
-		fontWeight: '800',
-		fontSize: 12,
-	},
-	infoText: {
-		color: '#92400e',
-		fontSize: 12,
-	},
-});
