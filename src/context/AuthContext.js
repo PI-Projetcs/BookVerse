@@ -1,1 +1,0 @@
-// Controle de autenticação (JWT, usuário logado)

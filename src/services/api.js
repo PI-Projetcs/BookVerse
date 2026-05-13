@@ -1,1 +1,0 @@
-//responsável pela comunicação com o backend (API).
