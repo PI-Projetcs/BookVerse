@@ -1,0 +1,26 @@
+package br.senac.sp.bookverse.model;
+
+import jakarta.persistence.*;
+import lombok.Data;
+
+import java.time.LocalDateTime;
+
+@Data
+@Entity
+@Table(name = "comments")
+public class Comment {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private String conteudo;
+    private LocalDateTime data;
+
+    @ManyToOne
+    @JoinColumn(name = "user_id", nullable = false)
+    private User usuario;
+
+    @ManyToOne
+    @JoinColumn(name = "discussion_id", nullable = false)
+    private Discussion discussao;
+}

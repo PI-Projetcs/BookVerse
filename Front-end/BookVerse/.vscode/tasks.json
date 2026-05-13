@@ -1,0 +1,19 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "test-auth-slice",
+			"type": "shell",
+			"command": "npm",
+			"args": [
+				"test",
+				"--",
+				"--runInBand",
+				"src/__tests__/sessionStorage.test.js",
+				"src/__tests__/sessionRoute.test.js",
+				"src/__tests__/authService.workflows.test.js"
+			],
+			"isBackground": false
+		}
+	]
+}

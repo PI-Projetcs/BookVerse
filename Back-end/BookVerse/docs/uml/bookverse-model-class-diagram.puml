@@ -1,0 +1,88 @@
+@startuml
+skinparam classAttributeIconSize 0
+hide methods
+hide circle
+
+package "br.senac.sp.bookverse.model" {
+    class User <<Entity>> {
+        id: Long
+        nome: String
+        email: String
+        senha: String
+        role: Role
+    }
+
+    class Book <<Entity>> {
+        id: Long
+        titulo: String
+        autor: String
+        genero: String
+        ano: Integer
+        sinopse: String
+        destaque: Boolean
+        mediaAvaliacao: Double
+    }
+
+    class Discussion <<Entity>> {
+        id: Long
+        titulo: String
+        descricao: String
+    }
+
+    class Comment <<Entity>> {
+        id: Long
+        conteudo: String
+        data: LocalDateTime
+    }
+
+    class Rating <<Entity>> {
+        id: Long
+        nota: Integer
+        descricao: String
+    }
+
+    class ReadingHistory <<Entity>> {
+        id: Long
+        status: ReadingStatus
+        progresso: Integer
+    }
+
+    class Achievement <<Entity>> {
+        id: Long
+        nome: String
+        descricao: String
+    }
+
+    enum Role {
+        USER
+        ADMIN
+    }
+
+    enum ReadingStatus {
+    READING
+    COMPLETE
+    }
+
+    class ApiErro <<DTO>> {
+        status: HttpStatus
+        mensagem: String
+        exception: String
+    }
+}
+
+User "1" -- "0..*" Rating : avaliacoes
+User "1" -- "0..*" Comment : comentarios
+User "1" -- "0..*" ReadingHistory : historicoLeitura
+User "0..*" -- "0..*" Achievement : conquistas
+
+Book "1" -- "0..*" Rating : avaliacoes
+Book "1" -- "0..*" Discussion : discussoes
+Book "1" -- "0..*" ReadingHistory : historicoLeitura
+
+Discussion "1" -- "0..*" Comment : comentarios
+
+User --> Role
+ReadingHistory --> ReadingStatus
+
+@enduml
+

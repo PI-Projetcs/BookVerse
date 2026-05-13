@@ -1,0 +1,31 @@
+spring:
+  application:
+    name: bookverse
+
+  config:
+    import: optional:file:.env[.properties]
+
+  datasource:
+    url: ${BOOKVERSE_DB_URL:jdbc:mysql://localhost:3306/bookverse?allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=UTC}
+    username: ${BOOKVERSE_DB_USERNAME}
+    password: ${BOOKVERSE_DB_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+
+
+server:
+  port: 8080
+
+bookverse:
+  jwt:
+    secret: ${BOOKVERSE_JWT_SECRET}
+    expiration-ms: ${BOOKVERSE_JWT_EXPIRATION_MS:86400000}
+  cors:
+    allowed-origins: http://localhost:8081
