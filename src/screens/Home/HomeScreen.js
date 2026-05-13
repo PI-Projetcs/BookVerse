@@ -1,0 +1,463 @@
+import React, { useEffect, useState } from 'react';
+import { Alert, Image, Modal, SafeAreaView, ScrollView, StatusBar, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import FooterNav from '../../components/FooterNav';
+import { getHomeViewModel, toggleHomeHighlightLike, updateHomeProgress } from '../../services/homeService';
+import { homeStyles as styles, HOME_CHAPTER_ACTIVE_GRADIENT, HOME_CHAPTER_DONE_GRADIENT, HOME_HEADER_GRADIENT, HOME_PROGRESS_GRADIENT } from '../../styles/homeStyles';
+
+function clamp01(value) {
+	if (!Number.isFinite(value)) return 0;
+	return Math.min(1, Math.max(0, value));
+}
+
+export default function HomeScreen({ navigation }) {
+	const insets = useSafeAreaInsets();
+
+	const [bookOfMonth, setBookOfMonth] = useState({
+		id: 1,
+		monthLabel: 'Marco 2026',
+		title: 'Livro do Mes',
+		author: 'Autor(a)',
+		description: 'Descricao nao informada.',
+		members: 0,
+		dateLabel: '',
+		coverUrl: 'https://placehold.co/240x320/f3f4f6/111827?text=Capa',
+	});
+
+	const [progress, setProgress] = useState({
+		currentPage: 0,
+		totalPages: 0,
+		weeklyDone: 0,
+		weeklyGoal: 1,
+	});
+
+	const [chapters, setChapters] = useState([]);
+	const [highlights, setHighlights] = useState([]);
+
+	const [isProgressModalOpen, setIsProgressModalOpen] = useState(false);
+	const [draftProgress, setDraftProgress] = useState({
+		currentPage: '0',
+		totalPages: '0',
+		weeklyDone: '0',
+		weeklyGoal: '1',
+	});
+
+	const percent = clamp01(progress.totalPages ? progress.currentPage / progress.totalPages : 0);
+	const percentLabel = `${Math.round(percent * 100)}%`;
+	const weeklyPercent = clamp01(progress.weeklyGoal ? progress.weeklyDone / progress.weeklyGoal : 0);
+
+	useEffect(() => {
+		let isMounted = true;
+
+		const loadHomeData = async () => {
+			const viewModel = await getHomeViewModel();
+			if (!isMounted || !viewModel) {
+				return;
+			}
+
+			setBookOfMonth(viewModel.bookOfMonth);
+			setProgress(viewModel.progress);
+			setChapters(viewModel.chapters);
+			setHighlights(viewModel.highlights);
+			setDraftProgress({
+				currentPage: String(viewModel.progress.currentPage ?? 0),
+				totalPages: String(viewModel.progress.totalPages ?? 0),
+				weeklyDone: String(viewModel.progress.weeklyDone ?? 0),
+				weeklyGoal: String(viewModel.progress.weeklyGoal ?? 1),
+			});
+		};
+
+		loadHomeData();
+
+		return () => {
+			isMounted = false;
+		};
+	}, []);
+
+	const handleOpenBook = () => {
+		if (navigation?.navigate) {
+			navigation.navigate('BookDetails', { id: bookOfMonth.id });
+		}
+	};
+
+	const handleOpenDiscussion = () => {
+		if (navigation?.navigate) {
+			navigation.navigate('Discussion');
+		}
+	};
+
+	const handleSelectChapter = (chapter) => {
+		if (chapter?.state === 'locked') {
+			Alert.alert('Capítulo bloqueado', 'Conclua os capítulos anteriores para desbloquear este capítulo.');
+			return;
+		}
+
+		if (navigation?.navigate) {
+			navigation.navigate('Discussion', { chapterId: chapter?.id });
+		}
+	};
+
+	const handleToggleLike = async (highlightId) => {
+		let nextLiked = false;
+
+		setHighlights((prev) =>
+			prev.map((h) => {
+				if (h.id !== highlightId) return h;
+				nextLiked = !h.liked;
+				const nextLikes = Math.max(0, (h.likes || 0) + (nextLiked ? 1 : -1));
+				return { ...h, liked: nextLiked, likes: nextLikes };
+			})
+		);
+
+		try {
+			const updated = await toggleHomeHighlightLike(highlightId, nextLiked);
+			if (!updated) {
+				return;
+			}
+
+			setHighlights((prev) =>
+				prev.map((h) =>
+					h.id === highlightId
+						? {
+							...h,
+							liked: Boolean(updated.liked),
+							likes: Number(updated.likes) || h.likes,
+						}
+						: h
+				)
+			);
+		} catch (error) {
+			// Keep optimistic update when request fails.
+		}
+	};
+
+	const openProgressModal = () => {
+		setDraftProgress({
+			currentPage: String(progress.currentPage ?? ''),
+			totalPages: String(progress.totalPages ?? ''),
+			weeklyDone: String(progress.weeklyDone ?? ''),
+			weeklyGoal: String(progress.weeklyGoal ?? ''),
+		});
+		setIsProgressModalOpen(true);
+	};
+
+	const saveProgressModal = async () => {
+		const next = {
+			currentPage: Number(draftProgress.currentPage),
+			totalPages: Number(draftProgress.totalPages),
+			weeklyDone: Number(draftProgress.weeklyDone),
+			weeklyGoal: Number(draftProgress.weeklyGoal),
+		};
+
+		if (![next.currentPage, next.totalPages, next.weeklyDone, next.weeklyGoal].every(Number.isFinite)) {
+			Alert.alert('Valores inválidos', 'Preencha apenas números.');
+			return;
+		}
+
+		if (next.totalPages <= 0 || next.weeklyGoal <= 0) {
+			Alert.alert('Valores inválidos', 'Total de páginas e meta semanal precisam ser maiores que zero.');
+			return;
+		}
+
+		const sanitized = {
+			currentPage: Math.max(0, Math.min(next.currentPage, next.totalPages)),
+			totalPages: next.totalPages,
+			weeklyDone: Math.max(0, Math.min(next.weeklyDone, next.weeklyGoal)),
+			weeklyGoal: next.weeklyGoal,
+		};
+
+		setProgress(sanitized);
+		setIsProgressModalOpen(false);
+
+		try {
+			const persisted = await updateHomeProgress(sanitized);
+			if (persisted) {
+				setProgress(persisted);
+			}
+		} catch (error) {
+			// Keep local update when request fails.
+		}
+	};
+
+	return (
+		<SafeAreaView style={styles.safeArea}>
+			<StatusBar barStyle="light-content" />
+
+			<LinearGradient
+				colors={HOME_HEADER_GRADIENT}
+				start={{ x: 0, y: 0 }}
+				end={{ x: 1, y: 0 }}
+				style={styles.header}
+			>
+				<View style={[styles.headerRow, { paddingTop: insets.top + 8 }]}>
+					<View style={styles.headerTitleRow}>
+						<MaterialCommunityIcons name="book-open-page-variant" size={20} color="#facc15" />
+						<Text style={styles.headerTitle}>Livro do Mês</Text>
+					</View>
+					<View style={styles.headerChip}>
+						<Ionicons name="calendar-outline" size={14} color="#fef3c7" />
+						<Text style={styles.headerChipText}>{bookOfMonth.monthLabel}</Text>
+					</View>
+				</View>
+			</LinearGradient>
+
+			<View style={styles.container}>
+				<ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+					<View style={styles.sectionHeader}>
+						<Text style={styles.sectionTitle}>Livro do Mês</Text>
+					</View>
+
+					<TouchableOpacity style={styles.bookCard} activeOpacity={0.9} onPress={handleOpenBook}>
+						<Image source={{ uri: bookOfMonth.coverUrl }} style={styles.bookCover} />
+						<View style={styles.bookInfo}>
+							<Text style={styles.bookTitle} numberOfLines={1}>
+								{bookOfMonth.title}
+							</Text>
+							<Text style={styles.bookAuthor} numberOfLines={1}>
+								{bookOfMonth.author}
+							</Text>
+							<Text style={styles.bookDesc} numberOfLines={3}>
+								{bookOfMonth.description}
+							</Text>
+
+							<View style={styles.bookMetaRow}>
+								<View style={styles.bookMetaItem}>
+									<Ionicons name="people-outline" size={14} color="#64748b" />
+									<Text style={styles.bookMetaText}>{bookOfMonth.members} membros</Text>
+								</View>
+								<View style={styles.bookMetaItem}>
+									<Ionicons name="calendar-clear-outline" size={14} color="#64748b" />
+									<Text style={styles.bookMetaText}>{bookOfMonth.dateLabel}</Text>
+								</View>
+							</View>
+						</View>
+					</TouchableOpacity>
+
+					<View style={styles.card}>
+						<View style={styles.cardHeaderRow}>
+							<Text style={styles.cardTitle}>Seu Progresso</Text>
+							<TouchableOpacity activeOpacity={0.85} onPress={openProgressModal}>
+								<Text style={styles.cardAction}>Atualizar</Text>
+							</TouchableOpacity>
+						</View>
+
+						<View style={styles.progressBlock}>
+							<View style={styles.progressTopRow}>
+								<Text style={styles.progressLabel}>
+									Página {progress.currentPage} de {progress.totalPages}
+								</Text>
+								<Text style={styles.progressValue}>{percentLabel}</Text>
+							</View>
+							<View style={styles.progressTrack}>
+								<LinearGradient
+									colors={HOME_PROGRESS_GRADIENT}
+									start={{ x: 0, y: 0 }}
+									end={{ x: 1, y: 0 }}
+									style={[styles.progressFill, { width: `${percent * 100}%` }]}
+								/>
+							</View>
+						</View>
+
+						<View style={[styles.progressBlock, styles.progressBlockTight]}>
+							<View style={styles.progressTopRow}>
+								<Text style={styles.progressLabel}>Meta semanal</Text>
+								<Text style={styles.progressValue}>
+									{progress.weeklyDone} / {progress.weeklyGoal} páginas
+								</Text>
+							</View>
+							<View style={styles.progressTrackMuted}>
+								<LinearGradient
+									colors={HOME_PROGRESS_GRADIENT}
+									start={{ x: 0, y: 0 }}
+									end={{ x: 1, y: 0 }}
+									style={[styles.progressFillMuted, { width: `${weeklyPercent * 100}%` }]}
+								/>
+							</View>
+						</View>
+					</View>
+
+					<View style={styles.card}>
+						<View style={styles.cardHeaderRow}>
+							<Text style={styles.cardTitle}>Capítulos</Text>
+							<TouchableOpacity activeOpacity={0.85} onPress={handleOpenDiscussion}>
+								<View style={styles.linkRow}>
+									<Ionicons name="chatbubbles-outline" size={14} color="#7D1F3E" />
+									<Text style={styles.linkText}>Ir para discussão</Text>
+								</View>
+							</TouchableOpacity>
+						</View>
+
+						<View style={styles.chapterList}>
+							{chapters.map((ch) => {
+								const isDone = ch.state === 'done';
+								const isActive = ch.state === 'active';
+								const isLocked = ch.state === 'locked';
+								return (
+									<TouchableOpacity
+										key={String(ch.id)}
+										activeOpacity={0.9}
+										onPress={() => handleSelectChapter(ch)}
+										style={[
+											styles.chapterRow,
+											isDone && styles.chapterRowDone,
+											isActive && styles.chapterRowActive,
+											isLocked && styles.chapterRowLocked,
+										]}
+									>
+										{isDone ? (
+											<LinearGradient
+												colors={HOME_CHAPTER_DONE_GRADIENT}
+												start={{ x: 0, y: 0 }}
+												end={{ x: 1, y: 0 }}
+												style={styles.chapterBadge}
+											>
+												<Text style={styles.chapterBadgeText}>{ch.id}</Text>
+											</LinearGradient>
+										) : isActive ? (
+											<LinearGradient
+												colors={HOME_CHAPTER_ACTIVE_GRADIENT}
+												start={{ x: 0, y: 0 }}
+												end={{ x: 1, y: 0 }}
+												style={styles.chapterBadge}
+											>
+												<Text style={styles.chapterBadgeText}>{ch.id}</Text>
+											</LinearGradient>
+										) : (
+											<View style={[styles.chapterBadge, isActive && styles.chapterBadgeActive, isLocked && styles.chapterBadgeLocked]}>
+												<Text style={[styles.chapterBadgeText, isLocked && styles.chapterBadgeTextLocked]}>
+													{ch.id}
+												</Text>
+											</View>
+										)}
+
+										<View style={styles.chapterTextCol}>
+											<Text style={[styles.chapterTitle, isLocked && styles.chapterTitleLocked]} numberOfLines={1}>
+												{ch.title}
+											</Text>
+											<Text style={[styles.chapterStatus, isLocked && styles.chapterStatusLocked]}>{ch.status}</Text>
+										</View>
+
+										<Ionicons
+											name={isLocked ? 'lock-closed-outline' : 'chevron-forward'}
+											size={18}
+											color={isLocked ? '#9ca3af' : '#94a3b8'}
+										/>
+									</TouchableOpacity>
+								);
+							})}
+						</View>
+					</View>
+
+					<View style={styles.sectionHeader}>
+						<Text style={styles.sectionTitle}>Destaques da Comunidade</Text>
+					</View>
+
+					{highlights.map((h) => (
+						<View key={h.id} style={styles.highlightCard}>
+							<Ionicons name="chatbox-ellipses-outline" size={18} color="#B8941F" style={styles.highlightIcon} />
+							<Text style={styles.highlightQuote} numberOfLines={3}>
+								“{h.text}”
+							</Text>
+							<View style={styles.highlightBottomRow}>
+								<Text style={styles.highlightAuthor}>— {h.author}</Text>
+								<TouchableOpacity
+									activeOpacity={0.85}
+									style={styles.likesRow}
+									onPress={() => handleToggleLike(h.id)}
+								>
+									<Ionicons name={h.liked ? 'heart' : 'heart-outline'} size={14} color="#7D1F3E" />
+									<Text style={styles.likesText}>{h.likes}</Text>
+								</TouchableOpacity>
+							</View>
+						</View>
+					))}
+
+					<View style={styles.bottomSpacer} />
+				</ScrollView>
+
+				<FooterNav navigation={navigation} activeKey="inicio" />
+			</View>
+
+			<Modal
+				visible={isProgressModalOpen}
+				transparent
+				animationType="fade"
+				onRequestClose={() => setIsProgressModalOpen(false)}
+			>
+				<View style={styles.modalBackdrop}>
+					<View style={styles.modalCard}>
+						<Text style={styles.modalTitle}>Atualizar progresso</Text>
+
+						<View style={styles.modalGrid}>
+							<View style={styles.modalField}>
+								<Text style={styles.modalLabel}>Página atual</Text>
+								<TextInput
+									value={draftProgress.currentPage}
+									onChangeText={(t) => setDraftProgress((p) => ({ ...p, currentPage: t.replace(/[^\d]/g, '') }))}
+									keyboardType="number-pad"
+									style={styles.modalInput}
+									placeholder="0"
+									placeholderTextColor="#9ca3af"
+								/>
+							</View>
+
+							<View style={styles.modalField}>
+								<Text style={styles.modalLabel}>Total de páginas</Text>
+								<TextInput
+									value={draftProgress.totalPages}
+									onChangeText={(t) => setDraftProgress((p) => ({ ...p, totalPages: t.replace(/[^\d]/g, '') }))}
+									keyboardType="number-pad"
+									style={styles.modalInput}
+									placeholder="0"
+									placeholderTextColor="#9ca3af"
+								/>
+							</View>
+
+							<View style={styles.modalField}>
+								<Text style={styles.modalLabel}>Feitas na semana</Text>
+								<TextInput
+									value={draftProgress.weeklyDone}
+									onChangeText={(t) => setDraftProgress((p) => ({ ...p, weeklyDone: t.replace(/[^\d]/g, '') }))}
+									keyboardType="number-pad"
+									style={styles.modalInput}
+									placeholder="0"
+									placeholderTextColor="#9ca3af"
+								/>
+							</View>
+
+							<View style={styles.modalField}>
+								<Text style={styles.modalLabel}>Meta semanal</Text>
+								<TextInput
+									value={draftProgress.weeklyGoal}
+									onChangeText={(t) => setDraftProgress((p) => ({ ...p, weeklyGoal: t.replace(/[^\d]/g, '') }))}
+									keyboardType="number-pad"
+									style={styles.modalInput}
+									placeholder="0"
+									placeholderTextColor="#9ca3af"
+								/>
+							</View>
+						</View>
+
+						<View style={styles.modalActions}>
+							<TouchableOpacity
+								activeOpacity={0.9}
+								style={[styles.modalButton, styles.modalButtonGhost]}
+								onPress={() => setIsProgressModalOpen(false)}
+							>
+								<Text style={[styles.modalButtonText, styles.modalButtonTextGhost]}>Cancelar</Text>
+							</TouchableOpacity>
+
+							<TouchableOpacity activeOpacity={0.9} style={[styles.modalButton, styles.modalButtonPrimary]} onPress={saveProgressModal}>
+								<Text style={styles.modalButtonText}>Salvar</Text>
+							</TouchableOpacity>
+						</View>
+					</View>
+				</View>
+			</Modal>
+		</SafeAreaView>
+	);
+}
+
