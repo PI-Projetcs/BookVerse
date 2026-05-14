@@ -103,7 +103,13 @@ export default function AdminBooks({ navigation }) {
 
 			return (
 		<View style={styles.card}>
-			<Image source={{ uri: item.coverUrl || COVER_PLACEHOLDER }} style={styles.cover} />
+			<View style={styles.coverFrame}>
+				<Image
+					source={{ uri: item.coverUrl || COVER_PLACEHOLDER }}
+					style={styles.cover}
+					resizeMode="contain"
+				/>
+			</View>
 			<Text style={styles.cardTitle} numberOfLines={2}>{item.title}</Text>
 			<Text style={styles.cardAuthor} numberOfLines={1}>{item.author}</Text>
 			<View style={styles.cardMeta}>

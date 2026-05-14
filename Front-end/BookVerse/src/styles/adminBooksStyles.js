@@ -91,11 +91,18 @@ export const adminBooksStyles = StyleSheet.create({
 		shadowOffset: { width: 0, height: 6 },
 		elevation: 3,
 	},
+	coverFrame: {
+		width: '100%',
+		height: 140,
+		borderRadius: 12,
+		overflow: 'hidden',
+		backgroundColor: '#e5e7eb',
+		alignItems: 'center',
+		justifyContent: 'center',
+	},
 	cover: {
 		width: '100%',
-		height: 160,
-		borderRadius: 12,
-		backgroundColor: '#e5e7eb',
+		height: '100%',
 	},
 	cardTitle: {
 		marginTop: 10,

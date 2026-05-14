@@ -15,10 +15,16 @@ export const bookCardStyles = StyleSheet.create({
 		shadowRadius: 6,
 		elevation: 2,
 	},
+	coverFrame: {
+		width: '100%',
+		height: 140,
+		backgroundColor: '#e5e7eb',
+		alignItems: 'center',
+		justifyContent: 'center',
+	},
 	cover: {
 		width: '100%',
-		height: 122,
-		backgroundColor: '#e5e7eb',
+		height: '100%',
 	},
 	content: {
 		paddingHorizontal: 6,

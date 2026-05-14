@@ -27,7 +27,9 @@ export default function BookCard({ book, onPress }) {
 			accessibilityLabel={`Abrir detalhes do livro ${title}, de ${author}`}
 			accessibilityHint="Abre a tela com informações completas do livro"
 		>
-			<Image source={{ uri: book?.coverUrl || FALLBACK_COVER }} style={styles.cover} resizeMode="cover" />
+			<View style={styles.coverFrame}>
+				<Image source={{ uri: book?.coverUrl || FALLBACK_COVER }} style={styles.cover} resizeMode="contain" />
+			</View>
 			<View style={styles.content}>
 				<Text style={styles.year}>{book?.year || '----'}</Text>
 				<Text style={styles.title} numberOfLines={2}>
