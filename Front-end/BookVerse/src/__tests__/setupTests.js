@@ -13,8 +13,18 @@ jest.mock('react-native', () => {
 		TouchableOpacity: makeComponent('TouchableOpacity'),
 		StyleSheet: { create: (styles) => styles },
 		Alert: { alert: jest.fn() },
+		Platform: { OS: 'web', select: (options) => options?.web ?? options?.default },
 	};
 });
+
+jest.mock('expo-constants', () => ({
+	__esModule: true,
+	default: {
+		expoConfig: {
+			hostUri: '127.0.0.1:8081',
+		},
+	},
+}));
 
 jest.mock('expo-linear-gradient', () => {
 	const React = require('react');

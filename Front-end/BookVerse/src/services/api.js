@@ -1,6 +1,32 @@
 import axios from 'axios';
+import Constants from 'expo-constants';
+import { Platform } from 'react-native';
 
-export const BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8080';
+function buildFallbackBaseUrl() {
+	if (Platform.OS === 'web') {
+		return 'http://localhost:8080';
+	}
+
+	const hostUri =
+		Constants.expoConfig?.hostUri ||
+		Constants.manifest2?.extra?.expoClient?.hostUri ||
+		Constants.manifest?.debuggerHost ||
+		'';
+	const host = String(hostUri).split(':')[0];
+
+	if (host) {
+		return `http://${host}:8080`;
+	}
+
+	if (Platform.OS === 'android') {
+		return 'http://10.0.2.2:8080';
+	}
+
+	return 'http://localhost:8080';
+}
+
+const envBaseUrl = String(process.env.EXPO_PUBLIC_API_URL || '').trim();
+export const BASE_URL = envBaseUrl || buildFallbackBaseUrl();
 
 let authToken = null;
 let refreshToken = null;
