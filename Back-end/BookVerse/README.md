@@ -44,11 +44,18 @@ src/main/java/br/senac/sp/bookverse/
    BOOKVERSE_DB_PASSWORD=sua_senha
    BOOKVERSE_JWT_SECRET=sua_chave_secreta_longa_aqui
    ```
-3. Execute o build e rode a aplicação:
+3. (Opcional) Configure o bootstrap automático do admin:
+   ```properties
+   BOOKVERSE_BOOTSTRAP_ADMIN_ENABLED=true
+   BOOKVERSE_ADMIN_EMAIL=admin@bookverse.com
+   BOOKVERSE_ADMIN_PASSWORD=admin123
+   BOOKVERSE_BOOTSTRAP_ADMIN_SYNC_CREDENTIALS=true
+   ```
+4. Execute o build e rode a aplicação:
    ```bash
    ./mvnw spring-boot:run
    ```
-4. Acesse a documentação Swagger: `http://localhost:8080/swagger-ui.html`
+5. Acesse a documentação Swagger: `http://localhost:8080/swagger-ui.html`
 
 ## 🔗 Integração com o Front-end
 
@@ -57,12 +64,21 @@ A API está configurada para aceitar requisições do front-end através de:
 - **JSON**: Formato padrão de troca de dados.
 - **Security**: Todos os endpoints (exceto Login/Cadastro) exigem o header `Authorization: Bearer <TOKEN>`.
 
+### Bootstrap de Usuário Admin
+Ao iniciar a aplicação, um usuário admin é automaticamente criado/sincronizado (se `BOOKVERSE_BOOTSTRAP_ADMIN_ENABLED=true`):
+- **Email padrão**: `admin@bookverse.com`
+- **Senha padrão**: `admin123`
+- **Role**: `ADMIN`
+- **Configurável via**: Variáveis de ambiente (`BOOKVERSE_ADMIN_*`)
+
+Ver `src/main/java/br/senac/sp/bookverse/config/AdminBootstrapConfig.java` para detalhes.
+
 ### Principais Endpoints
-- `POST /auth/login`: Autenticação do usuário.
-- `GET /books`: Listagem de livros (com filtros).
-- `POST /books`: Registro de novo livro (Admin).
-- `PUT /reading-history`: Atualização de progresso de leitura.
-- `GET /discussions`: Fóruns de discussão por livro.
+- `POST /api/v1/auth/login`: Autenticação do usuário.
+- `GET /api/v1/books`: Listagem de livros (com filtros).
+- `POST /api/v1/books`: Registro de novo livro (Admin).
+- `PUT /api/v1/reading-history`: Atualização de progresso de leitura.
+- `GET /api/v1/discussions`: Fóruns de discussão por livro.
 
 ## 📈 Sugestões de Melhorias Futuras
 

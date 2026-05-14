@@ -51,15 +51,29 @@ src/
 A integração é feita via **Axios**. Para configurar o endereço do servidor:
 
 1. Crie um arquivo chamado `.env` (ou utilize variáveis do Expo).
-2. Defina a URL base:
+2. Defina a URL base (opcional, o app detecta automaticamente):
    ```text
-   EXPO_PUBLIC_API_URL=http://<SEU_IP_LOCAL>:8080/api
+   EXPO_PUBLIC_API_URL=http://<SEU_IP_LOCAL>:8080
    ```
-   *Nota: Use o seu IP local em vez de 'localhost' para testar no dispositivo físico.*
+   *Nota: Se não definir, o app detectará automaticamente o IP da máquina host via Expo Constants.*
+
+### Detecção Automática de API URL
+- **Web**: `http://localhost:8080`
+- **Android Emulator**: `http://10.0.2.2:8080`
+- **Celular Físico**: IP da máquina host detectado automaticamente (ex: `http://192.168.x.x:8080`)
+
+A lógica de fallback está em `src/services/api.js`.
 
 ### Segurança e Sessão
 - O sistema utiliza **Bearer Tokens (JWT)**.
 - O `api.js` gerencia automaticamente a renovação do token via `Refresh Token` quando a sessão expira.
+- **Admin Bootstrap**: O usuário admin é criado/sincronizado automaticamente no startup do backend com credenciais padrão (veja Back-end README).
+
+## 🎨 Layout e UI
+
+- **Admin - Grade de Livros**: 3 colunas por linha com espaçamento consistente.
+- **Catálogo - Grade de Livros**: 3 colunas por linha (responsivo).
+- **Padronização de Imagens**: Todas as capas de livros usam `resizeMode="contain"` com altura fixa (140px) para evitar cortes e manter apresentação uniforme.
 
 ## 📈 Sugestões de Melhorias Futuras
 
@@ -67,6 +81,7 @@ A integração é feita via **Axios**. Para configurar o endereço do servidor:
 2. **TypeScript**: Incrementar a tipagem nos serviços e componentes para maior segurança no desenvolvimento.
 3. **Gerenciamento de Cache**: Implementar algo como *React Query* para otimizar o carregamento de dados e reduzir requisições desnecessárias.
 4. **Tratamento de Erros Global**: Criar um componente de "Boundary Error" ou Toast dinâmico para erros de rede interceptados.
+5. **Responsividade Avançada**: Implementar grid dinâmica (2 colunas em mobile pequeno, 3 em tablets, 4 em web).
 
 ---
 *Projeto desenvolvido para fins acadêmicos - BookVerse 2024.*

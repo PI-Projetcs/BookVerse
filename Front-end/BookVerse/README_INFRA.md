@@ -1,4 +1,22 @@
 
+## 🔧 Configuração de Rede para Mobile
+
+### Localhost vs IP Real
+- **Web (navegador)**: Pode usar `localhost:8080`
+- **Celular/Emulador**: DEVE usar o IP real da máquina (ex: `192.168.x.x:8080`)
+
+### Fallback Automático
+O app (`src/services/api.js`) tenta automaticamente:
+1. **EXPO_PUBLIC_API_URL** (se definida)
+2. **Host do Expo** (detectado via Constants.expoConfig.hostUri)
+3. **10.0.2.2:8080** (Android Emulator)
+4. **localhost:8080** (fallback)
+
+Para testar em celular físico, garanta que:
+1. PC e celular estão na mesma rede Wi-Fi
+2. Porta 8080 não está bloqueada pelo firewall
+3. Backend está rodando: `./mvnw spring-boot:run`
+
 ### Explicação das pastas
 ### assets
 Imagens, ícones, logos dos livros etc.
