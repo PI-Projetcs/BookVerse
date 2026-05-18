@@ -2,6 +2,8 @@ package br.senac.sp.bookverse.controller;
 
 import br.senac.sp.bookverse.dto.AuthenticationResponse;
 import br.senac.sp.bookverse.dto.LoginRequest;
+import br.senac.sp.bookverse.dto.RefreshTokenRequest;
+import br.senac.sp.bookverse.dto.RefreshTokenResponse;
 import br.senac.sp.bookverse.dto.RegistrationRequest;
 import br.senac.sp.bookverse.dto.UserResponseDTO;
 import br.senac.sp.bookverse.service.AuthenticationService;
@@ -35,5 +37,10 @@ public class AuthenticationController {
     public ResponseEntity<UserResponseDTO> register(@Valid @RequestBody RegistrationRequest request) {
         UserResponseDTO created = userService.registrar(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
+    }
+
+    @PostMapping("/refresh")
+    public ResponseEntity<RefreshTokenResponse> refresh(@Valid @RequestBody RefreshTokenRequest request) {
+        return ResponseEntity.ok(authService.refreshToken(request));
     }
 }

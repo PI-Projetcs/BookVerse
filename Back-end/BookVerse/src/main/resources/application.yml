@@ -27,5 +27,6 @@ bookverse:
   jwt:
     secret: ${BOOKVERSE_JWT_SECRET}
     expiration-ms: ${BOOKVERSE_JWT_EXPIRATION_MS:86400000}
+    refresh-expiration-ms: ${BOOKVERSE_JWT_REFRESH_EXPIRATION_MS:604800000}
   cors:
     allowed-origins: http://localhost:8081
