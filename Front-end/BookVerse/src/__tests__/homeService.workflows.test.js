@@ -1,7 +1,6 @@
 describe('homeService workflows (mock mode)', () => {
 	beforeEach(() => {
 		jest.resetModules();
-		process.env.EXPO_PUBLIC_USE_MOCK = 'true';
 	});
 
 	it('loads the home view model and updates progress, highlights, and book of month', async () => {

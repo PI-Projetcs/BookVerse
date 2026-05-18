@@ -7,6 +7,7 @@ import br.senac.sp.bookverse.dto.HomeDTO.ProgressDTO;
 import br.senac.sp.bookverse.mapper.BookMapper;
 import br.senac.sp.bookverse.model.Book;
 import br.senac.sp.bookverse.model.ReadingHistory;
+import br.senac.sp.bookverse.model.ReadingStatus;
 import br.senac.sp.bookverse.model.User;
 import br.senac.sp.bookverse.repository.BookRepository;
 import br.senac.sp.bookverse.repository.ReadingHistoryRepository;
@@ -28,15 +29,21 @@ public class HomeService {
     private final BookRepository bookRepository;
     private final ReadingHistoryRepository readingHistoryRepository;
     private final CurrentUserService currentUserService;
+    private final br.senac.sp.bookverse.repository.ChapterProgressRepository chapterProgressRepository;
+    private final br.senac.sp.bookverse.repository.HighlightLikeRepository highlightLikeRepository;
 
     public HomeService(
             BookRepository bookRepository,
             ReadingHistoryRepository readingHistoryRepository,
-            CurrentUserService currentUserService
+            CurrentUserService currentUserService,
+            br.senac.sp.bookverse.repository.ChapterProgressRepository chapterProgressRepository,
+            br.senac.sp.bookverse.repository.HighlightLikeRepository highlightLikeRepository
     ) {
         this.bookRepository = bookRepository;
         this.readingHistoryRepository = readingHistoryRepository;
         this.currentUserService = currentUserService;
+        this.chapterProgressRepository = chapterProgressRepository;
+        this.highlightLikeRepository = highlightLikeRepository;
     }
 
     @Transactional(readOnly = true)
@@ -51,17 +58,18 @@ public class HomeService {
         }
 
         Optional<Book> livroDoMes = bookRepository.findByDestaqueTrue().stream().findFirst();
+        var livroDoMesDTO = livroDoMes.map(BookMapper::toDTO).orElse(null);
 
         List<ReadingHistory> historicoLeitura = usuarioAtual != null
                 ? readingHistoryRepository.findByUsuarioId(usuarioAtual.getId())
                 : List.of();
 
         ProgressDTO progress = calcularProgresso(historicoLeitura, usuarioAtual);
-        List<ChapterDTO> chapters = gerarCapitulos();
+        List<ChapterDTO> chapters = gerarCapitulos(livroDoMesDTO, usuarioAtual);
         List<HighlightDTO> highlights = gerarHighlights();
 
         HomeDTO home = new HomeDTO(
-                livroDoMes.map(BookMapper::toDTO).orElse(null),
+            livroDoMesDTO,
                 progress,
                 chapters,
                 highlights
@@ -80,12 +88,20 @@ public class HomeService {
             return new ProgressDTO(0, 0, 0, 1);
         }
 
-        ReadingHistory historicoUsuario = historicos.stream()
-                .filter(h -> h.getUsuario() != null
+        Optional<Book> livroDoMes = bookRepository.findByDestaqueTrue().stream().findFirst();
+        ReadingHistory historicoUsuario = null;
+        if (livroDoMes.isPresent()) {
+            historicoUsuario = readingHistoryRepository.findByUsuarioAndLivro(usuario, livroDoMes.get())
+                .orElseGet(() -> historicos.stream()
+                    .filter(h -> h.getUsuario() != null
                         && h.getUsuario().getId() != null
-                        && h.getUsuario().getId().equals(usuario.getId()))
-                .findFirst()
-                .orElse(null);
+                        && h.getUsuario().getId().equals(usuario.getId())
+                        && h.getLivro() != null
+                        && h.getLivro().getId() != null
+                        && h.getLivro().getId().equals(livroDoMes.get().getId()))
+                    .findFirst()
+                    .orElse(null));
+        }
 
         if (historicoUsuario == null) {
             return new ProgressDTO(0, 0, 0, 1);
@@ -106,18 +122,42 @@ public class HomeService {
         );
     }
 
-    private List<ChapterDTO> gerarCapitulos() {
+    private List<ChapterDTO> gerarCapitulos(br.senac.sp.bookverse.dto.BookDTO livroDoMes, User usuario) {
         List<ChapterDTO> chapters = new ArrayList<>();
-        for (int i = 1; i <= 5; i++) {
-            String estado = i <= 2 ? "done" : i == 3 ? "active" : "locked";
-            String status = i <= 2 ? "Concluído" : i == 3 ? "Em leitura" : "Bloqueado";
+        if (livroDoMes != null && livroDoMes.chapters() != null && !livroDoMes.chapters().isEmpty()) {
+            // if user is authenticated, load persisted chapter progress for this book
+            java.util.Map<Integer, String> persisted = new java.util.HashMap<>();
+            if (usuario != null) {
+                Optional<Book> livroEntity = Optional.empty();
+                Long bookId = livroDoMes.id();
+                if (bookId != null) {
+                    livroEntity = bookRepository.findById(bookId);
+                }
+                if (livroEntity.isPresent()) {
+                    var progresses = chapterProgressRepository.findByUsuarioAndLivro(usuario, livroEntity.get());
+                    for (var p : progresses) {
+                        if (p.getChapterOrder() != null && p.getStatus() != null) {
+                            persisted.put(p.getChapterOrder(), p.getStatus());
+                        }
+                    }
+                }
+            }
 
-            chapters.add(new ChapterDTO(
-                    (long) i,
-                    "Capítulo " + i,
-                    status,
-                    estado
-            ));
+            for (int i = 0; i < livroDoMes.chapters().size(); i++) {
+                var chapter = livroDoMes.chapters().get(i);
+                Long id = chapter.id() != null ? chapter.id() : (long) (i + 1);
+                Integer order = id.intValue();
+                String status = persisted.getOrDefault(order, "");
+                String state = "active"; // all unlocked by requirement
+
+                chapters.add(new ChapterDTO(id, chapter.title(), status, state));
+            }
+            return chapters;
+        }
+
+        // fallback: generate empty chapters with no status
+        for (int i = 1; i <= 5; i++) {
+            chapters.add(new ChapterDTO((long) i, "Capítulo " + i, "", "active"));
         }
         return chapters;
     }
@@ -125,29 +165,28 @@ public class HomeService {
     private List<HighlightDTO> gerarHighlights() {
         List<HighlightDTO> highlights = new ArrayList<>();
 
-        highlights.add(new HighlightDTO(
-                1L,
-                "A leitura é a chave para novas dimensões.",
-                "Comunidade",
-                42,
-                false
-        ));
+        // static highlight definitions (could be moved to DB later)
+        var defs = java.util.Map.of(
+                1L, "A leitura é a chave para novas dimensões.",
+                2L, "Cada livro é uma porta para outro mundo.",
+                3L, "Palavras são magia, histórias são vidas."
+        );
 
-        highlights.add(new HighlightDTO(
-                2L,
-                "Cada livro é uma porta para outro mundo.",
-                "Comunidade",
-                38,
-                false
-        ));
+        for (var entry : defs.entrySet()) {
+            Long id = entry.getKey();
+            String text = entry.getValue();
+            long count = highlightLikeRepository.countByHighlightIdAndLikedTrue(id);
+            boolean liked = false;
+            try {
+                User u = currentUserService.authenticatedUser();
+                var opt = highlightLikeRepository.findByHighlightIdAndUsuario(id, u);
+                liked = opt.isPresent() && Boolean.TRUE.equals(opt.get().getLiked());
+            } catch (Exception ex) {
+                // anonymous user - keep liked=false
+            }
 
-        highlights.add(new HighlightDTO(
-                3L,
-                "Palavras são magia, histórias são vidas.",
-                "Comunidade",
-                55,
-                false
-        ));
+            highlights.add(new HighlightDTO(id, text, "Comunidade", (int) count, liked));
+        }
 
         return highlights;
     }
@@ -155,22 +194,51 @@ public class HomeService {
     @Transactional
     public ProgressDTO atualizarProgresso(ProgressDTO progressDTO) {
         log.info("Atualizando progresso de leitura");
-        // Por enquanto, apenas retorna o DTO recebido
-        // Em produção, isso seria persistido no banco
-        return progressDTO;
+
+        User usuario = currentUserService.authenticatedUser();
+        Book livroDoMes = bookRepository.findByDestaqueTrue().stream()
+            .findFirst()
+            .orElseThrow(() -> new IllegalStateException("Livro do mês não encontrado."));
+
+        ReadingHistory historico = readingHistoryRepository
+            .findByUsuarioAndLivro(usuario, livroDoMes)
+            .orElseGet(ReadingHistory::new);
+
+        historico.setUsuario(usuario);
+        historico.setLivro(livroDoMes);
+        historico.setProgresso(progressDTO.currentPage() != null ? progressDTO.currentPage() : 0);
+        historico.setStatus(progressDTO.currentPage() != null
+            && livroDoMes.getPaginas() != null
+            && progressDTO.currentPage() >= livroDoMes.getPaginas()
+            ? ReadingStatus.COMPLETE
+            : ReadingStatus.READING);
+
+        ReadingHistory salvo = readingHistoryRepository.save(historico);
+
+        Integer currentPage = salvo.getProgresso() != null ? salvo.getProgresso() : 0;
+        Integer totalPages = livroDoMes.getPaginas() != null ? livroDoMes.getPaginas() : 0;
+        Integer weeklyDone = progressDTO.weeklyDone() != null ? progressDTO.weeklyDone() : 0;
+        Integer weeklyGoal = progressDTO.weeklyGoal() != null ? progressDTO.weeklyGoal() : 1;
+
+        return new ProgressDTO(currentPage, totalPages, weeklyDone, weeklyGoal);
     }
 
     @Transactional
     public HighlightDTO toggleHighlightLike(Long highlightId, Boolean liked) {
         log.info("Alternando like do highlight={}, liked={}", highlightId, liked);
-        // Por enquanto, gera um highlight de exemplo
-        // Em produção, isso seria persistido no banco
-        return new HighlightDTO(
-                highlightId,
-                "Destaque exemplo",
-                "Comunidade",
-                liked ? 1 : 0,
-                liked
-        );
+        User usuario = currentUserService.authenticatedUser();
+
+        var existing = highlightLikeRepository.findByHighlightIdAndUsuario(highlightId, usuario);
+        if (existing.isPresent()) {
+            var rec = existing.get();
+            rec.setLiked(Boolean.TRUE.equals(liked));
+            highlightLikeRepository.save(rec);
+        } else {
+            var rec = new br.senac.sp.bookverse.model.HighlightLike(highlightId, usuario, Boolean.TRUE.equals(liked));
+            highlightLikeRepository.save(rec);
+        }
+
+        long count = highlightLikeRepository.countByHighlightIdAndLikedTrue(highlightId);
+        return new HighlightDTO(highlightId, "Destaque exemplo", "Comunidade", (int) count, Boolean.TRUE.equals(liked));
     }
 }

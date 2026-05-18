@@ -3,7 +3,6 @@ describe('profileService workflows (mock mode)', () => {
 
   beforeEach(() => {
     jest.resetModules();
-    process.env.EXPO_PUBLIC_USE_MOCK = 'true';
     profileService = require('../services/profileService');
   });
 

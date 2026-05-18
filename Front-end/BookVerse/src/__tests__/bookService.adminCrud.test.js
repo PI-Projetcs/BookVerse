@@ -1,7 +1,6 @@
 describe('bookService admin CRUD (mock mode)', () => {
 	beforeEach(() => {
 		jest.resetModules();
-		process.env.EXPO_PUBLIC_USE_MOCK = 'true';
 	});
 
 	it('creates, updates, and deletes an admin book', async () => {

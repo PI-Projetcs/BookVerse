@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
+  Alert,
   ActivityIndicator,
   View,
   Text,
@@ -11,16 +12,11 @@ import {
   Image,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Feather, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { Feather, Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import styles from '../../styles/discussionStyles';
 import FooterNav from '../../components/FooterNav';
-import {
-  addCommentToDiscussion,
-  getDiscussions,
-  likeComment,
-  toggleReportComment,
-} from '../../services/bookService';
+import { getBookById, getDiscussions, createCommentOnDiscussion } from '../../services/bookService';
 
 const HIT_SLOP = { top: 10, bottom: 10, left: 10, right: 10 };
 
@@ -29,9 +25,10 @@ export default function DiscussionScreen({ navigation, route }) {
   const bookId = Number(route?.params?.bookId) || 1;
   const initialChapterId = Number(route?.params?.chapterId);
   const [selectedFilter, setSelectedFilter] = useState('recentes');
-  const [expandedChapters, setExpandedChapters] = useState({});
+  const [expandedThreads, setExpandedThreads] = useState({});
   const [newComments, setNewComments] = useState({});
-  const [chapters, setChapters] = useState([]);
+  const [book, setBook] = useState(null);
+  const [threads, setThreads] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
 
@@ -42,28 +39,63 @@ export default function DiscussionScreen({ navigation, route }) {
       try {
         setIsLoading(true);
         setErrorMessage('');
-        const result = await getDiscussions(bookId);
+        const [bookResult, discussionsResult] = await Promise.all([
+          getBookById(bookId),
+          getDiscussions(bookId),
+        ]);
         if (!isMounted) {
           return;
         }
 
-        const safeChapters = Array.isArray(result) ? result : [];
-        setChapters(safeChapters);
+        const safeBook = bookResult || null;
+        const bookChapters = Array.isArray(safeBook?.chapters) ? safeBook.chapters : [];
+        const safeDiscussions = Array.isArray(discussionsResult) ? discussionsResult : [];
 
-        const initialExpanded = safeChapters.reduce((accumulator, chapter) => {
-          accumulator[chapter.id] = chapter.id === initialChapterId;
+        const mergedThreads = bookChapters.map((chapter, index) => {
+          const discussion = safeDiscussions[index] || null;
+          return {
+            id: discussion?.id || chapter.id || index + 1,
+            chapterId: Number(chapter.id) || index + 1,
+            chapterTitle: chapter.title || `Capítulo ${index + 1}`,
+            discussionId: discussion?.id || null,
+            discussionTitle: discussion?.title || chapter.title || `Capítulo ${index + 1}`,
+            discussionDescription: discussion?.description || '',
+            comments: Array.isArray(discussion?.comments) ? discussion.comments : [],
+          };
+        });
+
+        if (safeDiscussions.length > bookChapters.length) {
+          safeDiscussions.slice(bookChapters.length).forEach((discussion, extraIndex) => {
+            mergedThreads.push({
+              id: discussion.id || bookChapters.length + extraIndex + 1,
+              chapterId: null,
+              chapterTitle: discussion.title || `Discussão ${bookChapters.length + extraIndex + 1}`,
+              discussionId: discussion.id || null,
+              discussionTitle: discussion.title || `Discussão ${bookChapters.length + extraIndex + 1}`,
+              discussionDescription: discussion.description || '',
+              comments: Array.isArray(discussion.comments) ? discussion.comments : [],
+            });
+          });
+        }
+
+        setBook(safeBook);
+        setThreads(mergedThreads);
+
+        const initialExpanded = mergedThreads.reduce((accumulator, thread) => {
+          accumulator[thread.id] =
+            thread.chapterId === initialChapterId || thread.discussionId === initialChapterId;
           return accumulator;
         }, {});
 
-        if (!initialExpanded[initialChapterId] && safeChapters.length > 0) {
-          initialExpanded[safeChapters[0].id] = true;
+        if (!initialExpanded[initialChapterId] && mergedThreads.length > 0) {
+          initialExpanded[mergedThreads[0].id] = true;
         }
 
-        setExpandedChapters(initialExpanded);
+        setExpandedThreads(initialExpanded);
       } catch (error) {
         if (isMounted) {
           setErrorMessage('Não foi possível carregar as discussões.');
-          setChapters([]);
+          setThreads([]);
         }
       } finally {
         if (isMounted) {
@@ -80,121 +112,56 @@ export default function DiscussionScreen({ navigation, route }) {
   }, [bookId, initialChapterId]);
 
   const filteredChapters = useMemo(() => {
-    return chapters.map((chapter) => {
-      const sortedComments = [...chapter.comments];
+    return threads.map((thread) => {
+      const sortedComments = [...(thread.comments || [])];
       if (selectedFilter === 'populares') {
         sortedComments.sort((a, b) => b.likes - a.likes);
       } else {
         sortedComments.sort((a, b) => b.id - a.id);
       }
-      return { ...chapter, comments: sortedComments };
+      return { ...thread, comments: sortedComments };
     });
-  }, [chapters, selectedFilter]);
+  }, [threads, selectedFilter]);
 
-  const toggleChapter = (chapterId) => {
-    setExpandedChapters((prev) => ({ ...prev, [chapterId]: !prev[chapterId] }));
+  const toggleThread = (threadId) => {
+    setExpandedThreads((prev) => ({ ...prev, [threadId]: !prev[threadId] }));
   };
 
-  const updateCommentInChapter = (chapterId, commentId, updater) => {
-    setChapters((prev) =>
-      prev.map((chapter) =>
-        chapter.id === chapterId
+  const prependCommentInThread = (threadId, comment) => {
+    setThreads((prev) =>
+      prev.map((thread) =>
+        thread.id === threadId
           ? {
-              ...chapter,
-              comments: chapter.comments.map((comment) =>
-                comment.id === commentId ? updater(comment) : comment
-              ),
+              ...thread,
+              comments: [comment, ...(thread.comments || [])],
             }
-          : chapter
+          : thread
       )
     );
   };
 
-  const prependCommentInChapter = (chapterId, comment) => {
-    setChapters((prev) =>
-      prev.map((chapter) =>
-        chapter.id === chapterId
-          ? {
-              ...chapter,
-              comments: [comment, ...chapter.comments],
-            }
-          : chapter
-      )
-    );
-  };
-
-  const handleLike = async (chapterId, commentId) => {
-    updateCommentInChapter(chapterId, commentId, (comment) => ({
-      ...comment,
-      likes: comment.likes + 1,
-    }));
-
-    try {
-      const response = await likeComment(bookId, chapterId, commentId);
-      const updatedComment = response?.item;
-      if (!updatedComment) {
-        return;
-      }
-
-      updateCommentInChapter(chapterId, commentId, (comment) => ({
-        ...comment,
-        likes: Number(updatedComment.likes) || comment.likes,
-      }));
-    } catch (error) {
-      // Keep optimistic update even when request fails.
+  const handleAddComment = async (thread) => {
+    if (!thread?.discussionId) {
+      Alert.alert('Discussão indisponível', 'Este capítulo ainda não possui uma discussão vinculada.');
+      return;
     }
-  };
 
-  const handleReport = async (chapterId, commentId) => {
-    const currentChapter = chapters.find((chapter) => chapter.id === chapterId);
-    const currentComment = currentChapter?.comments?.find((comment) => comment.id === commentId);
-    const nextReported = !currentComment?.reported;
-
-    updateCommentInChapter(chapterId, commentId, (comment) => ({
-      ...comment,
-      reported: nextReported,
-    }));
-
-    try {
-      const response = await toggleReportComment(bookId, chapterId, commentId, nextReported);
-      const updatedComment = response?.item;
-      if (!updatedComment) {
-        return;
-      }
-
-      updateCommentInChapter(chapterId, commentId, (comment) => ({
-        ...comment,
-        reported: Boolean(updatedComment.reported),
-      }));
-    } catch (error) {
-      // Keep optimistic toggle when request fails.
-    }
-  };
-
-  const handleAddComment = async (chapterId) => {
-    const text = (newComments[chapterId] || '').trim();
+    const text = (newComments[thread.id] || '').trim();
     if (!text) return;
 
-    setNewComments((prev) => ({ ...prev, [chapterId]: '' }));
+    setNewComments((prev) => ({ ...prev, [thread.id]: '' }));
 
     const fallbackComment = {
       id: Date.now(),
       author: 'Você',
       date: 'Agora mesmo',
       text,
-      likes: 0,
-      replies: 0,
-      avatar: 'https://i.pravatar.cc/100?img=5',
-      reported: false,
     };
 
     let commentToInsert = fallbackComment;
 
     try {
-      const response = await addCommentToDiscussion(bookId, chapterId, {
-        text,
-        author: 'Você',
-      });
+      const response = await createCommentOnDiscussion(thread.discussionId, { conteudo: text });
 
       if (response?.item) {
         commentToInsert = {
@@ -206,7 +173,7 @@ export default function DiscussionScreen({ navigation, route }) {
       // Keep local fallback comment when request fails.
     }
 
-    prependCommentInChapter(chapterId, commentToInsert);
+    prependCommentInThread(thread.id, commentToInsert);
   };
 
   return (
@@ -254,7 +221,7 @@ export default function DiscussionScreen({ navigation, route }) {
           </View>
         </View>
 
-        <Text style={styles.bookSubtitle}>O Código Da Vinci</Text>
+        <Text style={styles.bookSubtitle}>{book?.title || 'Livro do mês'}</Text>
       </LinearGradient>
 
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
@@ -274,30 +241,35 @@ export default function DiscussionScreen({ navigation, route }) {
         {!isLoading && !errorMessage && filteredChapters.length === 0 ? (
           <View style={styles.emptyState}>
             <Ionicons name="chatbubble-ellipses-outline" size={28} color="#9ca3af" />
-            <Text style={styles.emptyStateText}>Sem capítulos de discussão.</Text>
+            <Text style={styles.emptyStateText}>Sem discussões disponíveis para este livro.</Text>
           </View>
         ) : null}
 
         {!isLoading && !errorMessage ? filteredChapters.map((chapter) => {
-          const isExpanded = expandedChapters[chapter.id];
+          const isExpanded = expandedThreads[chapter.id];
 
           return (
             <View key={chapter.id} style={styles.chapterCard}>
               <TouchableOpacity
                 style={styles.chapterHeader}
-                onPress={() => toggleChapter(chapter.id)}
+                onPress={() => toggleThread(chapter.id)}
                 hitSlop={HIT_SLOP}
                 accessibilityRole="button"
-                accessibilityLabel={`Alternar comentários do capítulo ${chapter.id}, ${chapter.title}`}
+                accessibilityLabel={`Alternar comentários do capítulo ${chapter.chapterTitle || chapter.title}`}
                 accessibilityState={{ expanded: Boolean(isExpanded) }}
               >
                 <View style={styles.chapterInfo}>
                   <View style={styles.chapterBadge}>
-                    <Text style={styles.chapterBadgeText}>{chapter.id}</Text>
+                    <Text style={styles.chapterBadgeText}>{chapter.chapterId || chapter.id}</Text>
                   </View>
 
                   <View style={styles.chapterTitleContainer}>
-                    <Text style={styles.chapterTitle}>{chapter.title}</Text>
+                    <Text style={styles.chapterTitle}>{chapter.chapterTitle || chapter.title}</Text>
+                    {chapter.discussionDescription ? (
+                      <Text style={styles.chapterCommentCount} numberOfLines={2}>
+                        {chapter.discussionDescription}
+                      </Text>
+                    ) : null}
                     <Text style={styles.chapterCommentCount}>
                       {chapter.comments.length} comentário{chapter.comments.length !== 1 ? 's' : ''}
                     </Text>
@@ -361,7 +333,11 @@ export default function DiscussionScreen({ navigation, route }) {
                     <View style={styles.emptyState}>
                       <Ionicons name="chatbubble-ellipses-outline" size={28} color="#9ca3af" />
                       <Text style={styles.emptyStateText}>Nenhum comentário ainda</Text>
-                      <Text style={styles.emptyStateSubtext}>Seja o primeiro a comentar este capítulo.</Text>
+                      <Text style={styles.emptyStateSubtext}>
+                        {chapter.discussionId
+                          ? 'Seja o primeiro a comentar esta discussão.'
+                          : 'Este capítulo ainda não possui discussão vinculada.'}
+                      </Text>
                     </View>
                   ) : (
                     chapter.comments.map((comment) => (
@@ -378,48 +354,6 @@ export default function DiscussionScreen({ navigation, route }) {
                         </View>
 
                         <Text style={styles.commentText}>{comment.text}</Text>
-
-                        <View style={styles.commentActions}>
-                          <TouchableOpacity
-                            style={styles.actionButton}
-                            onPress={() => handleLike(chapter.id, comment.id)}
-                            hitSlop={HIT_SLOP}
-                            accessibilityRole="button"
-                            accessibilityLabel={`Curtir comentário de ${comment.author}`}
-                          >
-                            <Feather name="thumbs-up" size={14} color="#6b7280" />
-                            <Text style={styles.actionText}>{comment.likes}</Text>
-                          </TouchableOpacity>
-
-                          <TouchableOpacity
-                            style={styles.actionButton}
-                            disabled
-                            accessibilityRole="button"
-                            accessibilityLabel={`Responder comentário de ${comment.author} indisponível`}
-                            accessibilityState={{ disabled: true }}
-                          >
-                            <MaterialCommunityIcons name="reply-outline" size={15} color="#6b7280" />
-                            <Text style={styles.actionText}>
-                              {comment.replies > 0
-                                ? `${comment.replies} resposta${comment.replies > 1 ? 's' : ''}`
-                                : 'Responder'}
-                            </Text>
-                          </TouchableOpacity>
-
-                          <TouchableOpacity
-                            style={[styles.actionButton, styles.reportButton]}
-                            onPress={() => handleReport(chapter.id, comment.id)}
-                            hitSlop={HIT_SLOP}
-                            accessibilityRole="button"
-                            accessibilityLabel={`Reportar comentário de ${comment.author}`}
-                            accessibilityState={{ selected: Boolean(comment.reported) }}
-                          >
-                            <Feather name="flag" size={14} color={comment.reported ? '#7D1F3E' : '#6b7280'} />
-                            <Text style={[styles.actionText, comment.reported && styles.actionTextActive]}>
-                              Reportar
-                            </Text>
-                          </TouchableOpacity>
-                        </View>
                       </View>
                     ))
                   )}
@@ -432,14 +366,16 @@ export default function DiscussionScreen({ navigation, route }) {
                       multiline
                       value={newComments[chapter.id]}
                       onChangeText={(text) => setNewComments((prev) => ({ ...prev, [chapter.id]: text }))}
-                      accessibilityLabel={`Campo para comentar no capítulo ${chapter.id}`}
+                      accessibilityLabel={`Campo para comentar no capítulo ${chapter.chapterTitle || chapter.title}`}
                     />
 
                     <TouchableOpacity
-                      onPress={() => handleAddComment(chapter.id)}
+                      onPress={() => handleAddComment(chapter)}
                       hitSlop={HIT_SLOP}
                       accessibilityRole="button"
-                      accessibilityLabel={`Publicar comentário no capítulo ${chapter.id}`}
+                      accessibilityLabel={`Publicar comentário no capítulo ${chapter.chapterTitle || chapter.title}`}
+                      disabled={!chapter.discussionId}
+                      accessibilityState={{ disabled: !chapter.discussionId }}
                     >
                       <LinearGradient
                         colors={['#6B0F2E', '#0a0f1a', '#003D2B']}

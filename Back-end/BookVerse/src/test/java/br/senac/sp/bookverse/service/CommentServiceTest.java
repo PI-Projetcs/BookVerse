@@ -38,6 +38,9 @@ class CommentServiceTest {
     @Mock
     private CurrentUserService currentUserService;
 
+    @Mock
+    private br.senac.sp.bookverse.repository.CommentLikeRepository commentLikeRepository;
+
     @InjectMocks
     private CommentService commentService;
 
@@ -56,7 +59,7 @@ class CommentServiceTest {
         salvo.setDiscussao(discussao);
         when(commentRepository.save(org.mockito.ArgumentMatchers.any(Comment.class))).thenReturn(salvo);
 
-        CommentDTO resultado = commentService.criar(new CommentDTO(null, "Bom ponto", null, 3L, null, null, null));
+        CommentDTO resultado = commentService.criar(new CommentDTO(null, "Bom ponto", null, 3L, null, null, null, 0, false));
 
         assertEquals(9L, resultado.id());
         assertEquals("Bom ponto", resultado.conteudo());
@@ -86,7 +89,7 @@ class CommentServiceTest {
         when(currentUserService.authenticatedUser()).thenReturn(usuario);
         when(discussionRepository.findById(99L)).thenReturn(Optional.empty());
 
-        assertThrows(ResourceNotFoundException.class, () -> commentService.criar(new CommentDTO(null, "x", null, 99L, null, null, null)));
+        assertThrows(ResourceNotFoundException.class, () -> commentService.criar(new CommentDTO(null, "x", null, 99L, null, null, null, 0, false)));
     }
 
     @Test
@@ -106,7 +109,7 @@ class CommentServiceTest {
         when(discussionRepository.findById(3L)).thenReturn(Optional.of(discussao));
         when(commentRepository.save(comentario)).thenReturn(comentario);
 
-        CommentDTO resultado = commentService.atualizar(7L, new CommentDTO(7L, "Editado", null, 3L, null, null, null));
+        CommentDTO resultado = commentService.atualizar(7L, new CommentDTO(7L, "Editado", null, 3L, null, null, null, 0, false));
 
         assertEquals("Editado", resultado.conteudo());
         verify(commentRepository).save(comentario);

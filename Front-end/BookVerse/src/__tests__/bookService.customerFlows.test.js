@@ -1,7 +1,6 @@
 describe('bookService customer flows (mock mode)', () => {
 	beforeEach(() => {
 		jest.resetModules();
-		process.env.EXPO_PUBLIC_USE_MOCK = 'true';
 	});
 
 	it('searches, sorts, and loads book catalog and details', async () => {

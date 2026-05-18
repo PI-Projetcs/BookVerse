@@ -19,7 +19,9 @@ public final class CommentMapper {
                 comment.getDiscussao() != null ? comment.getDiscussao().getId() : null,
                 comment.getDiscussao() != null ? comment.getDiscussao().getTitulo() : null,
                 comment.getUsuario() != null ? comment.getUsuario().getId() : null,
-                comment.getUsuario() != null ? comment.getUsuario().getNome() : null
+                comment.getUsuario() != null ? comment.getUsuario().getNome() : null,
+                0,
+                false
         );
     }
 }

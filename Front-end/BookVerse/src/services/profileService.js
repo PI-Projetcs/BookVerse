@@ -1,13 +1,4 @@
 import api from './api';
-import { MOCK_USER } from '../mocks/UserMock';
-
-// Mock mode toggle - respect environment variable
-const USE_MOCK_DATA = process.env.EXPO_PUBLIC_USE_MOCK === 'true';
-
-// Mock store for profile updates
-let mockProfileStore = {
-  ...MOCK_USER,
-};
 
 function normalizeProfile(payload = {}) {
   const source = payload?.item || payload;
@@ -30,10 +21,6 @@ function normalizeProfile(payload = {}) {
 }
 
 export async function getUserProfile() {
-  if (USE_MOCK_DATA) {
-    return normalizeProfile(mockProfileStore);
-  }
-
   try {
     const response = await api.get('/api/v1/users/me');
     return normalizeProfile(response.data);
@@ -50,21 +37,9 @@ export async function updateUserProfile(profileData) {
     profilePicture: profileData?.profilePicture || profileData?.profile_picture || '',
   };
 
-  if (USE_MOCK_DATA) {
-    mockProfileStore = {
-      ...mockProfileStore,
-      name: updatePayload.nome,
-      email: updatePayload.email,
-      bio: updatePayload.biography,
-      profilePicture: updatePayload.profilePicture,
-    };
-    return normalizeProfile(mockProfileStore);
-  }
-
   try {
     const response = await api.put('/api/v1/users/me', updatePayload);
-    const normalized = normalizeProfile(response.data);
-    return normalized;
+    return normalizeProfile(response.data);
   } catch (error) {
     throw error;
   }
@@ -76,15 +51,6 @@ export async function changePassword(currentPassword, newPassword) {
     senhaNova: newPassword,
   };
 
-  if (USE_MOCK_DATA) {
-    // Mock validation: simple check that new password is different
-    if (!newPassword || newPassword.length < 6) {
-      throw new Error('Nova senha deve ter no mínimo 6 caracteres');
-    }
-    // In mock mode, just return success
-    return { success: true, message: 'Senha alterada com sucesso' };
-  }
-
   try {
     const response = await api.post('/api/v1/users/change-password', payload);
     return response.data;
@@ -94,14 +60,6 @@ export async function changePassword(currentPassword, newPassword) {
 }
 
 export async function getUserStats() {
-  if (USE_MOCK_DATA) {
-    return {
-      livrosLidos: mockProfileStore.stats?.livrosLidos || 0,
-      favoritos: mockProfileStore.stats?.favoritos || 0,
-      resenhas: mockProfileStore.stats?.resenhas || 0,
-    };
-  }
-
   try {
     const response = await api.get('/api/v1/users/me/stats');
     return response.data?.item || response.data;
@@ -113,14 +71,6 @@ export async function getUserStats() {
 export async function updateProfilePicture(imageUri) {
   if (!imageUri) {
     throw new Error('Image URI é obrigatório');
-  }
-
-  if (USE_MOCK_DATA) {
-    mockProfileStore = {
-      ...mockProfileStore,
-      profilePicture: imageUri,
-    };
-    return normalizeProfile(mockProfileStore);
   }
 
   try {
@@ -143,16 +93,6 @@ export async function updateProfilePicture(imageUri) {
 }
 
 export async function addCategoryPreference(categoryName) {
-  if (USE_MOCK_DATA) {
-    if (!mockProfileStore.categorias) {
-      mockProfileStore.categorias = [];
-    }
-    if (!mockProfileStore.categorias.includes(categoryName)) {
-      mockProfileStore.categorias.push(categoryName);
-    }
-    return normalizeProfile(mockProfileStore);
-  }
-
   try {
     const response = await api.post('/api/v1/users/me/categories', {
       nome: categoryName,
@@ -164,15 +104,6 @@ export async function addCategoryPreference(categoryName) {
 }
 
 export async function removeCategoryPreference(categoryName) {
-  if (USE_MOCK_DATA) {
-    if (mockProfileStore.categorias) {
-      mockProfileStore.categorias = mockProfileStore.categorias.filter(
-        c => c !== categoryName
-      );
-    }
-    return normalizeProfile(mockProfileStore);
-  }
-
   try {
     const response = await api.delete(`/api/v1/users/me/categories/${categoryName}`);
     return normalizeProfile(response.data);

@@ -15,7 +15,6 @@ const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
 	const [session, setSession] = useState(null);
-	const [isBootstrapping, setIsBootstrapping] = useState(true);
 
 	useEffect(() => {
 		let isMounted = true;
@@ -28,7 +27,6 @@ export function AuthProvider({ children }) {
 
 			applyApiSession(restored);
 			setSession(restored);
-			setIsBootstrapping(false);
 		};
 
 		restoreSession();
@@ -104,11 +102,10 @@ export function AuthProvider({ children }) {
 			session,
 			role: session?.role || null,
 			isAuthenticated: Boolean(session?.role && session?.token),
-			isBootstrapping,
 			signIn,
 			signOut,
 		}),
-		[session, isBootstrapping]
+		[session]
 	);
 
 	return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -2,6 +2,8 @@ package br.senac.sp.bookverse.dto;
 
 import jakarta.validation.constraints.*;
 
+import java.util.List;
+
 public record BookDTO(
         Long id,
         @NotBlank(message = "Título é obrigatório") String titulo,
@@ -14,6 +16,11 @@ public record BookDTO(
         Integer paginas,
         Boolean destaque,
         @Min(value = 0, message = "Avaliação mínima é 0")
-        @Max(value = 5, message = "Avaliação máxima é 5") Double mediaAvaliacao
+        @Max(value = 5, message = "Avaliação máxima é 5") Double mediaAvaliacao,
+        List<ChapterDTO> chapters
 ) {
+    public record ChapterDTO(
+            Long id,
+            String title
+    ) {}
 }

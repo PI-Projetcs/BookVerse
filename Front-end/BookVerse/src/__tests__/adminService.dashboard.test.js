@@ -3,7 +3,6 @@ describe('adminService dashboard workflows (mock mode - RF11)', () => {
 
   beforeEach(() => {
     jest.resetModules();
-    process.env.EXPO_PUBLIC_USE_MOCK = 'true';
     adminService = require('../services/adminService');
   });
 

@@ -17,6 +17,9 @@ jest.mock('react-native', () => {
 	};
 });
 
+// Provide a global axios mock for all tests
+jest.mock('axios');
+
 jest.mock('expo-constants', () => ({
 	__esModule: true,
 	default: {

@@ -1,10 +1,5 @@
 import api from './api';
-import { MOCK_ADMIN_MEMBERS, MOCK_ADMIN_MODERATION } from '../mocks';
-
-const USE_MOCK_DATA = process.env.EXPO_PUBLIC_USE_MOCK === 'true';
-
-const mockMembersStore = JSON.parse(JSON.stringify(MOCK_ADMIN_MEMBERS));
-const mockModerationStore = JSON.parse(JSON.stringify(MOCK_ADMIN_MODERATION));
+// Admin service uses backend APIs via Axios
 
 function normalizeMember(member = {}, index = 0) {
 	const backendRole = (member.role || '').toUpperCase();
@@ -70,10 +65,6 @@ function filterModeration(items, { query = '', status = 'pending' } = {}) {
 }
 
 export async function getAdminMembers(params = {}) {
-	if (USE_MOCK_DATA) {
-		return filterMembers(mockMembersStore.map(normalizeMember), params);
-	}
-
 	try {
 		const response = await api.get('/api/v1/users');
 		const items = Array.isArray(response.data?.content)
@@ -91,30 +82,19 @@ export async function getAdminMembers(params = {}) {
 export async function updateAdminMemberStatus(memberId, nextStatus) {
 	const normalizedId = Number(memberId);
 	const status = nextStatus === 'blocked' ? 'blocked' : 'active';
-
-	if (USE_MOCK_DATA) {
-		const index = mockMembersStore.findIndex((member) => Number(member.id) === normalizedId);
-		if (index < 0) return null;
-		mockMembersStore[index].status = status;
-		return normalizeMember(mockMembersStore[index], index);
+	try {
+		const response = await api.put(`/api/v1/users/${memberId}/status`, { status });
+		return normalizeMember(response.data || { id: memberId, status });
+	} catch (error) {
+		// If endpoint missing, throw to indicate backend action required
+		throw error;
 	}
-
-	// Backend does not expose a status endpoint yet; return optimistic update only
-	return { id: normalizedId, status };
 }
 
 export async function updateAdminMemberRole(memberId, nextRole) {
 	const normalizedId = Number(memberId);
 	const role = nextRole === 'moderator' ? 'moderator' : 'member';
 	const backendRole = nextRole === 'admin' ? 'ADMIN' : 'USER';
-
-	if (USE_MOCK_DATA) {
-		const index = mockMembersStore.findIndex((member) => Number(member.id) === normalizedId);
-		if (index < 0) return null;
-		mockMembersStore[index].role = role;
-		return normalizeMember(mockMembersStore[index], index);
-	}
-
 	try {
 		const response = await api.put(`/api/v1/users/${memberId}`, { role: backendRole });
 		return normalizeMember(response.data || { id: memberId, role: backendRole });
@@ -124,12 +104,19 @@ export async function updateAdminMemberRole(memberId, nextRole) {
 }
 
 export async function getModerationItems(params = {}) {
-	if (USE_MOCK_DATA) {
-		return filterModeration(mockModerationStore.map(normalizeModerationItem), params);
+	try {
+		const response = await api.get('/api/v1/admin/moderation');
+		const items = Array.isArray(response.data?.content)
+			? response.data.content
+			: Array.isArray(response.data)
+				? response.data
+				: [];
+		const normalized = items.map(normalizeModerationItem);
+		return filterModeration(normalized, params);
+	} catch (error) {
+		// If backend lacks endpoint, propagate error for visibility
+		throw error;
 	}
-
-	// Backend does not expose a moderation endpoint yet
-	return [];
 }
 
 export async function setModerationStatus(itemId, nextStatus) {
@@ -137,16 +124,12 @@ export async function setModerationStatus(itemId, nextStatus) {
 	const status = ['pending', 'approved', 'rejected'].includes(nextStatus)
 		? nextStatus
 		: 'pending';
-
-	if (USE_MOCK_DATA) {
-		const index = mockModerationStore.findIndex((item) => Number(item.id) === normalizedId);
-		if (index < 0) return null;
-		mockModerationStore[index].status = status;
-		return normalizeModerationItem(mockModerationStore[index], index);
+	try {
+		const response = await api.post(`/api/v1/admin/moderation/${itemId}/status`, { status });
+		return normalizeModerationItem(response.data || { id: itemId, status });
+	} catch (error) {
+		throw error;
 	}
-
-	// Backend does not expose a moderation endpoint yet
-	return null;
 }
 
 // Mock store for dashboard
@@ -175,12 +158,6 @@ function normalizeDashboard(data = {}) {
 }
 
 export async function getAdminDashboard() {
-	if (USE_MOCK_DATA) {
-		return {
-			item: normalizeDashboard(mockDashboardStore),
-		};
-	}
-
 	try {
 		const response = await api.get('/api/v1/admin/dashboard');
 		return {

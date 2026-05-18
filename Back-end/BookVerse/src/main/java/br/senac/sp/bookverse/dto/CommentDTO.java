@@ -12,6 +12,8 @@ public record CommentDTO(
 		@NotNull(message = "ID da discussão é obrigatório") Long discussaoId,
 		String discussaoTitulo,
 		Long usuarioId,
-		String usuarioNome
+		String usuarioNome,
+		Integer likes,
+		Boolean liked
 ) {
 }
