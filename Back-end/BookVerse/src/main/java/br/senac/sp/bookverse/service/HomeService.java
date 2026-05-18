@@ -6,10 +6,13 @@ import br.senac.sp.bookverse.dto.HomeDTO.HighlightDTO;
 import br.senac.sp.bookverse.dto.HomeDTO.ProgressDTO;
 import br.senac.sp.bookverse.mapper.BookMapper;
 import br.senac.sp.bookverse.model.Book;
+import br.senac.sp.bookverse.model.Comment;
 import br.senac.sp.bookverse.model.ReadingHistory;
 import br.senac.sp.bookverse.model.ReadingStatus;
 import br.senac.sp.bookverse.model.User;
 import br.senac.sp.bookverse.repository.BookRepository;
+import br.senac.sp.bookverse.repository.CommentRepository;
+import br.senac.sp.bookverse.repository.DiscussionRepository;
 import br.senac.sp.bookverse.repository.ReadingHistoryRepository;
 import br.senac.sp.bookverse.security.CurrentUserService;
 import org.slf4j.Logger;
@@ -18,6 +21,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 
@@ -29,6 +33,8 @@ public class HomeService {
     private final BookRepository bookRepository;
     private final ReadingHistoryRepository readingHistoryRepository;
     private final CurrentUserService currentUserService;
+    private final DiscussionRepository discussionRepository;
+    private final CommentRepository commentRepository;
     private final br.senac.sp.bookverse.repository.ChapterProgressRepository chapterProgressRepository;
     private final br.senac.sp.bookverse.repository.HighlightLikeRepository highlightLikeRepository;
 
@@ -36,12 +42,16 @@ public class HomeService {
             BookRepository bookRepository,
             ReadingHistoryRepository readingHistoryRepository,
             CurrentUserService currentUserService,
+            DiscussionRepository discussionRepository,
+            CommentRepository commentRepository,
             br.senac.sp.bookverse.repository.ChapterProgressRepository chapterProgressRepository,
             br.senac.sp.bookverse.repository.HighlightLikeRepository highlightLikeRepository
     ) {
         this.bookRepository = bookRepository;
         this.readingHistoryRepository = readingHistoryRepository;
         this.currentUserService = currentUserService;
+        this.discussionRepository = discussionRepository;
+        this.commentRepository = commentRepository;
         this.chapterProgressRepository = chapterProgressRepository;
         this.highlightLikeRepository = highlightLikeRepository;
     }
@@ -66,7 +76,7 @@ public class HomeService {
 
         ProgressDTO progress = calcularProgresso(historicoLeitura, usuarioAtual);
         List<ChapterDTO> chapters = gerarCapitulos(livroDoMesDTO, usuarioAtual);
-        List<HighlightDTO> highlights = gerarHighlights();
+        List<HighlightDTO> highlights = gerarHighlights(livroDoMesDTO, usuarioAtual);
 
         HomeDTO home = new HomeDTO(
             livroDoMesDTO,
@@ -162,30 +172,42 @@ public class HomeService {
         return chapters;
     }
 
-    private List<HighlightDTO> gerarHighlights() {
+    private List<HighlightDTO> gerarHighlights(br.senac.sp.bookverse.dto.BookDTO livroDoMes, User usuarioAtual) {
+        if (livroDoMes == null || livroDoMes.id() == null) {
+            return List.of();
+        }
+
+        List<Comment> comments = discussionRepository.findByLivroId(livroDoMes.id()).stream()
+                .flatMap(discussion -> commentRepository.findByDiscussaoId(discussion.getId()).stream())
+                .sorted(Comparator.comparing(Comment::getData, Comparator.nullsLast(Comparator.naturalOrder())).reversed())
+                .limit(3)
+                .toList();
+
+        if (comments.isEmpty()) {
+            return List.of();
+        }
+
         List<HighlightDTO> highlights = new ArrayList<>();
+        for (Comment comment : comments) {
+            Long id = comment.getId();
+            long likes = highlightLikeRepository.countByHighlightIdAndLikedTrue(id);
+            boolean liked = usuarioAtual != null
+                    && highlightLikeRepository.findByHighlightIdAndUsuario(id, usuarioAtual)
+                    .map(record -> Boolean.TRUE.equals(record.getLiked()))
+                    .orElse(false);
 
-        // static highlight definitions (could be moved to DB later)
-        var defs = java.util.Map.of(
-                1L, "A leitura é a chave para novas dimensões.",
-                2L, "Cada livro é uma porta para outro mundo.",
-                3L, "Palavras são magia, histórias são vidas."
-        );
-
-        for (var entry : defs.entrySet()) {
-            Long id = entry.getKey();
-            String text = entry.getValue();
-            long count = highlightLikeRepository.countByHighlightIdAndLikedTrue(id);
-            boolean liked = false;
-            try {
-                User u = currentUserService.authenticatedUser();
-                var opt = highlightLikeRepository.findByHighlightIdAndUsuario(id, u);
-                liked = opt.isPresent() && Boolean.TRUE.equals(opt.get().getLiked());
-            } catch (Exception ex) {
-                // anonymous user - keep liked=false
+            String author = "Comunidade";
+            if (comment.getUsuario() != null && comment.getUsuario().getNome() != null && !comment.getUsuario().getNome().isBlank()) {
+                author = comment.getUsuario().getNome();
             }
 
-            highlights.add(new HighlightDTO(id, text, "Comunidade", (int) count, liked));
+            highlights.add(new HighlightDTO(
+                    id,
+                    comment.getConteudo(),
+                    author,
+                    (int) likes,
+                    liked
+            ));
         }
 
         return highlights;
@@ -239,6 +261,21 @@ public class HomeService {
         }
 
         long count = highlightLikeRepository.countByHighlightIdAndLikedTrue(highlightId);
-        return new HighlightDTO(highlightId, "Destaque exemplo", "Comunidade", (int) count, Boolean.TRUE.equals(liked));
+
+        String text = "Destaque da comunidade";
+        String author = "Comunidade";
+        var comment = commentRepository.findById(highlightId);
+        if (comment.isPresent()) {
+            if (comment.get().getConteudo() != null && !comment.get().getConteudo().isBlank()) {
+                text = comment.get().getConteudo();
+            }
+            if (comment.get().getUsuario() != null
+                    && comment.get().getUsuario().getNome() != null
+                    && !comment.get().getUsuario().getNome().isBlank()) {
+                author = comment.get().getUsuario().getNome();
+            }
+        }
+
+        return new HighlightDTO(highlightId, text, author, (int) count, Boolean.TRUE.equals(liked));
     }
 }
