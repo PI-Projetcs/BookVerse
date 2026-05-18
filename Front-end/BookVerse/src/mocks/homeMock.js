@@ -19,14 +19,14 @@ export const MOCK_PROGRESS = {
 };
 
 export const MOCK_CHAPTERS = [
-	{ id: 1, title: 'Uma Pedra no Caminho', status: 'Concluido', state: 'done' },
-	{ id: 2, title: 'Um Belo Dia', status: 'Concluido', state: 'done' },
-	{ id: 3, title: 'Madeira e Palavra', status: 'Em andamento', state: 'active' },
-	{ id: 4, title: 'O Vinho e o Sangue', status: 'Bloqueado', state: 'locked' },
-	{ id: 5, title: 'Notas', status: 'Bloqueado', state: 'locked' },
+	{ id: 1, title: 'Uma Pedra no Caminho', status: '', state: 'active' },
+	{ id: 2, title: 'Um Belo Dia', status: '', state: 'active' },
+	{ id: 3, title: 'Madeira e Palavra', status: '', state: 'active' },
+	{ id: 4, title: 'O Vinho e o Sangue', status: '', state: 'active' },
+	{ id: 5, title: 'Notas', status: '', state: 'active' },
 ];
 
 export const MOCK_HIGHLIGHTS = [
-	{ id: 'h1', text: 'E preciso ser um pouco louco para ser musico.', author: 'Ana Silva', likes: 23, liked: false },
-	{ id: 'h2', text: 'Nao ha magica maior do que uma historia bem contada.', author: 'Carlos Mendes', likes: 18, liked: false },
+	{ id: 'h1', text: 'E preciso ser um pouco louco para ser musico.', author: 'Ana Silva', likes: 0, liked: false },
+	{ id: 'h2', text: 'Nao ha magica maior do que uma historia bem contada.', author: 'Carlos Mendes', likes: 0, liked: false },
 ];

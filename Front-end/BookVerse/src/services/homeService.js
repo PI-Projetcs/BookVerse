@@ -1,30 +1,20 @@
 import api from './api';
-import {
-	MOCK_BOOK_OF_MONTH,
-	MOCK_CHAPTERS,
-	MOCK_HIGHLIGHTS,
-	MOCK_PROGRESS,
-} from '../mocks';
+import { getDiscussions } from './bookService';
 
-const USE_MOCK_DATA = process.env.EXPO_PUBLIC_USE_MOCK === 'true';
-
-const mockHomeStore = {
-	bookOfMonth: { ...MOCK_BOOK_OF_MONTH },
-	progress: { ...MOCK_PROGRESS },
-	chapters: MOCK_CHAPTERS.map((item) => ({ ...item })),
-	highlights: MOCK_HIGHLIGHTS.map((item) => ({ ...item })),
-};
+let chapterStatusEndpointSupported = undefined; // undefined = unknown, false = not supported, true = supported
 
 function normalizeBookOfMonth(book = {}) {
 	return {
 		id: Number(book.id) || 1,
-		monthLabel: book.monthLabel || 'Marco 2026',
-		title: book.title || 'Livro do Mes',
-		author: book.author || 'Autor(a)',
-		description: book.description || 'Descricao nao informada.',
+		monthLabel: book.monthLabel || book.mesLabel || 'Marco 2026',
+		title: book.title || book.titulo || 'Livro do Mes',
+		author: book.author || book.autor || 'Autor(a)',
+		description: book.description || book.synopsis || book.sinopse || 'Descricao nao informada.',
+		synopsis: book.synopsis || book.sinopse || book.description || 'Descricao nao informada.',
+		pages: Number(book.pages ?? book.paginas) || 0,
 		members: Number(book.members) || 0,
 		dateLabel: book.dateLabel || '',
-		coverUrl: book.coverUrl || MOCK_BOOK_OF_MONTH.coverUrl,
+		coverUrl: book.coverUrl || 'https://placehold.co/240x320/f3f4f6/111827?text=Capa',
 	};
 }
 
@@ -41,8 +31,8 @@ function normalizeChapter(chapter = {}, index = 0) {
 	return {
 		id: Number(chapter.id) || index + 1,
 		title: chapter.title || `Capitulo ${index + 1}`,
-		status: chapter.status || 'Bloqueado',
-		state: chapter.state || 'locked',
+		status: chapter.status || '',
+		state: chapter.state || 'active',
 	};
 }
 
@@ -70,28 +60,23 @@ function normalizeHomeData(data = {}) {
 	};
 }
 
-function getMockHomeData() {
-	return normalizeHomeData(mockHomeStore);
+
+function countUniqueCommenters(discussions = []) {
+	const uniqueCommenters = new Set();
+
+	discussions.forEach((discussion) => {
+		(discussion?.comments || []).forEach((comment) => {
+			const key = String(comment?.author || comment?.usuarioNome || '').trim().toLowerCase();
+			if (key) {
+				uniqueCommenters.add(key);
+			}
+		});
+	});
+
+	return uniqueCommenters.size;
 }
 
-function updateMockHighlightLike(highlightId, liked) {
-	const highlightIndex = mockHomeStore.highlights.findIndex((item) => item.id === highlightId);
-	if (highlightIndex < 0) {
-		return null;
-	}
 
-	const previous = mockHomeStore.highlights[highlightIndex];
-	const nextLiked = Boolean(liked);
-	const likeDelta = nextLiked === previous.liked ? 0 : nextLiked ? 1 : -1;
-
-	mockHomeStore.highlights[highlightIndex] = {
-		...previous,
-		liked: nextLiked,
-		likes: Math.max(0, (Number(previous.likes) || 0) + likeDelta),
-	};
-
-	return normalizeHighlight(mockHomeStore.highlights[highlightIndex], highlightIndex);
-}
 
 function toBookOfMonthPayload(bookData = {}) {
 	const now = new Date();
@@ -104,20 +89,34 @@ function toBookOfMonthPayload(bookData = {}) {
 		title: bookData.title,
 		author: bookData.author,
 		description: bookData.synopsis || bookData.description,
-		members: Number(bookData.members) || mockHomeStore.bookOfMonth.members || 0,
+		members: Number(bookData.members) || 0,
 		dateLabel,
 		coverUrl: bookData.coverUrl,
 	});
 }
 
 export async function getHomeViewModel() {
-	if (USE_MOCK_DATA) {
-		return getMockHomeData();
-	}
-
 	try {
 		const response = await api.get('/api/v1/home');
-		return normalizeHomeData(response.data);
+		const homeData = normalizeHomeData(response.data);
+
+		if (homeData?.bookOfMonth?.id) {
+			try {
+				const discussions = await getDiscussions(homeData.bookOfMonth.id);
+				homeData.bookOfMonth.members = countUniqueCommenters(discussions);
+			} catch (discussionError) {
+				// Keep the home card usable even if comment lookup fails.
+				homeData.bookOfMonth.members = Number(homeData.bookOfMonth.members) || 0;
+			}
+		}
+
+		if (!homeData.progress.totalPages && homeData.bookOfMonth.pages) {
+			homeData.progress.totalPages = Number(homeData.bookOfMonth.pages) || 0;
+		}
+
+		// keep chapter status as provided by backend so user-specific progress is visible
+
+		return homeData;
 	} catch (error) {
 		throw error;
 	}
@@ -125,11 +124,6 @@ export async function getHomeViewModel() {
 
 export async function updateHomeProgress(progressData) {
 	const normalizedProgress = normalizeProgress(progressData);
-
-	if (USE_MOCK_DATA) {
-		mockHomeStore.progress = { ...mockHomeStore.progress, ...normalizedProgress };
-		return normalizeProgress(mockHomeStore.progress);
-	}
 
 	try {
 		const response = await api.put(`/api/v1/home/progress`, normalizedProgress);
@@ -140,11 +134,24 @@ export async function updateHomeProgress(progressData) {
 	}
 }
 
-export async function toggleHomeHighlightLike(highlightId, liked) {
-	if (USE_MOCK_DATA) {
-		return updateMockHighlightLike(highlightId, liked);
-	}
+export async function updateChapterStatus(bookId, chapterId, status) {
+	const normalized = {
+		id: Number(chapterId),
+		status: String(status),
+	};
 
+	try {
+		const response = await api.put(`/api/v1/books/${bookId}/chapters/${chapterId}/status`, { status: normalized.status });
+		const result = response?.data?.item || response?.data || null;
+		if (!result) return null;
+		return normalizeChapter(result, 0);
+	} catch (error) {
+		// Non-fatal: caller will handle optimistic update
+		return null;
+	}
+}
+
+export async function toggleHomeHighlightLike(highlightId, liked) {
 	try {
 		const response = await api.post(`/api/v1/home/highlights/${highlightId}/like`, {
 			liked: Boolean(liked),
@@ -164,16 +171,10 @@ export async function toggleHomeHighlightLike(highlightId, liked) {
 export async function updateBookOfMonth(bookData) {
 	const payload = toBookOfMonthPayload(bookData);
 
-	if (USE_MOCK_DATA) {
-		mockHomeStore.bookOfMonth = { ...payload };
-		return normalizeBookOfMonth(mockHomeStore.bookOfMonth);
-	}
-
 	try {
 		const response = await api.post(`/api/v1/books/${bookData.id}/set-book-of-month`);
 		const result = response.data?.item || response.data;
 		const normalized = normalizeBookOfMonth(result || payload);
-		mockHomeStore.bookOfMonth = { ...normalized };
 		return normalized;
 	} catch (error) {
 		throw error;

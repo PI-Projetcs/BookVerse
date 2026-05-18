@@ -38,18 +38,12 @@ function AdminNavigator() {
 }
 
 export default function AppNavigator() {
-	const { session, isBootstrapping } = useAuth();
+	const { session } = useAuth();
 	const initialRoute = getInitialRouteFromSession(session);
 	const isAuthenticated = Boolean(session?.token && session?.role);
 	const isAdmin = session?.role === 'admin';
 
-	if (isBootstrapping) {
-		return (
-			<View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#0f172a" }}>
-				<ActivityIndicator size="large" color="#facc15" />
-			</View>
-		);
-	}
+    
 
 	return (
 		<NavigationContainer key={`${session?.role || 'guest'}:${session?.email || 'guest'}`}>

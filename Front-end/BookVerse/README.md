@@ -64,10 +64,67 @@ A integração é feita via **Axios**. Para configurar o endereço do servidor:
 
 A lógica de fallback está em `src/services/api.js`.
 
+## 📚 Página: Livro do Mês
+
+**Descrição:** apresenta o `HomeBookOfMonth` (capa, título, autor, descrição, membros, data), progresso de leitura do usuário, lista de capítulos ligados à discussão e destaques da comunidade.
+
+**Comportamento de capítulos (implementações recentes):**
+- Todos os capítulos são exibidos inicialmente sem status definido (campo `status` vazio) e desbloqueados (`state: active`).
+- O usuário pode tocar na pílula de status de cada capítulo e escolher `Concluído` ou `Em leitura`.
+- As escolhas do usuário são persistidas por usuário no back-end (persistência por `ChapterProgress`).
+
+**Dados carregados de:** `GET /api/v1/home` (ou `/api/home` conforme contrato do backend). A resposta aceita: `HomeViewModel` ou `{ item: HomeViewModel }`.
+
+**Principais componentes:**
+- `src/screens/Home/HomeScreen.js` — view do usuário com progresso, capítulos e destaques.
+- `src/screens/Admin/BookOfMonth.js` — painel administrativo para definir o livro do mês.
+- `src/services/homeService.js` — normalização e chamadas ao backend para `home`, `updateChapterStatus()` e `updateHomeProgress()`.
+
+**Funcionalidades:**
+- Exibe livro do mês e meta semanal.
+- Lista de capítulos (cada capítulo mostra título, pílula de status e navega para discussão).
+- Usuário pode marcar capítulos como `Concluído` ou `Em leitura`.
+- Mudanças de status são salvas no servidor via API REST (por usuário).
+- Atualiza progresso via `PUT /api/v1/home/progress`.
+- Navega para discussões por capítulo (`Discussion`), passando `bookId` e `chapterId`.
+- Curtir destaque da comunidade via `POST /api/v1/home/highlights/:id/like`.
+
+**Endpoints relevantes (frontend ↔ backend):**
+- `GET /api/v1/home` — obtém `HomeViewModel` com `bookOfMonth`, `progress`, `chapters` e `highlights`.
+- `PUT /api/v1/home/progress` — atualiza progresso do usuário.
+- `PUT /api/v1/books/{bookId}/chapters/{chapterOrder}/status` — persiste status do capítulo para o usuário autenticado. Body: `{ "status": "Concluído" }` ou `{ "status": "Em leitura" }`.
+- `POST /api/v1/chapters/{chapterId}/status` — rota fallback (alguns backends podem expor este formato).
+- `POST /api/v1/home/highlights/{id}/like` — curtir destaque.
+
+As rotas acima são consumidas por `src/services/*` usando `Axios` (veja seção de Integração abaixo).
+
+## ⚙️ Boas práticas de integração (Axios / API)
+
+- Use variáveis de ambiente para a URL base (`EXPO_PUBLIC_API_URL`) e para ativar dados mock (`EXPO_PUBLIC_USE_MOCK=true`).
+- Padronize endpoints com versão (`/api/v1/...`) ou documente claramente no backend para evitar mismatches.
+- Trate erros de rede e mostre mensagens de feedback (`try/catch` já presente em services — propague mensagens úteis para UI quando necessário).
+- Documente endpoints e formatos na API (veja `README_BACKEND_CONTRACT.md`).
+- Autenticação: `api.js` injeta `Authorization: Bearer <token>` quando a sessão está aplicada; garanta que o backend aceite esse header.
+
+## Persistência dos status de capítulos
+
+- Mecanismo: cada status definido pelo usuário é persistido no back-end usando uma API REST.
+- Endpoint principal: `PUT /api/v1/books/{bookId}/chapters/{chapterOrder}/status` com corpo JSON `{ "status": "Concluído" }`, `{ "status": "Em leitura" }` ou `{ "status": "" }` para limpar o status.
+- Camada de front-end: `src/services/homeService.js` exporta `updateChapterStatus(bookId, chapterId, status)` que envia a requisição via `Axios` (arquivo `src/services/api.js`). A função aplica lógica de fallback (tenta `PUT` e, se 404, tenta `POST` legacy) e realiza atualização otimista na UI.
+- Camada de back-end: a aplicação Spring Boot persiste o status por usuário na entidade `ChapterProgress` (tabela `chapter_progress`) via `ChapterProgressService.updateStatus(...)`. Quando não existe progresso salvo, os capítulos são retornados sem status (campo `status` vazio) e desbloqueados (`state: active`).
+
+Observações:
+- Envie o token de autenticação (Bearer) para que o back-end identifique o usuário e persista o status corretamente.
+- A opção de limpar o status (`status: ""`) remove a marcação do usuário para aquele capítulo.
+
+## ✅ Observações e recomendações rápidas
+
+- Corrigi a navegação para a tela de Discussão garantindo que `bookId` seja passado (corrige capítulos/discussões carregadas incorretamente).
+- Verifique se o backend expõe os mesmos caminhos usados no frontend (`/api/v1/home` vs `/api/home`). Se o backend não usar `v1`, alinhe um dos lados.
+
 ### Segurança e Sessão
 - O sistema utiliza **Bearer Tokens (JWT)**.
 - O `api.js` gerencia automaticamente a renovação do token via `Refresh Token` quando a sessão expira.
-- **Admin Bootstrap**: O usuário admin é criado/sincronizado automaticamente no startup do backend com credenciais padrão (veja Back-end README).
 
 ## 🎨 Layout e UI
 

@@ -30,6 +30,14 @@ public class CommentController {
         return ResponseEntity.ok(commentService.listarTodos(pageable));
     }
 
+    @GetMapping("/discussion/{discussionId}")
+    public ResponseEntity<Page<CommentDTO>> getCommentsByDiscussion(
+            @PathVariable Long discussionId,
+            @PageableDefault(size = 20, sort = "id") Pageable pageable
+    ) {
+        return ResponseEntity.ok(commentService.listarPorDiscussao(discussionId, pageable));
+    }
+
     @PostMapping
     public ResponseEntity<CommentDTO> criarComment(@Valid @RequestBody CommentDTO comentario) {
         CommentDTO criado = commentService.criar(comentario);

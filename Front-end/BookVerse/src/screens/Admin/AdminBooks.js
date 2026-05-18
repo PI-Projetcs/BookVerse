@@ -119,6 +119,9 @@ export default function AdminBooks({ navigation }) {
 				<View style={styles.cardMetaChip}>
 					<Text style={styles.cardMetaChipText}>{item.year || 'Sem ano'}</Text>
 				</View>
+				<View style={styles.cardMetaChip}>
+					<Text style={styles.cardMetaChipText}>{(item.chapters?.length || 0)} capítulos</Text>
+				</View>
 			</View>
 			<View style={styles.cardActions}>
 				<TouchableOpacity

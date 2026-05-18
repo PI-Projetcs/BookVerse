@@ -27,12 +27,5 @@ bookverse:
   jwt:
     secret: ${BOOKVERSE_JWT_SECRET}
     expiration-ms: ${BOOKVERSE_JWT_EXPIRATION_MS:86400000}
-  bootstrap:
-    admin:
-      enabled: ${BOOKVERSE_BOOTSTRAP_ADMIN_ENABLED:true}
-      email: ${BOOKVERSE_ADMIN_EMAIL:admin@bookverse.com}
-      name: ${BOOKVERSE_ADMIN_NAME:Administrador}
-      password: ${BOOKVERSE_ADMIN_PASSWORD:admin123}
-      sync-credentials: ${BOOKVERSE_BOOTSTRAP_ADMIN_SYNC_CREDENTIALS:true}
   cors:
     allowed-origins: http://localhost:8081

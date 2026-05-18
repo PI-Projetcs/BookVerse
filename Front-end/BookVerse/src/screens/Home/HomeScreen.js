@@ -1,11 +1,11 @@
-import React, { useCallback, useEffect, useState } from 'react';
-import { Alert, Image, Modal, SafeAreaView, ScrollView, StatusBar, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { Alert, Image, Modal, SafeAreaView, ScrollView, StatusBar, Text, TextInput, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import FooterNav from '../../components/FooterNav';
-import { getHomeViewModel, toggleHomeHighlightLike, updateHomeProgress } from '../../services/homeService';
+import { getHomeViewModel, toggleHomeHighlightLike, updateHomeProgress, updateChapterStatus } from '../../services/homeService';
 import { homeStyles as styles, HOME_CHAPTER_ACTIVE_GRADIENT, HOME_CHAPTER_DONE_GRADIENT, HOME_HEADER_GRADIENT, HOME_PROGRESS_GRADIENT } from '../../styles/homeStyles';
 
 const HIT_SLOP = { top: 10, bottom: 10, left: 10, right: 10 };
@@ -18,12 +18,30 @@ function clamp01(value) {
 export default function HomeScreen({ navigation }) {
 	const insets = useSafeAreaInsets();
 
+	const { width: windowWidth, height: windowHeight } = useWindowDimensions();
+
+	// responsiveness: small phones, regular, large
+	const isSmall = windowWidth < 360;
+	const isLarge = windowWidth > 420;
+
+	const coverWidth = isSmall ? 70 : isLarge ? 100 : 84;
+	const coverHeight = Math.round(coverWidth * 1.33);
+	const titleSize = isSmall ? 14 : isLarge ? 18 : 16;
+	const descSize = isSmall ? 11 : isLarge ? 13 : 12;
+	const pillFontSize = isSmall ? 10 : isLarge ? 12 : 11;
+	const isLandscape = windowWidth > windowHeight;
+	const cardPadding = isSmall ? 10 : isLarge ? 16 : 14;
+	const cardPaddingLandscape = cardPadding + (isLandscape ? 4 : 0);
+	const badgeSize = isSmall ? 22 : isLarge ? 34 : 26;
+
 	const [bookOfMonth, setBookOfMonth] = useState({
 		id: 1,
 		monthLabel: 'Marco 2026',
 		title: 'Livro do Mes',
 		author: 'Autor(a)',
 		description: 'Descricao nao informada.',
+		synopsis: 'Descricao nao informada.',
+		pages: 0,
 		members: 0,
 		dateLabel: '',
 		coverUrl: 'https://placehold.co/240x320/f3f4f6/111827?text=Capa',
@@ -47,7 +65,8 @@ export default function HomeScreen({ navigation }) {
 		weeklyGoal: '1',
 	});
 
-	const percent = clamp01(progress.totalPages ? progress.currentPage / progress.totalPages : 0);
+	const effectiveTotalPages = progress.totalPages || bookOfMonth.pages || 0;
+	const percent = clamp01(effectiveTotalPages ? progress.currentPage / effectiveTotalPages : 0);
 	const percentLabel = `${Math.round(percent * 100)}%`;
 	const weeklyPercent = clamp01(progress.weeklyGoal ? progress.weeklyDone / progress.weeklyGoal : 0);
 
@@ -63,7 +82,7 @@ export default function HomeScreen({ navigation }) {
 		setHighlights(viewModel.highlights);
 		setDraftProgress({
 			currentPage: String(viewModel.progress.currentPage ?? 0),
-			totalPages: String(viewModel.progress.totalPages ?? 0),
+			totalPages: String(viewModel.progress.totalPages || viewModel.bookOfMonth?.pages || 0),
 			weeklyDone: String(viewModel.progress.weeklyDone ?? 0),
 			weeklyGoal: String(viewModel.progress.weeklyGoal ?? 1),
 		});
@@ -86,7 +105,7 @@ export default function HomeScreen({ navigation }) {
 
 	const handleOpenDiscussion = () => {
 		if (navigation?.navigate) {
-			navigation.navigate('Discussion');
+			navigation.navigate('Discussion', { bookId: bookOfMonth.id });
 		}
 	};
 
@@ -97,7 +116,7 @@ export default function HomeScreen({ navigation }) {
 		}
 
 		if (navigation?.navigate) {
-			navigation.navigate('Discussion', { chapterId: chapter?.id });
+			navigation.navigate('Discussion', { bookId: bookOfMonth.id, chapterId: chapter?.id });
 		}
 	};
 
@@ -138,7 +157,7 @@ export default function HomeScreen({ navigation }) {
 	const openProgressModal = () => {
 		setDraftProgress({
 			currentPage: String(progress.currentPage ?? ''),
-			totalPages: String(progress.totalPages ?? ''),
+			totalPages: String(progress.totalPages || bookOfMonth.pages || ''),
 			weeklyDone: String(progress.weeklyDone ?? ''),
 			weeklyGoal: String(progress.weeklyGoal ?? ''),
 		});
@@ -183,6 +202,57 @@ export default function HomeScreen({ navigation }) {
 		}
 	};
 
+	// Chapter status modal
+	const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
+	const [selectedChapter, setSelectedChapter] = useState(null);
+
+	const handleChangeChapterStatus = async (chapterId, nextStatus) => {
+		setChapters((prev) =>
+			prev.map((c) =>
+				c.id === chapterId
+					? { ...c, status: nextStatus, state: nextStatus === 'Concluído' ? 'done' : 'active' }
+					: c
+			)
+		);
+
+		setIsStatusModalOpen(false);
+
+
+		try {
+			await updateChapterStatus(bookOfMonth.id, chapterId, nextStatus);
+		} catch (err) {
+			// ignore — optimistic update kept
+		}
+
+		// show feedback
+		showToast(`Capítulo ${chapterId} marcado como ${nextStatus}`);
+	};
+
+	// Toast feedback
+	const [toastMessage, setToastMessage] = useState('');
+	const [toastVisible, setToastVisible] = useState(false);
+	const toastTimeoutRef = useRef(null);
+
+	const showToast = (message, duration = 2500) => {
+		if (toastTimeoutRef.current) {
+			clearTimeout(toastTimeoutRef.current);
+		}
+		setToastMessage(message);
+		setToastVisible(true);
+		toastTimeoutRef.current = setTimeout(() => {
+			setToastVisible(false);
+			toastTimeoutRef.current = null;
+		}, duration);
+	};
+
+	useEffect(() => {
+		return () => {
+			if (toastTimeoutRef.current) {
+				clearTimeout(toastTimeoutRef.current);
+			}
+		};
+	}, []);
+
 	return (
 		<SafeAreaView style={styles.safeArea}>
 			<StatusBar barStyle="light-content" />
@@ -212,30 +282,32 @@ export default function HomeScreen({ navigation }) {
 					</View>
 
 					<TouchableOpacity
-						style={styles.bookCard}
+						style={[styles.bookCard, { padding: cardPaddingLandscape }]}
 						activeOpacity={0.9}
 						onPress={handleOpenBook}
 						hitSlop={HIT_SLOP}
 						accessibilityRole="button"
 						accessibilityLabel={`Abrir livro do mês ${bookOfMonth.title}, de ${bookOfMonth.author}`}
 					>
-						<Image source={{ uri: bookOfMonth.coverUrl }} style={styles.bookCover} />
+						<Image source={{ uri: bookOfMonth.coverUrl }} style={[styles.bookCover, { width: coverWidth, height: coverHeight }]} />
 						<View style={styles.bookInfo}>
-							<Text style={styles.bookTitle} numberOfLines={1}>
+							<Text style={[styles.bookTitle, { fontSize: titleSize }]} numberOfLines={1}>
 								{bookOfMonth.title}
 							</Text>
 							<Text style={styles.bookAuthor} numberOfLines={1}>
 								{bookOfMonth.author}
 							</Text>
-							<Text style={styles.bookDesc} numberOfLines={3}>
-								{bookOfMonth.description}
+							<Text style={[styles.bookDesc, { fontSize: descSize, lineHeight: descSize + 5, color: isSmall ? '#0f172a' : styles.bookDesc.color }]} numberOfLines={3}>
+								{bookOfMonth.synopsis || bookOfMonth.description}
 							</Text>
 
 							<View style={styles.bookMetaRow}>
-								<View style={styles.bookMetaItem}>
-									<Ionicons name="people-outline" size={14} color="#64748b" />
-									<Text style={styles.bookMetaText}>{bookOfMonth.members} membros</Text>
-								</View>
+								{Number(bookOfMonth.members) > 0 ? (
+									<View style={styles.bookMetaItem}>
+										<Ionicons name="people-outline" size={14} color="#64748b" />
+										<Text style={styles.bookMetaText}>{bookOfMonth.members} membros</Text>
+									</View>
+								) : null}
 								<View style={styles.bookMetaItem}>
 									<Ionicons name="calendar-clear-outline" size={14} color="#64748b" />
 									<Text style={styles.bookMetaText}>{bookOfMonth.dateLabel}</Text>
@@ -261,10 +333,15 @@ export default function HomeScreen({ navigation }) {
 						<View style={styles.progressBlock}>
 							<View style={styles.progressTopRow}>
 								<Text style={styles.progressLabel}>
-									Página {progress.currentPage} de {progress.totalPages}
+									Páginas lidas
 								</Text>
-								<Text style={styles.progressValue}>{percentLabel}</Text>
+								<Text style={styles.progressValue}>
+									{progress.currentPage} de {effectiveTotalPages}
+								</Text>
 							</View>
+							<Text style={styles.progressHint}>
+								Total do livro: {effectiveTotalPages} páginas
+							</Text>
 							<View style={styles.progressTrack}>
 								<LinearGradient
 									colors={HOME_PROGRESS_GRADIENT}
@@ -282,6 +359,9 @@ export default function HomeScreen({ navigation }) {
 									{progress.weeklyDone} / {progress.weeklyGoal} páginas
 								</Text>
 							</View>
+							<Text style={styles.progressHint}>
+								Ajuste essa meta no botão Atualizar
+							</Text>
 							<View style={styles.progressTrackMuted}>
 								<LinearGradient
 									colors={HOME_PROGRESS_GRADIENT}
@@ -331,37 +411,61 @@ export default function HomeScreen({ navigation }) {
 											isLocked && styles.chapterRowLocked,
 										]}
 									>
-										{isDone ? (
-											<LinearGradient
-												colors={HOME_CHAPTER_DONE_GRADIENT}
-												start={{ x: 0, y: 0 }}
-												end={{ x: 1, y: 0 }}
-												style={styles.chapterBadge}
-											>
-												<Text style={styles.chapterBadgeText}>{ch.id}</Text>
-											</LinearGradient>
-										) : isActive ? (
-											<LinearGradient
-												colors={HOME_CHAPTER_ACTIVE_GRADIENT}
-												start={{ x: 0, y: 0 }}
-												end={{ x: 1, y: 0 }}
-												style={styles.chapterBadge}
-											>
-												<Text style={styles.chapterBadgeText}>{ch.id}</Text>
-											</LinearGradient>
-										) : (
-											<View style={[styles.chapterBadge, isActive && styles.chapterBadgeActive, isLocked && styles.chapterBadgeLocked]}>
-												<Text style={[styles.chapterBadgeText, isLocked && styles.chapterBadgeTextLocked]}>
-													{ch.id}
-												</Text>
-											</View>
-										)}
+														{isDone ? (
+															<LinearGradient
+																colors={HOME_CHAPTER_DONE_GRADIENT}
+																start={{ x: 0, y: 0 }}
+																end={{ x: 1, y: 0 }}
+																style={[styles.chapterBadge, { width: badgeSize, height: badgeSize, borderRadius: badgeSize / 2 }]}
+															>
+																<Text style={[styles.chapterBadgeText, { fontSize: badgeSize / 2.6 }]}>{ch.id}</Text>
+															</LinearGradient>
+														) : isActive ? (
+															<LinearGradient
+																colors={HOME_CHAPTER_ACTIVE_GRADIENT}
+																start={{ x: 0, y: 0 }}
+																end={{ x: 1, y: 0 }}
+																style={[styles.chapterBadge, { width: badgeSize, height: badgeSize, borderRadius: badgeSize / 2 }]}
+															>
+																<Text style={[styles.chapterBadgeText, { fontSize: badgeSize / 2.6 }]}>{ch.id}</Text>
+															</LinearGradient>
+														) : (
+															<View style={[styles.chapterBadge, isActive && styles.chapterBadgeActive, isLocked && styles.chapterBadgeLocked, { width: badgeSize, height: badgeSize, borderRadius: badgeSize / 2 }]}> 
+																<Text style={[styles.chapterBadgeText, isLocked && styles.chapterBadgeTextLocked, { fontSize: badgeSize / 2.6 }]}> 
+																	{ch.id}
+																</Text>
+															</View>
+														)}
 
 										<View style={styles.chapterTextCol}>
-											<Text style={[styles.chapterTitle, isLocked && styles.chapterTitleLocked]} numberOfLines={1}>
-												{ch.title}
-											</Text>
-											<Text style={[styles.chapterStatus, isLocked && styles.chapterStatusLocked]}>{ch.status}</Text>
+											<View style={styles.chapterTitleRow}>
+												<Text style={[styles.chapterTitle, isLocked && styles.chapterTitleLocked]} numberOfLines={1}>
+													{ch.title}
+												</Text>
+												{(() => {
+													const displayStatus = (ch.status || '').trim() || 'Marcar';
+													return (
+														<TouchableOpacity
+															activeOpacity={isLocked ? 1 : 0.8}
+															disabled={isLocked}
+															onPress={() => {
+																if (isLocked) return;
+																setSelectedChapter(ch);
+																setIsStatusModalOpen(true);
+															}}
+															style={[
+																styles.chapterStatusPill,
+																isDone && styles.chapterStatusPillDone,
+																isActive && styles.chapterStatusPillActive,
+																isLocked && styles.chapterStatusPillLocked,
+																{ minWidth: 64, alignItems: 'center', justifyContent: 'center' },
+															]}
+														>
+															<Text style={[styles.chapterStatusPillText, { fontSize: pillFontSize }, isLocked && styles.chapterStatusPillTextLocked]}>{displayStatus}</Text>
+														</TouchableOpacity>
+													);
+												})()}
+											</View>
 										</View>
 
 										<Ionicons
@@ -408,6 +512,12 @@ export default function HomeScreen({ navigation }) {
 				<FooterNav navigation={navigation} activeKey="inicio" />
 			</View>
 
+				{toastVisible ? (
+					<View style={styles.toastContainer} pointerEvents="none">
+						<Text style={styles.toastText}>{toastMessage}</Text>
+					</View>
+				) : null}
+
 			<Modal
 				visible={isProgressModalOpen}
 				transparent
@@ -417,6 +527,9 @@ export default function HomeScreen({ navigation }) {
 				<View style={styles.modalBackdrop}>
 					<View style={styles.modalCard}>
 						<Text style={styles.modalTitle}>Atualizar progresso</Text>
+						<Text style={styles.modalSubtitle}>
+							Informe a página atual, o total de páginas do livro e a meta semanal desejada.
+						</Text>
 
 						<View style={styles.modalGrid}>
 							<View style={styles.modalField}>
@@ -433,7 +546,7 @@ export default function HomeScreen({ navigation }) {
 							</View>
 
 							<View style={styles.modalField}>
-								<Text style={styles.modalLabel}>Total de páginas</Text>
+								<Text style={styles.modalLabel}>Total de páginas do livro</Text>
 								<TextInput
 									value={draftProgress.totalPages}
 									onChangeText={(t) => setDraftProgress((p) => ({ ...p, totalPages: t.replace(/[^\d]/g, '') }))}
@@ -459,7 +572,7 @@ export default function HomeScreen({ navigation }) {
 							</View>
 
 							<View style={styles.modalField}>
-								<Text style={styles.modalLabel}>Meta semanal</Text>
+								<Text style={styles.modalLabel}>Meta semanal ajustável</Text>
 								<TextInput
 									value={draftProgress.weeklyGoal}
 									onChangeText={(t) => setDraftProgress((p) => ({ ...p, weeklyGoal: t.replace(/[^\d]/g, '') }))}
@@ -493,6 +606,45 @@ export default function HomeScreen({ navigation }) {
 								accessibilityLabel="Salvar progresso de leitura"
 							>
 								<Text style={styles.modalButtonText}>Salvar</Text>
+							</TouchableOpacity>
+						</View>
+					</View>
+				</View>
+			</Modal>
+
+			<Modal
+				visible={isStatusModalOpen}
+				transparent
+				animationType="fade"
+				onRequestClose={() => setIsStatusModalOpen(false)}
+			>
+				<View style={styles.modalBackdrop}>
+					<View style={styles.modalCard}>
+						<Text style={styles.modalTitle}>Atualizar status do capítulo</Text>
+						<Text style={styles.modalSubtitle}>
+							Selecione se você já concluiu ou está lendo este capítulo.
+						</Text>
+
+						<View style={{ marginTop: 12 }}>
+							<TouchableOpacity
+								style={[styles.modalButton, { marginBottom: 8 }]}
+								onPress={() => handleChangeChapterStatus(selectedChapter?.id, 'Concluído')}
+							>
+								<Text style={[styles.modalButtonText, { color: '#ffffff' }]}>Concluído</Text>
+							</TouchableOpacity>
+							<TouchableOpacity
+								style={[styles.modalButton, styles.modalButtonGhost]}
+								onPress={() => handleChangeChapterStatus(selectedChapter?.id, 'Em leitura')}
+							>
+								<Text style={[styles.modalButtonTextGhost]}>Em leitura</Text>
+							</TouchableOpacity>
+						</View>
+						<View style={{ marginTop: 12 }}>
+							<TouchableOpacity style={[styles.modalButton, styles.modalButtonGhost]} onPress={() => handleChangeChapterStatus(selectedChapter?.id, '')}>
+								<Text style={[styles.modalButtonTextGhost]}>Limpar status</Text>
+							</TouchableOpacity>
+							<TouchableOpacity style={[styles.modalButton, styles.modalButtonGhost, { marginTop: 8 }]} onPress={() => setIsStatusModalOpen(false)}>
+								<Text style={[styles.modalButtonTextGhost]}>Cancelar</Text>
 							</TouchableOpacity>
 						</View>
 					</View>

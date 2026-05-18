@@ -46,10 +46,26 @@ const EMPTY_FORM = {
   synopsis: '',
   pages: '',
   isHighlight: false,
+  chapters: [],
 };
 
 const COVER_PLACEHOLDER = 'https://placehold.co/180x240/e5e7eb/475569?text=BookV';
 const HIT_SLOP = { top: 10, bottom: 10, left: 10, right: 10 };
+
+function createChapter(chapter = {}, index = 0) {
+  return {
+    id: chapter?.id || `chapter-${Date.now()}-${index}`,
+    title: chapter?.title || chapter?.titulo || '',
+  };
+}
+
+function normalizeChapters(chapters = []) {
+  if (Array.isArray(chapters) && chapters.length > 0) {
+    return chapters.map((chapter, index) => createChapter(chapter, index));
+  }
+
+  return [createChapter()];
+}
 
 function mapBookToForm(book) {
   return {
@@ -62,6 +78,7 @@ function mapBookToForm(book) {
     synopsis: book?.synopsis || '',
     pages: book?.pages ? String(book.pages) : '',
     isHighlight: Boolean(book?.highlight),
+    chapters: normalizeChapters(book?.chapters),
   };
 }
 
@@ -89,6 +106,52 @@ export default function RegisterBook({ navigation, route }) {
 
   const handleChange = (field, value) => {
     setForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleChapterChange = (chapterId, value) => {
+    setForm((prev) => ({
+      ...prev,
+      chapters: prev.chapters.map((chapter) =>
+        chapter.id === chapterId ? { ...chapter, title: value } : chapter
+      ),
+    }));
+  };
+
+  const addChapter = () => {
+    setForm((prev) => ({
+      ...prev,
+      chapters: [...prev.chapters, createChapter({}, prev.chapters.length)],
+    }));
+  };
+
+  const removeChapter = (chapterId) => {
+    setForm((prev) => {
+      const nextChapters = prev.chapters.filter((chapter) => chapter.id !== chapterId);
+      return {
+        ...prev,
+        chapters: nextChapters.length > 0 ? nextChapters : [createChapter()],
+      };
+    });
+  };
+
+  const moveChapter = (chapterId, direction) => {
+    setForm((prev) => {
+      const currentIndex = prev.chapters.findIndex((chapter) => chapter.id === chapterId);
+      const nextIndex = currentIndex + direction;
+
+      if (currentIndex < 0 || nextIndex < 0 || nextIndex >= prev.chapters.length) {
+        return prev;
+      }
+
+      const nextChapters = [...prev.chapters];
+      const [movedChapter] = nextChapters.splice(currentIndex, 1);
+      nextChapters.splice(nextIndex, 0, movedChapter);
+
+      return {
+        ...prev,
+        chapters: nextChapters,
+      };
+    });
   };
 
   const resetForm = () => {
@@ -119,6 +182,12 @@ export default function RegisterBook({ navigation, route }) {
       synopsis: form.synopsis.trim(),
       pages: form.pages ? Number(form.pages) : null,
       highlight: form.isHighlight,
+      chapters: form.chapters
+        .map((chapter, index) => ({
+          id: Number.isFinite(Number(chapter.id)) ? Number(chapter.id) : index + 1,
+          title: String(chapter.title || '').trim(),
+        }))
+        .filter((chapter) => chapter.title.length > 0),
     };
 
     if (payload.year && !Number.isFinite(payload.year)) {
@@ -325,6 +394,79 @@ export default function RegisterBook({ navigation, route }) {
               style={[styles.input, styles.inputMultiline]}
               accessibilityLabel="Sinopse do livro"
             />
+
+            <View style={styles.chapterHeaderRow}>
+              <Text style={styles.fieldLabel}>Capítulos</Text>
+              <TouchableOpacity
+                activeOpacity={0.85}
+                onPress={addChapter}
+                hitSlop={HIT_SLOP}
+                accessibilityRole="button"
+                accessibilityLabel="Adicionar capítulo"
+                style={styles.addChapterButton}
+              >
+                <Ionicons name="add-circle-outline" size={16} color="#0f766e" />
+                <Text style={styles.addChapterButtonText}>Adicionar capítulo</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.chaptersList}>
+              {form.chapters.map((chapter, index) => (
+                <View key={chapter.id} style={styles.chapterItem}>
+                  <View style={styles.chapterItemHeader}>
+                    <Text style={styles.chapterIndex}>Capítulo {index + 1}</Text>
+                    <View style={styles.chapterActionsGroup}>
+                      <TouchableOpacity
+                        activeOpacity={0.85}
+                        onPress={() => moveChapter(chapter.id, -1)}
+                        disabled={index === 0}
+                        hitSlop={HIT_SLOP}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Mover capítulo ${index + 1} para cima`}
+                        accessibilityState={{ disabled: index === 0 }}
+                        style={[styles.chapterActionButton, index === 0 && styles.chapterActionButtonDisabled]}
+                      >
+                        <Ionicons name="chevron-up-outline" size={16} color={index === 0 ? '#cbd5e1' : '#0f766e'} />
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        activeOpacity={0.85}
+                        onPress={() => moveChapter(chapter.id, 1)}
+                        disabled={index === form.chapters.length - 1}
+                        hitSlop={HIT_SLOP}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Mover capítulo ${index + 1} para baixo`}
+                        accessibilityState={{ disabled: index === form.chapters.length - 1 }}
+                        style={[
+                          styles.chapterActionButton,
+                          index === form.chapters.length - 1 && styles.chapterActionButtonDisabled,
+                        ]}
+                      >
+                        <Ionicons name="chevron-down-outline" size={16} color={index === form.chapters.length - 1 ? '#cbd5e1' : '#0f766e'} />
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        activeOpacity={0.85}
+                        onPress={() => removeChapter(chapter.id)}
+                        hitSlop={HIT_SLOP}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Remover capítulo ${index + 1}`}
+                        style={styles.removeChapterButton}
+                      >
+                        <Ionicons name="trash-outline" size={16} color="#9f1239" />
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+
+                  <TextInput
+                    value={chapter.title}
+                    onChangeText={(value) => handleChapterChange(chapter.id, value)}
+                    placeholder={`Nome do capítulo ${index + 1}`}
+                    placeholderTextColor="#94a3b8"
+                    style={styles.input}
+                    accessibilityLabel={`Nome do capítulo ${index + 1}`}
+                  />
+                </View>
+              ))}
+            </View>
 
             <View style={styles.row}>
               <View style={styles.column}>

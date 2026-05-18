@@ -3,7 +3,6 @@ describe('bookService rating workflows (mock mode - RF08)', () => {
 
   beforeEach(() => {
     jest.resetModules();
-    process.env.EXPO_PUBLIC_USE_MOCK = 'true';
     bookService = require('../services/bookService');
   });
 

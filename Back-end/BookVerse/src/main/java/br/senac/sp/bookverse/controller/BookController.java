@@ -2,6 +2,7 @@ package br.senac.sp.bookverse.controller;
 
 import br.senac.sp.bookverse.dto.BookDTO;
 import br.senac.sp.bookverse.service.BookService;
+import br.senac.sp.bookverse.service.CommentService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
@@ -10,15 +11,22 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
+import br.senac.sp.bookverse.service.ChapterProgressService;
+import br.senac.sp.bookverse.model.ChapterProgress;
+
 
 @RestController
 @RequestMapping({"/api/v1/books", "/api/books", "/books"})
 public class BookController {
 
     private final BookService bookService;
+    private final ChapterProgressService chapterProgressService;
+    private final CommentService commentService;
 
-    public BookController(BookService bookService) {
+    public BookController(BookService bookService, ChapterProgressService chapterProgressService, CommentService commentService) {
         this.bookService = bookService;
+        this.chapterProgressService = chapterProgressService;
+        this.commentService = commentService;
     }
 
     @GetMapping("/{id}")
@@ -77,5 +85,29 @@ public class BookController {
     @GetMapping("/search/by-rating")
     public ResponseEntity<?> searchByAvaliacao(@RequestParam Double minima) {
         return ResponseEntity.ok(bookService.filtrarPorAvaliacao(minima));
+    }
+
+    @PutMapping("/{bookId}/chapters/{chapterOrder}/status")
+    public ResponseEntity<ChapterProgress> updateChapterStatus(@PathVariable Long bookId, @PathVariable Integer chapterOrder, @RequestBody  java.util.Map<String, String> body) {
+        String status = body.getOrDefault("status", "");
+        ChapterProgress updated = chapterProgressService.updateStatus(bookId, chapterOrder, status);
+        return ResponseEntity.ok(updated);
+    }
+
+    @PostMapping("/{bookId}/discussions/{discussionId}/comments/{commentId}/like")
+    public ResponseEntity<?> toggleCommentLike(
+            @PathVariable Long bookId,
+            @PathVariable Long discussionId,
+            @PathVariable Long commentId,
+            @RequestBody(required = false) java.util.Map<String, Object> body
+    ) {
+        Boolean liked = null;
+        if (body != null && body.containsKey("liked")) {
+            Object val = body.get("liked");
+            if (val instanceof Boolean) liked = (Boolean) val;
+            else if (val instanceof String) liked = Boolean.valueOf((String) val);
+        }
+        var result = commentService.toggleCommentLike(commentId, liked);
+        return ResponseEntity.ok(java.util.Map.of("item", result));
     }
 }

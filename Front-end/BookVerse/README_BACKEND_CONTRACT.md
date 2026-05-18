@@ -26,6 +26,7 @@ Campos esperados:
 - `coverUrl`: `string`
 - `synopsis`: `string`
 - `authorBio`: `string`
+- `chapters`: `Chapter[]`
 
 Usado em:
 
@@ -58,6 +59,34 @@ Campos esperados:
 - `replies`: `number`
 - `avatar`: `string`
 - `reported`: `boolean`
+
+### API real de comentários
+
+Endpoint para listar comentários por discussão:
+
+- `GET /api/v1/comments/discussion/:discussionId`
+
+Resposta aceita:
+
+- lista direta de `Comment`
+- ou `{ content: Comment[] }`
+
+Endpoint para criar comentário:
+
+- `POST /api/v1/comments`
+
+Payload enviado pelo frontend:
+
+```json
+{
+  "conteudo": "Comentário do usuário",
+  "discussaoId": 1
+}
+```
+
+Resposta ideal:
+
+- `{ item: Comment }`
 
 Usado em:
 
@@ -147,73 +176,20 @@ Resposta aceita:
 
 Endpoint:
 
-- `GET /api/books/:bookId/discussions`
+- `GET /api/v1/discussions/book/:bookId`
 
 Resposta aceita:
 
-- lista direta de `Chapter`
-- ou `{ chapters: Chapter[] }`
+- lista direta de `Discussion`
+- ou `{ content: Discussion[] }`
 
-### Adicionar comentario
+Campos usados pelo frontend:
 
-Endpoint:
-
-- `POST /api/books/:bookId/discussions/:chapterId/comments`
-
-Payload enviado pelo frontend:
-
-```json
-{
-  "text": "Comentário do usuário",
-  "author": "Você"
-}
-```
-
-Resposta ideal:
-
-- `{ item: Comment }`
-
-### Curtir comentario
-
-Endpoint:
-
-- `POST /api/books/:bookId/discussions/:chapterId/comments/:commentId/like`
-
-Payload enviado:
-
-- sem body obrigatorio hoje
-
-Resposta ideal:
-
-- `{ item: Comment }`
-
-Campos realmente usados no retorno:
-
-- `item.id`
-- `item.likes`
-
-### Reportar comentario
-
-Endpoint:
-
-- `POST /api/books/:bookId/discussions/:chapterId/comments/:commentId/report`
-
-Payload enviado:
-
-```json
-{
-  "reported": true
-}
-```
-
-Resposta ideal:
-
-- `{ item: Comment }`
-
-Campos realmente usados no retorno:
-
-- `item.id`
-- `item.reported`
+- `id`
+- `title` / `titulo`
+- `description` / `descricao`
+- `bookId` / `livroId`
+- `bookTitle` / `livroTitulo`
 
 ### Home
 
@@ -343,7 +319,8 @@ Se quiser padronizar desde ja, a recomendacao minima e:
 
 Se o backend devolver exatamente estes nomes, o frontend fica alinhado:
 
-- `Book`: `id`, `title`, `author`, `year`, `genre`, `rating`, `coverUrl`, `synopsis`, `authorBio`
+- `Book`: `id`, `title`, `author`, `year`, `genre`, `rating`, `coverUrl`, `synopsis`, `authorBio`, `chapters`
+- `Chapter`: `id`, `title`
 - `Chapter`: `id`, `title`, `comments`
 - `Comment`: `id`, `author`, `date`, `text`, `likes`, `replies`, `avatar`, `reported`
 - `HomeBookOfMonth`: `id`, `monthLabel`, `title`, `author`, `description`, `members`, `dateLabel`, `coverUrl`

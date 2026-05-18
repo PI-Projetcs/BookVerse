@@ -1,9 +1,5 @@
 import api from './api';
-import { MOCK_ADMIN_BOOKS, MOCK_BOOKS, MOCK_DISCUSSIONS_BY_BOOK } from '../mocks';
 
-const USE_MOCK_DATA = process.env.EXPO_PUBLIC_USE_MOCK === 'true';
-const mockDiscussionsStore = JSON.parse(JSON.stringify(MOCK_DISCUSSIONS_BY_BOOK));
-const mockAdminBooksStore = normalizeList(JSON.parse(JSON.stringify(MOCK_ADMIN_BOOKS)));
 
 function mapCatalogSortToBackend(sortBy = 'title') {
 	if (sortBy === 'rating') {
@@ -28,6 +24,13 @@ function toBackendBookPayload(bookData = {}) {
 		mediaAvaliacao: bookData?.mediaAvaliacao ?? bookData?.rating ?? 0,
 		paginas: bookData?.paginas ?? bookData?.pages ?? null,
 		destaque: Boolean(bookData?.destaque ?? bookData?.highlight ?? false),
+		// Include chapters payload to allow backend to persist chapter list
+		chapters: Array.isArray(bookData?.chapters)
+			? bookData.chapters.map((ch, idx) => ({ id: ch?.id ?? idx + 1, title: ch?.title || ch }))
+			: undefined,
+		capitulos: Array.isArray(bookData?.chapters)
+			? bookData.chapters.map((ch, idx) => ({ id: ch?.id ?? idx + 1, titulo: ch?.title || ch }))
+			: undefined,
 	};
 }
 
@@ -44,6 +47,9 @@ function normalizeBook(book = {}, index = 0) {
 		authorBio: book.authorBio || book.author_bio || '',
 		pages: Number(book.pages ?? book.paginas) || null,
 		highlight: Boolean(book.highlight ?? book.destaque ?? false),
+		chapters: Array.isArray(book.chapters)
+			? book.chapters.map((ch, idx) => ({ id: Number(ch.id ?? idx + 1), title: ch.title || ch.titulo || String(ch) }))
+			: [],
 	};
 }
 
@@ -78,17 +84,7 @@ function filterAndSortBooks(items, { query = '', sortBy = 'title' } = {}) {
 	});
 }
 
-function getMockCatalogBooks(params) {
-	return filterAndSortBooks(normalizeList(MOCK_BOOKS), params);
-}
 
-function getMockAdminBooks() {
-	return normalizeList(mockAdminBooksStore).sort((left, right) => right.id - left.id);
-}
-
-function getNextMockBookId(items = []) {
-	return items.reduce((currentMax, item) => Math.max(currentMax, Number(item.id) || 0), 0) + 1;
-}
 
 function normalizeComment(comment = {}, index = 0) {
 	return {
@@ -116,27 +112,78 @@ function normalizeDiscussions(items = []) {
 	return items.map((item, index) => normalizeChapter(item, index));
 }
 
-function getMockDiscussions(bookId) {
-	const normalizedBookId = Number(bookId) || 1;
-	const chapters = mockDiscussionsStore[normalizedBookId] || [];
-	return normalizeDiscussions(chapters);
-}
 
-function getNextMockCommentId(chapters = []) {
-	let currentMax = 0;
-	chapters.forEach((chapter) => {
-		(chapter.comments || []).forEach((comment) => {
-			currentMax = Math.max(currentMax, Number(comment.id) || 0);
-		});
-	});
-	return currentMax + 1;
-}
 
-export async function getCatalogBooks({ query = '', sortBy = 'title' } = {}) {
-	if (USE_MOCK_DATA) {
-		return getMockCatalogBooks({ query, sortBy });
+function extractCollection(payload = {}) {
+	if (Array.isArray(payload)) {
+		return payload;
 	}
 
+	if (Array.isArray(payload?.content)) {
+		return payload.content;
+	}
+
+	if (Array.isArray(payload?.items)) {
+		return payload.items;
+	}
+
+	if (Array.isArray(payload?.data)) {
+		return payload.data;
+	}
+
+	return [];
+}
+
+function formatCommentDate(value) {
+	if (!value) {
+		return 'Agora mesmo';
+	}
+
+	const parsed = new Date(value);
+	if (Number.isNaN(parsed.getTime())) {
+		return String(value);
+	}
+
+	return parsed.toLocaleDateString('pt-BR', {
+		day: '2-digit',
+		month: 'short',
+		year: 'numeric',
+	});
+}
+
+function normalizeBackendComment(comment = {}) {
+	return {
+		id: Number(comment.id ?? Date.now()),
+		author: comment.usuarioNome || comment.author || 'Leitor(a)',
+		date: formatCommentDate(comment.data || comment.date),
+		text: comment.conteudo || comment.text || '',
+		likes: Number(comment.likes) || 0,
+		replies: Number(comment.replies) || 0,
+		avatar: comment.avatar || 'https://i.pravatar.cc/100?img=5',
+		reported: Boolean(comment.reported),
+		discussionId: Number(comment.discussaoId ?? comment.discussionId) || null,
+	};
+}
+
+function normalizeBackendDiscussion(discussion = {}, comments = []) {
+	return {
+		id: Number(discussion.id),
+		title: discussion.titulo || discussion.title || 'Discussão do capítulo',
+		description: discussion.descricao || discussion.description || '',
+		bookId: Number(discussion.livroId ?? discussion.bookId) || null,
+		bookTitle: discussion.livroTitulo || discussion.bookTitle || '',
+		comments: comments.map(normalizeBackendComment),
+	};
+}
+
+async function fetchBackendComments(discussionId) {
+	const response = await api.get(`/api/v1/comments/discussion/${discussionId}`);
+	return extractCollection(response.data).map(normalizeBackendComment);
+}
+
+
+
+export async function getCatalogBooks({ query = '', sortBy = 'title' } = {}) {
 	try {
 		const response = await api.get('/api/v1/books', {
 			params: {
@@ -164,12 +211,6 @@ export async function getCatalogBooks({ query = '', sortBy = 'title' } = {}) {
 }
 
 export async function getBookById(bookId) {
-	if (USE_MOCK_DATA) {
-		const normalizedId = Number(bookId);
-		const selectedBook = normalizeList(MOCK_BOOKS).find((book) => book.id === normalizedId);
-		return selectedBook || null;
-	}
-
 	try {
 		const response = await api.get(`/api/v1/books/${bookId}`);
 
@@ -184,10 +225,6 @@ export async function getBookById(bookId) {
 }
 
 export async function getAdminBooks() {
-	if (USE_MOCK_DATA) {
-		return getMockAdminBooks();
-	}
-
 	try {
 		const response = await api.get('/api/v1/books');
 
@@ -210,16 +247,6 @@ export async function getAdminBooks() {
 }
 
 export async function createAdminBook(bookData) {
-	if (USE_MOCK_DATA) {
-		const newBook = normalizeBook({
-			...bookData,
-			id: getNextMockBookId(mockAdminBooksStore),
-		});
-
-		mockAdminBooksStore.unshift(newBook);
-		return newBook;
-	}
-
 	const response = await api.post(`/api/v1/books`, toBackendBookPayload(bookData));
 	if (response.data?.item) {
 		return normalizeBook(response.data.item);
@@ -230,22 +257,6 @@ export async function createAdminBook(bookData) {
 
 export async function updateAdminBook(bookId, bookData) {
 	const normalizedBookId = Number(bookId);
-
-	if (USE_MOCK_DATA) {
-		const bookIndex = mockAdminBooksStore.findIndex((item) => Number(item.id) === normalizedBookId);
-		if (bookIndex < 0) {
-			return null;
-		}
-
-		const updatedBook = normalizeBook({
-			...mockAdminBooksStore[bookIndex],
-			...bookData,
-			id: normalizedBookId,
-		});
-
-		mockAdminBooksStore[bookIndex] = updatedBook;
-		return updatedBook;
-	}
 
 	try {
 		const response = await api.put(`/api/v1/books/${bookId}`, toBackendBookPayload(bookData));
@@ -263,16 +274,6 @@ export async function updateAdminBook(bookId, bookData) {
 export async function deleteAdminBook(bookId) {
 	const normalizedBookId = Number(bookId);
 
-	if (USE_MOCK_DATA) {
-		const bookIndex = mockAdminBooksStore.findIndex((item) => Number(item.id) === normalizedBookId);
-		if (bookIndex < 0) {
-			return false;
-		}
-
-		mockAdminBooksStore.splice(bookIndex, 1);
-		return true;
-	}
-
 	try {
 		await api.delete(`/api/v1/books/${bookId}`);
 		return true;
@@ -282,93 +283,47 @@ export async function deleteAdminBook(bookId) {
 }
 
 export async function getDiscussions(bookId) {
-	if (USE_MOCK_DATA) {
-		return getMockDiscussions(bookId);
-	}
-
 	try {
 		const response = await api.get(`/api/v1/discussions/book/${bookId}`);
+		const discussions = extractCollection(response.data);
+		const discussionsWithComments = await Promise.all(
+			discussions.map(async (discussion) => {
+				const comments = discussion?.id ? await fetchBackendComments(discussion.id) : [];
+				return normalizeBackendDiscussion(discussion, comments);
+			})
+		);
 
-		if (Array.isArray(response.data)) {
-			return normalizeDiscussions(response.data);
-		}
-
-		if (Array.isArray(response.data?.chapters)) {
-			return normalizeDiscussions(response.data.chapters);
-		}
-
-		if (Array.isArray(response.data?.content)) {
-			return normalizeDiscussions(response.data.content);
-		}
-
-		return [];
+		return discussionsWithComments;
 	} catch (error) {
 		throw error;
 	}
 }
 
+export async function getCommentsByDiscussion(discussionId) {
+	const response = await api.get(`/api/v1/comments/discussion/${discussionId}`);
+	return extractCollection(response.data).map(normalizeBackendComment);
+}
+
+export async function createCommentOnDiscussion(discussionId, commentData) {
+	const payload = {
+		conteudo: String(commentData?.conteudo || commentData?.text || '').trim(),
+		discussaoId: Number(discussionId),
+	};
+
+	const response = await api.post('/api/v1/comments', payload);
+	const created = response.data?.item || response.data;
+	return { item: normalizeBackendComment(created) };
+}
+
 export async function addCommentToDiscussion(bookId, chapterId, commentData) {
-	if (USE_MOCK_DATA) {
-		const normalizedBookId = Number(bookId) || 1;
-		const normalizedChapterId = Number(chapterId);
-		const chapters = mockDiscussionsStore[normalizedBookId] || [];
-		const chapterIndex = chapters.findIndex((chapter) => Number(chapter.id) === normalizedChapterId);
-
-		if (chapterIndex < 0) {
-			return null;
-		}
-
-		const nextId = getNextMockCommentId(chapters);
-		const newComment = normalizeComment({
-			id: nextId,
-			author: commentData?.author || 'Voce',
-			date: commentData?.date || 'Agora mesmo',
-			text: commentData?.text || '',
-			likes: 0,
-			replies: 0,
-			avatar: commentData?.avatar,
-			reported: false,
-		});
-
-		chapters[chapterIndex].comments = [newComment, ...(chapters[chapterIndex].comments || [])];
-		mockDiscussionsStore[normalizedBookId] = chapters;
-
-		return { item: newComment };
-	}
-
 	try {
-		const response = await api.post(
-			`/api/v1/books/${bookId}/discussions/${chapterId}/comments`,
-			commentData
-		);
-
-		return response.data;
+		return createCommentOnDiscussion(chapterId, commentData);
 	} catch (error) {
 		throw error;
 	}
 }
 
 export async function likeComment(bookId, chapterId, commentId) {
-	if (USE_MOCK_DATA) {
-		const normalizedBookId = Number(bookId) || 1;
-		const normalizedChapterId = Number(chapterId);
-		const normalizedCommentId = Number(commentId);
-		const chapters = mockDiscussionsStore[normalizedBookId] || [];
-
-		const chapter = chapters.find((item) => Number(item.id) === normalizedChapterId);
-		if (!chapter) {
-			return null;
-		}
-
-		const comment = (chapter.comments || []).find((item) => Number(item.id) === normalizedCommentId);
-		if (!comment) {
-			return null;
-		}
-
-		comment.likes = (Number(comment.likes) || 0) + 1;
-		return { item: normalizeComment(comment) };
-	}
-
 	try {
 		const response = await api.post(
 			`/api/v1/books/${bookId}/discussions/${chapterId}/comments/${commentId}/like`
@@ -381,26 +336,6 @@ export async function likeComment(bookId, chapterId, commentId) {
 }
 
 export async function toggleReportComment(bookId, chapterId, commentId, reported) {
-	if (USE_MOCK_DATA) {
-		const normalizedBookId = Number(bookId) || 1;
-		const normalizedChapterId = Number(chapterId);
-		const normalizedCommentId = Number(commentId);
-		const chapters = mockDiscussionsStore[normalizedBookId] || [];
-
-		const chapter = chapters.find((item) => Number(item.id) === normalizedChapterId);
-		if (!chapter) {
-			return null;
-		}
-
-		const comment = (chapter.comments || []).find((item) => Number(item.id) === normalizedCommentId);
-		if (!comment) {
-			return null;
-		}
-
-		comment.reported = Boolean(reported);
-		return { item: normalizeComment(comment) };
-	}
-
 	try {
 		const response = await api.post(
 			`/api/v1/books/${bookId}/discussions/${chapterId}/comments/${commentId}/report`,
@@ -438,19 +373,6 @@ export async function rateBook(bookId, ratingValue, review = '') {
 		resenha: String(review || ''),
 	};
 
-	if (USE_MOCK_DATA) {
-		const bookIdKey = `book_${bookId}`;
-		const rating = normalizeRating({
-			id: Math.random(),
-			bookId,
-			rating: ratingValue,
-			review,
-			createdAt: new Date().toISOString(),
-		});
-		mockRatingsStore[bookIdKey] = rating;
-		return { item: rating };
-	}
-
 	try {
 		const response = await api.post(`/api/v1/books/${bookId}/ratings`, payload);
 		return { item: normalizeRating(response.data?.item || response.data) };
@@ -460,14 +382,6 @@ export async function rateBook(bookId, ratingValue, review = '') {
 }
 
 export async function getBookRatings(bookId) {
-	if (USE_MOCK_DATA) {
-		const bookIdKey = `book_${bookId}`;
-		const rating = mockRatingsStore[bookIdKey];
-		return {
-			items: rating ? [rating] : [],
-		};
-	}
-
 	try {
 		const response = await api.get(`/api/v1/books/${bookId}/ratings`);
 		const items = Array.isArray(response.data?.items)
@@ -489,19 +403,6 @@ export async function updateBookRating(bookId, ratingValue, review = '') {
 		resenha: String(review || ''),
 	};
 
-	if (USE_MOCK_DATA) {
-		const bookIdKey = `book_${bookId}`;
-		const rating = normalizeRating({
-			id: mockRatingsStore[bookIdKey]?.id || Math.random(),
-			bookId,
-			rating: ratingValue,
-			review,
-			updatedAt: new Date().toISOString(),
-		});
-		mockRatingsStore[bookIdKey] = rating;
-		return { item: rating };
-	}
-
 	try {
 		const response = await api.put(`/api/v1/books/${bookId}/ratings`, payload);
 		return { item: normalizeRating(response.data?.item || response.data) };
@@ -511,12 +412,6 @@ export async function updateBookRating(bookId, ratingValue, review = '') {
 }
 
 export async function deleteBookRating(bookId) {
-	if (USE_MOCK_DATA) {
-		const bookIdKey = `book_${bookId}`;
-		delete mockRatingsStore[bookIdKey];
-		return { success: true };
-	}
-
 	try {
 		const response = await api.delete(`/api/v1/books/${bookId}/ratings`);
 		return response.data || { success: true };

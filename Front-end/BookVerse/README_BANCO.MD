@@ -1,9 +1,5 @@
 use bookverse;
 
--- NOTA: Usuário admin (admin@bookverse.com / admin123) é criado automaticamente
--- no startup via AdminBootstrapConfig (veja Backend README).
--- Se preferir criar manualmente, desabilite BOOKVERSE_BOOTSTRAP_ADMIN_ENABLED.
-
 INSERT INTO books
 (titulo, autor, genero, ano, sinopse, media_avaliacao, destaque, destaque_data, cover_url)
 VALUES
