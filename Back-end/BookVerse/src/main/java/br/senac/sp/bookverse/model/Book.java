@@ -21,6 +21,9 @@ public class Book {
     private Integer ano;
     private String sinopse;
     private String coverUrl;
+    @Lob
+    @Column(columnDefinition = "TEXT")
+    private String authorBio;
     private Integer paginas;
     private Boolean destaque;
     private Double mediaAvaliacao;

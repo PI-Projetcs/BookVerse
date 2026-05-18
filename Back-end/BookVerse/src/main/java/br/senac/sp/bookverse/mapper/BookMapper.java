@@ -26,6 +26,7 @@ public final class BookMapper {
                 book.getAno(),
                 book.getSinopse(),
                 book.getCoverUrl(),
+                book.getAuthorBio(),
                 book.getPaginas(),
                 book.getDestaque(),
                 book.getMediaAvaliacao(),
@@ -54,6 +55,7 @@ public final class BookMapper {
         book.setAno(dto.ano());
         book.setSinopse(dto.sinopse());
         book.setCoverUrl(dto.coverUrl());
+        book.setAuthorBio(dto.authorBio());
         book.setPaginas(dto.paginas());
         book.setDestaque(dto.destaque());
         book.setMediaAvaliacao(dto.mediaAvaliacao());

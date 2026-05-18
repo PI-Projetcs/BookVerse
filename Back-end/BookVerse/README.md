@@ -43,6 +43,7 @@ src/main/java/br/senac/sp/bookverse/
    BOOKVERSE_DB_USERNAME=root
    BOOKVERSE_DB_PASSWORD=sua_senha
    BOOKVERSE_JWT_SECRET=sua_chave_secreta_longa_aqui
+   SERVER_PORT=8080
    
 4. Execute o build e rode a aplicação:
    ```bash

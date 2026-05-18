@@ -21,6 +21,7 @@ function toBackendBookPayload(bookData = {}) {
 		ano: bookData?.ano ?? bookData?.year ?? null,
 		sinopse: bookData?.sinopse || bookData?.synopsis || '',
 		coverUrl: bookData?.coverUrl || '',
+		authorBio: bookData?.authorBio || bookData?.author_bio || bookData?.aboutAuthor || '',
 		mediaAvaliacao: bookData?.mediaAvaliacao ?? bookData?.rating ?? 0,
 		paginas: bookData?.paginas ?? bookData?.pages ?? null,
 		destaque: Boolean(bookData?.destaque ?? bookData?.highlight ?? false),
@@ -43,8 +44,8 @@ function normalizeBook(book = {}, index = 0) {
 		genre: book.genre || book.genero || 'Geral',
 		rating: Number(book.rating ?? book.mediaAvaliacao) || 0,
 		coverUrl: book.coverUrl || book.cover_url || '',
-		synopsis: book.synopsis || book.sinopse || '',
 		authorBio: book.authorBio || book.author_bio || '',
+		synopsis: book.synopsis || book.sinopse || '',
 		pages: Number(book.pages ?? book.paginas) || null,
 		highlight: Boolean(book.highlight ?? book.destaque ?? false),
 		chapters: Array.isArray(book.chapters)
@@ -67,7 +68,7 @@ function filterAndSortBooks(items, { query = '', sortBy = 'title' } = {}) {
 			return true;
 		}
 
-		const searchableText = [book.title, book.author, book.genre].join(' ').toLowerCase();
+		const searchableText = [book.title, book.author, book.genre, book.authorBio].join(' ').toLowerCase();
 		return searchableText.includes(queryText);
 	});
 

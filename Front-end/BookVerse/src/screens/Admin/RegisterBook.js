@@ -39,6 +39,7 @@ const GENRE_OPTIONS = [
 const EMPTY_FORM = {
   title: '',
   author: '',
+  authorBio: '',
   genre: '',
   year: '',
   rating: '',
@@ -71,6 +72,7 @@ function mapBookToForm(book) {
   return {
     title: book?.title || '',
     author: book?.author || '',
+    authorBio: book?.authorBio || '',
     genre: book?.genre || '',
     year: book?.year ? String(book.year) : '',
     rating: Number.isFinite(book?.rating) ? String(book.rating) : '',
@@ -167,14 +169,15 @@ export default function RegisterBook({ navigation, route }) {
   };
 
   const handleSubmit = async () => {
-    if (!form.title.trim() || !form.author.trim() || !form.genre.trim()) {
-      Alert.alert('Campos obrigatórios', 'Preencha título, autor e categoria para continuar.');
+    if (!form.title.trim() || !form.author.trim() || !form.authorBio.trim() || !form.genre.trim()) {
+      Alert.alert('Campos obrigatórios', 'Preencha título, autor, sobre o autor e categoria para continuar.');
       return;
     }
 
     const payload = {
       title: form.title.trim(),
       author: form.author.trim(),
+      authorBio: form.authorBio.trim(),
       genre: form.genre.trim(),
       year: form.year ? Number(form.year) : null,
       rating: form.rating ? Number(form.rating) : 0,
@@ -286,6 +289,17 @@ export default function RegisterBook({ navigation, route }) {
               placeholderTextColor="#94a3b8"
               style={styles.input}
               accessibilityLabel="Autor do livro"
+            />
+
+            <Text style={styles.fieldLabel}>Sobre o autor</Text>
+            <TextInput
+              value={form.authorBio}
+              onChangeText={(value) => handleChange('authorBio', value)}
+              placeholder="Mini biografia do autor"
+              placeholderTextColor="#94a3b8"
+              multiline
+              style={[styles.input, styles.inputMultiline]}
+              accessibilityLabel="Sobre o autor"
             />
 
             <View style={styles.row}>

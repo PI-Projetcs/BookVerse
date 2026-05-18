@@ -87,6 +87,13 @@ export const adminRegisterStyles = StyleSheet.create({
 		fontWeight: '800',
 		color: '#334155',
 	},
+	fieldHint: {
+		marginTop: -2,
+		marginBottom: 10,
+		fontSize: 10,
+		fontWeight: '600',
+		color: '#64748b',
+	},
 	chapterHeaderRow: {
 		flexDirection: 'row',
 		justifyContent: 'space-between',

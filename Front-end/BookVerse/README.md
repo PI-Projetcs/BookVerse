@@ -1,6 +1,6 @@
 # BookVerse - Front-end (Mobile)
 
-O **BookVerse** é uma plataforma mobile para amantes de leitura, focada na organização de bibliotecas pessoais, descoberta de novos títulos e interação em comunidades de discussão. Este repositório contém o código-fonte da aplicação mobile desenvolvida com **React Native** e **Expo**.
+O **BookVerse** é a aplicação mobile do ecossistema BookVerse. Ela cobre catálogo, leitura, discussões, autenticação e o cadastro administrativo de livros, com integração via **Axios** para o back-end em Spring Boot.
 
 ## 🚀 Tecnologias Utilizadas
 
@@ -63,6 +63,34 @@ A integração é feita via **Axios**. Para configurar o endereço do servidor:
 - **Celular Físico**: IP da máquina host detectado automaticamente (ex: `http://192.168.x.x:8080`)
 
 A lógica de fallback está em `src/services/api.js`.
+
+## 📝 Cadastro de Livro
+
+O formulário administrativo de cadastro e edição fica em `src/screens/Admin/RegisterBook.js` e envia os dados para o back-end por meio de `src/services/bookService.js`.
+
+### Campos disponíveis no formulário
+- Título
+- Autor
+- Sobre o autor
+- Categoria
+- Ano
+- Nota
+- URL da capa
+- Sinopse
+- Páginas
+- Destaque
+- Capítulos
+
+### Como a integração funciona
+- O formulário monta o payload em `createAdminBook()` e `updateAdminBook()`.
+- O service normaliza os nomes em português para a API (`titulo`, `autor`, `authorBio`, `genero`, `ano`, `sinopse`, `coverUrl`, `paginas`, `destaque`, `chapters`).
+- O back-end recebe o `BookDTO`, valida os campos obrigatórios e persiste o livro via JPA.
+- A resposta é normalizada de volta para o formato usado pela UI.
+
+### Resumo da persistência
+- Front-end: estado local do formulário + validação antes do envio.
+- Axios: POST/PUT em `/api/v1/books`.
+- Back-end: `BookController` recebe a requisição, `BookService` salva, `BookMapper` converte DTO ↔ entidade, e a entidade `Book` persiste `authorBio` na tabela `books`.
 
 ## 📚 Página: Livro do Mês
 
