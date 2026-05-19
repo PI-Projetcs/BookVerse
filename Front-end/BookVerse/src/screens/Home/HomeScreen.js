@@ -562,7 +562,7 @@ export default function HomeScreen({ navigation }) {
 					<View style={styles.modalCard}>
 						<Text style={styles.modalTitle}>Atualizar progresso</Text>
 						<Text style={styles.modalSubtitle}>
-							Informe a página atual, o total de páginas do livro e a meta semanal desejada.
+							Informe a página atual, as páginas feitas na semana e a meta semanal desejada.
 						</Text>
 
 						<View style={styles.modalGrid}>
