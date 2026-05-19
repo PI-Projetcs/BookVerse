@@ -583,9 +583,9 @@ export default function HomeScreen({ navigation }) {
 								<Text style={styles.modalLabel}>Total de páginas do livro</Text>
 								<TextInput
 									value={draftProgress.totalPages}
-									onChangeText={(t) => setDraftProgress((p) => ({ ...p, totalPages: t.replace(/[^\d]/g, '') }))}
+									editable={false}
 									keyboardType="number-pad"
-									style={styles.modalInput}
+									style={[styles.modalInput, { color: '#6b7280', backgroundColor: '#f1f5f9' }]}
 									placeholder="0"
 									placeholderTextColor="#9ca3af"
 									accessibilityLabel="Total de páginas do livro"
