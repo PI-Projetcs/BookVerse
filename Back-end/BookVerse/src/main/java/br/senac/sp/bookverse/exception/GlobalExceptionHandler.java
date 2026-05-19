@@ -87,11 +87,13 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiErro> handleGenericException(Exception e) {
         log.error("Erro não tratado capturado pelo handler global", e);
+        // Em ambiente de desenvolvimento, retorne a mensagem real da exceção
+        String mensagemDetalhada = e.getMessage() != null ? e.getMessage() : "Erro interno do servidor. Por favor, tente novamente mais tarde.";
         ApiErro apiErro = ApiErro.builder()
-                .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .mensagem("Erro interno do servidor. Por favor, tente novamente mais tarde.")
-                .exception(e.getClass().getName())
-                .build();
+            .status(HttpStatus.INTERNAL_SERVER_ERROR)
+            .mensagem(mensagemDetalhada)
+            .exception(e.getClass().getName())
+            .build();
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(apiErro);
     }
 

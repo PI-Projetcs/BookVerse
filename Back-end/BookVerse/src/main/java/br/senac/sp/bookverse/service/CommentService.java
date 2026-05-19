@@ -267,4 +267,27 @@ public class CommentService {
 		}
 		return status;
 	}
+
+	@Transactional(readOnly = true)
+	public Page<CommentDTO> listarComentariosAprovadosPorDiscussao(Long discussaoId, Pageable pageable) {
+		return commentRepository.findByDiscussaoIdAndStatus(discussaoId, CommentStatus.APPROVED, pageable)
+				.map(CommentMapper::toDTO);
+	}
+
+	@Transactional
+	public CommentDTO criarComentarioPorCapitulo(CommentDTO dto) {
+		User usuario = currentUserService.authenticatedUser();
+
+		Comment comentario = new Comment();
+		comentario.setConteudo(dto.conteudo());
+		comentario.setData(LocalDateTime.now());
+		comentario.setStatus(CommentStatus.PENDING);
+		comentario.setUsuario(usuario);
+		comentario.setDiscussao(discussionRepository.findById(dto.discussaoId())
+				.orElseThrow(() -> new ResourceNotFoundException("Discussão não encontrada.")));
+
+		Comment salvo = commentRepository.save(comentario);
+		log.info("Comentário criado. id={}, usuario={}", salvo.getId(), usuario.getId());
+		return CommentMapper.toDTO(salvo);
+	}
 }

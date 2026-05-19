@@ -315,9 +315,28 @@ export async function getDiscussions(bookId) {
 	}
 }
 
+export async function createDiscussionForChapter(bookId, chapterTitle, chapterDescription = '') {
+	const fallbackTitle = chapterTitle ? `Discussão: ${chapterTitle}` : 'Discussão do capítulo';
+	const fallbackDescription = chapterDescription || `Espaço para comentar sobre ${chapterTitle || 'o capítulo'}.`;
+	const payload = {
+		titulo: fallbackTitle,
+		descricao: fallbackDescription,
+		livroId: Number(bookId),
+	};
+
+	const response = await api.post('/api/v1/discussions', payload);
+	const created = response.data?.item || response.data;
+	return normalizeBackendDiscussion(created, []);
+}
+
 export async function getCommentsByDiscussion(discussionId) {
 	const response = await api.get(`/api/v1/comments/discussion/${discussionId}`);
 	return extractCollection(response.data).map(normalizeBackendComment);
+}
+
+export async function getApprovedCommentsByDiscussion(discussionId) {
+    const response = await api.get(`/api/v1/comments/discussion/${discussionId}/approved`);
+    return extractCollection(response.data).map(normalizeBackendComment);
 }
 
 export async function createCommentOnDiscussion(discussionId, commentData) {
@@ -337,6 +356,16 @@ export async function addCommentToDiscussion(bookId, chapterId, commentData) {
 	} catch (error) {
 		throw error;
 	}
+}
+
+export async function createChapterComment(chapterId, commentData) {
+    const payload = {
+        conteudo: String(commentData?.conteudo || '').trim(),
+        discussaoId: Number(chapterId),
+    };
+
+    const response = await api.post('/api/v1/comments/chapter', payload);
+    return normalizeBackendComment(response.data);
 }
 
 export async function likeComment(bookId, chapterId, commentId) {
@@ -368,12 +397,16 @@ export async function toggleReportComment(bookId, chapterId, commentId, reported
 const mockRatingsStore = {};
 
 function normalizeRating(rating = {}) {
+	const rawStatus = String(rating?.status || '').toUpperCase();
+	const status = ['PENDING', 'APPROVED', 'REJECTED'].includes(rawStatus) ? rawStatus : null;
+
 	return {
 		id: rating?.id || null,
 		bookId: Number(rating?.bookId ?? rating?.book_id ?? rating?.livroId) || null,
 		userId: Number(rating?.userId ?? rating?.user_id ?? rating?.usuarioId) || null,
 		rating: Number(rating?.rating ?? rating?.avaliacao ?? rating?.nota) || 0,
 		review: rating?.review || rating?.resenha || rating?.descricao || '',
+		status,
 		createdAt: rating?.createdAt || rating?.created_at || new Date().toISOString(),
 		updatedAt: rating?.updatedAt || rating?.updated_at || new Date().toISOString(),
 	};

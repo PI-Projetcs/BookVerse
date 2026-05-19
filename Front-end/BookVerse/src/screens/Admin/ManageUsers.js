@@ -50,6 +50,7 @@ export default function ManageUsers({ navigation }) {
   const [statusFilter, setStatusFilter] = useState('all');
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
+  const [roleUpdatingMemberId, setRoleUpdatingMemberId] = useState(null);
 
   const loadMembers = async () => {
     try {
@@ -83,10 +84,29 @@ export default function ManageUsers({ navigation }) {
   };
 
   const handleToggleRole = async (member) => {
-    const nextRole = member.role === 'moderator' ? 'member' : 'moderator';
-    const updated = await updateAdminMemberRole(member.id, nextRole);
-    if (!updated) return;
-    setMembers((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
+    if (roleUpdatingMemberId === member.id) {
+      return;
+    }
+
+    try {
+      setRoleUpdatingMemberId(member.id);
+      const nextRole = member.role === 'moderator' ? 'member' : 'moderator';
+      const updated = await updateAdminMemberRole(member.id, nextRole);
+      if (!updated) return;
+      setMembers((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
+        } catch (error) {
+          let backendMsg = 'Não foi possível alterar o papel deste usuário agora.';
+          if (error?.response?.data?.message) {
+            backendMsg = error.response.data.message;
+          } else if (error?.response?.data?.error) {
+            backendMsg = error.response.data.error;
+          } else if (typeof error?.message === 'string') {
+            backendMsg = error.message;
+          }
+          Alert.alert('Falha ao atualizar perfil', backendMsg);
+    } finally {
+      setRoleUpdatingMemberId((current) => (current === member.id ? null : current));
+    }
   };
 
   return (
@@ -155,6 +175,7 @@ export default function ManageUsers({ navigation }) {
               const badgeStyle = getStatusBadgeStyle(member.status);
               const isModerator = member.role === 'moderator';
               const isAdmin = member.role === 'admin';
+              const isRoleUpdating = roleUpdatingMemberId === member.id;
               const canToggleStatus = member.role === 'member';
               const canToggleRole = !isAdmin;
               return (
@@ -185,15 +206,21 @@ export default function ManageUsers({ navigation }) {
                   <View style={styles.actionsRow}>
                     {canToggleRole ? (
                       <TouchableOpacity
-                        style={[styles.actionButton, styles.actionButtonSoft]}
+                        style={[styles.actionButton, styles.actionButtonSoft, isRoleUpdating && { opacity: 0.65 }]}
                         onPress={() => handleToggleRole(member)}
+                        disabled={isRoleUpdating}
                         hitSlop={HIT_SLOP}
                         accessibilityRole="button"
                         accessibilityLabel={isModerator ? `Tornar ${member.name} membro` : `Tornar ${member.name} moderador`}
+                        accessibilityState={{ disabled: isRoleUpdating, busy: isRoleUpdating }}
                       >
-                        <Ionicons name="person-circle-outline" size={14} color="#0f766e" />
+                        {isRoleUpdating ? (
+                          <ActivityIndicator size="small" color="#0f766e" />
+                        ) : (
+                          <Ionicons name="person-circle-outline" size={14} color="#0f766e" />
+                        )}
                         <Text style={[styles.actionText, { color: '#0f766e' }]}>
-                          {isModerator ? 'Tornar membro' : 'Tornar moderador'}
+                          {isRoleUpdating ? 'Atualizando...' : isModerator ? 'Tornar membro' : 'Tornar moderador'}
                         </Text>
                       </TouchableOpacity>
                     ) : null}

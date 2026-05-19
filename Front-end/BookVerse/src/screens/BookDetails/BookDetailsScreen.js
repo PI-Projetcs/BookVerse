@@ -68,16 +68,21 @@ export default function BookDetailsScreen({ navigation, route }) {
 		return ratings.find((item) => Number(item.userId) === Number(session.id)) || null;
 	}, [ratings, session?.id]);
 
+	const approvedRatings = useMemo(
+		() => ratings.filter((item) => !item?.status || item.status === 'APPROVED'),
+		[ratings]
+	);
+
 	const averageRating = useMemo(() => {
-		if (!ratings.length) {
+		if (!approvedRatings.length) {
 			return Number(book?.rating || 0);
 		}
 
-		const sum = ratings.reduce((acc, item) => acc + Number(item?.rating || 0), 0);
-		return sum / ratings.length;
-	}, [book?.rating, ratings]);
+		const sum = approvedRatings.reduce((acc, item) => acc + Number(item?.rating || 0), 0);
+		return sum / approvedRatings.length;
+	}, [approvedRatings, book?.rating]);
 
-	const totalRatings = ratings.length;
+	const totalRatings = approvedRatings.length;
 
 	const loadDetails = useCallback(async () => {
 		try {
@@ -140,10 +145,10 @@ export default function BookDetailsScreen({ navigation, route }) {
 			setIsSavingRating(true);
 			if (myExistingRating) {
 				await updateBookRating(bookId, myRating, myReview);
-				Alert.alert('Sucesso', 'Sua avaliação foi atualizada.');
+				Alert.alert('Sucesso', 'Sua avaliação foi atualizada e está pendente de aprovação.');
 			} else {
 				await rateBook(bookId, myRating, myReview);
-				Alert.alert('Sucesso', 'Sua avaliação foi enviada.');
+				Alert.alert('Sucesso', 'Sua avaliação foi enviada e está pendente de aprovação.');
 			}
 			await loadDetails();
 		} catch (error) {

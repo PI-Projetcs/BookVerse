@@ -9,6 +9,10 @@ function normalizeRole(roleValue) {
 		return 'admin';
 	}
 
+	if (normalized === 'MODERATOR' || normalized === 'ROLE_MODERATOR') {
+		return 'moderator';
+	}
+
 	return 'member';
 }
 

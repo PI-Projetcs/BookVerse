@@ -15,7 +15,7 @@ import { Feather, Ionicons } from '@expo/vector-icons';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import styles from '../../styles/discussionStyles';
 import FooterNav from '../../components/FooterNav';
-import { getBookById, getDiscussions, createCommentOnDiscussion } from '../../services/bookService';
+import { getBookById, getDiscussions, createChapterComment, createDiscussionForChapter } from '../../services/bookService';
 
 const HIT_SLOP = { top: 10, bottom: 10, left: 10, right: 10 };
 
@@ -127,16 +127,42 @@ export default function DiscussionScreen({ navigation, route }) {
   };
 
   const handleAddComment = async (thread) => {
-    if (!thread?.discussionId) {
-      Alert.alert('Discussão indisponível', 'Este capítulo ainda não possui uma discussão vinculada.');
+    const text = (newComments[thread.id] || '').trim();
+    if (!text) {
+      Alert.alert('Comentário vazio', 'Escreva algo antes de publicar.');
       return;
     }
 
-    const text = (newComments[thread.id] || '').trim();
-    if (!text) return;
-
     try {
-      await createCommentOnDiscussion(thread.discussionId, { conteudo: text });
+      let discussionId = thread?.discussionId;
+
+      if (!discussionId) {
+        const createdDiscussion = await createDiscussionForChapter(
+          bookId,
+          thread?.chapterTitle || thread?.discussionTitle,
+          thread?.discussionDescription || ''
+        );
+        discussionId = createdDiscussion?.id;
+
+        if (!discussionId) {
+          throw new Error('Falha ao criar discussão para o capítulo.');
+        }
+
+        setThreads((prev) =>
+          prev.map((item) =>
+            item.id === thread.id
+              ? {
+                  ...item,
+                  discussionId,
+                  discussionTitle: createdDiscussion?.title || item.discussionTitle,
+                  discussionDescription: createdDiscussion?.description || item.discussionDescription,
+                }
+              : item
+          )
+        );
+      }
+
+      await createChapterComment(discussionId, { conteudo: text });
       setNewComments((prev) => ({ ...prev, [thread.id]: '' }));
       Alert.alert('Comentário enviado', 'Seu comentário foi enviado para aprovação do moderador/admin.');
     } catch (error) {
@@ -342,14 +368,15 @@ export default function DiscussionScreen({ navigation, route }) {
                       hitSlop={HIT_SLOP}
                       accessibilityRole="button"
                       accessibilityLabel={`Publicar comentário no capítulo ${chapter.chapterTitle || chapter.title}`}
-                      disabled={!chapter.discussionId}
-                      accessibilityState={{ disabled: !chapter.discussionId }}
                     >
                       <LinearGradient
                         colors={['#6B0F2E', '#0a0f1a', '#003D2B']}
                         start={{ x: 0, y: 0 }}
                         end={{ x: 1, y: 0 }}
-                        style={styles.submitButton}
+                        style={[
+                          styles.submitButton,
+                          !chapter.discussionId ? { opacity: 0.65 } : null,
+                        ]}
                       >
                         <View style={styles.submitButtonContent}>
                           <Feather name="send" size={15} color="#fff" />

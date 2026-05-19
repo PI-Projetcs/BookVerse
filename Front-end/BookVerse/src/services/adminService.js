@@ -25,11 +25,11 @@ function normalizeModerationItem(item = {}, index = 0) {
 		: 'pending';
 
 	return {
-		id: Number(item.id ?? index + 1),
+		id: String(item.id ?? `comment-${index + 1}`),
 		bookTitle: item.bookTitle || 'Livro',
 		chapterTitle: item.chapterTitle || 'Capitulo',
 		author: item.author || 'Leitor(a)',
-		date: item.date || '2026-01-01',
+		date: item.date || '',
 		text: item.text || '',
 		reason: item.reason || 'Analise manual',
 		status,
@@ -80,21 +80,22 @@ export async function getAdminMembers(params = {}) {
 }
 
 export async function updateAdminMemberStatus(memberId, nextStatus) {
-	const normalizedId = Number(memberId);
 	const status = nextStatus === 'blocked' ? 'blocked' : 'active';
 	try {
 		const response = await api.put(`/api/v1/users/${memberId}/status`, { status });
 		return normalizeMember(response.data || { id: memberId, status });
 	} catch (error) {
-		// If endpoint missing, throw to indicate backend action required
 		throw error;
 	}
 }
 
 export async function updateAdminMemberRole(memberId, nextRole) {
-	const normalizedId = Number(memberId);
-	const role = nextRole === 'moderator' ? 'moderator' : 'member';
-	const backendRole = nextRole === 'admin' ? 'ADMIN' : 'USER';
+	let backendRole = 'USER';
+	if (nextRole === 'admin') {
+		backendRole = 'ADMIN';
+	} else if (nextRole === 'moderator') {
+		backendRole = 'MODERATOR';
+	}
 	try {
 		const response = await api.put(`/api/v1/users/${memberId}`, { role: backendRole });
 		return normalizeMember(response.data || { id: memberId, role: backendRole });
@@ -105,7 +106,12 @@ export async function updateAdminMemberRole(memberId, nextRole) {
 
 export async function getModerationItems(params = {}) {
 	try {
-		const response = await api.get('/api/v1/admin/moderation');
+		const response = await api.get('/api/v1/admin/moderation', {
+			params: {
+				status: params?.status || 'pending',
+				query: params?.query || '',
+			},
+		});
 		const items = Array.isArray(response.data?.content)
 			? response.data.content
 			: Array.isArray(response.data)
@@ -114,18 +120,16 @@ export async function getModerationItems(params = {}) {
 		const normalized = items.map(normalizeModerationItem);
 		return filterModeration(normalized, params);
 	} catch (error) {
-		// If backend lacks endpoint, propagate error for visibility
 		throw error;
 	}
 }
 
 export async function setModerationStatus(itemId, nextStatus) {
-	const normalizedId = Number(itemId);
 	const status = ['pending', 'approved', 'rejected'].includes(nextStatus)
 		? nextStatus
 		: 'pending';
 	try {
-		const response = await api.post(`/api/v1/admin/moderation/${itemId}/status`, { status });
+		const response = await api.post(`/api/v1/admin/moderation/${encodeURIComponent(String(itemId))}/status`, { status });
 		return normalizeModerationItem(response.data || { id: itemId, status });
 	} catch (error) {
 		throw error;
