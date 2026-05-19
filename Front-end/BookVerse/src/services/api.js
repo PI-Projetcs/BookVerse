@@ -2,17 +2,36 @@ import axios from 'axios';
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 
-function buildFallbackBaseUrl() {
-	if (Platform.OS === 'web') {
-		return 'http://localhost:8080';
+function extractHost(value) {
+	const raw = String(value || '').trim();
+	if (!raw) {
+		return '';
 	}
 
+	const withoutScheme = raw.replace(/^[a-z]+:\/\//i, '');
+	const hostPort = withoutScheme.split('/')[0] || '';
+	return (hostPort.split(':')[0] || '').trim();
+}
+
+function isLocalhostHost(host) {
+	return host === 'localhost' || host === '127.0.0.1' || host === '::1';
+}
+
+function getExpoHost() {
 	const hostUri =
 		Constants.expoConfig?.hostUri ||
 		Constants.manifest2?.extra?.expoClient?.hostUri ||
 		Constants.manifest?.debuggerHost ||
 		'';
-	const host = String(hostUri).split(':')[0];
+
+	return extractHost(hostUri);
+}
+
+function buildFallbackBaseUrl() {
+	if (Platform.OS === 'web') {
+		return 'http://localhost:8080';
+	}
+	const host = getExpoHost();
 
 	if (host) {
 		return `http://${host}:8080`;
@@ -25,8 +44,30 @@ function buildFallbackBaseUrl() {
 	return 'http://localhost:8080';
 }
 
-const envBaseUrl = String(process.env.EXPO_PUBLIC_API_URL || '').trim();
-export const BASE_URL = envBaseUrl || buildFallbackBaseUrl();
+function resolveBaseUrl() {
+	const envBaseUrl = String(process.env.EXPO_PUBLIC_API_URL || '').trim();
+	if (!envBaseUrl) {
+		return buildFallbackBaseUrl();
+	}
+
+	if (Platform.OS === 'web') {
+		return envBaseUrl;
+	}
+
+	const envHost = extractHost(envBaseUrl);
+	if (!isLocalhostHost(envHost)) {
+		return envBaseUrl;
+	}
+
+	const expoHost = getExpoHost();
+	if (expoHost) {
+		return `http://${expoHost}:8080`;
+	}
+
+	return envBaseUrl;
+}
+
+export const BASE_URL = resolveBaseUrl();
 
 let authToken = null;
 let refreshToken = null;
