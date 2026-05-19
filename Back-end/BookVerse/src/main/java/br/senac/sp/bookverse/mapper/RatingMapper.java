@@ -19,7 +19,8 @@ public final class RatingMapper {
                 rating.getLivro() != null ? rating.getLivro().getId() : null,
                 rating.getLivro() != null ? rating.getLivro().getTitulo() : null,
                 rating.getUsuario() != null ? rating.getUsuario().getId() : null,
-                rating.getUsuario() != null ? rating.getUsuario().getNome() : null
+                rating.getUsuario() != null ? rating.getUsuario().getNome() : null,
+                rating.getStatus()
         );
     }
 }

@@ -29,5 +29,17 @@ public class CurrentUserService {
     public boolean isAdmin(User usuario) {
         return usuario != null && Role.ADMIN.equals(usuario.getRole());
     }
+
+    public boolean canModerate(User usuario) {
+        if (usuario == null) {
+            return false;
+        }
+
+        if (isAdmin(usuario)) {
+            return true;
+        }
+
+        return "MODERATOR".equalsIgnoreCase(String.valueOf(usuario.getRole()));
+    }
 }
 

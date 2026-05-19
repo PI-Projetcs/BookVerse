@@ -14,6 +14,9 @@ public class Rating {
     private Integer nota;
     private String descricao;
 
+    @Enumerated(EnumType.STRING)
+    private RatingStatus status = RatingStatus.PENDING;
+
     @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)
     private User usuario;

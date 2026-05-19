@@ -1,6 +1,7 @@
 package br.senac.sp.bookverse.repository;
 
 import br.senac.sp.bookverse.model.Rating;
+import br.senac.sp.bookverse.model.RatingStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -14,5 +15,6 @@ public interface RatingRepository extends JpaRepository<Rating, Long> {
     List<Rating> findByLivroId(Long livroId);
     Page<Rating> findByLivroId(Long livroId, Pageable pageable);
     Optional<Rating> findByLivroIdAndUsuarioId(Long livroId, Long usuarioId);
+    List<Rating> findByStatus(RatingStatus status);
 }
 

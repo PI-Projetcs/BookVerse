@@ -126,19 +126,6 @@ export default function DiscussionScreen({ navigation, route }) {
     setExpandedThreads((prev) => ({ ...prev, [threadId]: !prev[threadId] }));
   };
 
-  const prependCommentInThread = (threadId, comment) => {
-    setThreads((prev) =>
-      prev.map((thread) =>
-        thread.id === threadId
-          ? {
-              ...thread,
-              comments: [comment, ...(thread.comments || [])],
-            }
-          : thread
-      )
-    );
-  };
-
   const handleAddComment = async (thread) => {
     if (!thread?.discussionId) {
       Alert.alert('Discussão indisponível', 'Este capítulo ainda não possui uma discussão vinculada.');
@@ -148,31 +135,13 @@ export default function DiscussionScreen({ navigation, route }) {
     const text = (newComments[thread.id] || '').trim();
     if (!text) return;
 
-    setNewComments((prev) => ({ ...prev, [thread.id]: '' }));
-
-    const fallbackComment = {
-      id: Date.now(),
-      author: 'Você',
-      date: 'Agora mesmo',
-      text,
-    };
-
-    let commentToInsert = fallbackComment;
-
     try {
-      const response = await createCommentOnDiscussion(thread.discussionId, { conteudo: text });
-
-      if (response?.item) {
-        commentToInsert = {
-          ...fallbackComment,
-          ...response.item,
-        };
-      }
+      await createCommentOnDiscussion(thread.discussionId, { conteudo: text });
+      setNewComments((prev) => ({ ...prev, [thread.id]: '' }));
+      Alert.alert('Comentário enviado', 'Seu comentário foi enviado para aprovação do moderador/admin.');
     } catch (error) {
-      // Keep local fallback comment when request fails.
+      Alert.alert('Erro', 'Não foi possível enviar seu comentário agora.');
     }
-
-    prependCommentInThread(thread.id, commentToInsert);
   };
 
   return (

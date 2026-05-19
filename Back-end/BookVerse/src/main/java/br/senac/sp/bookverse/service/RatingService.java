@@ -5,10 +5,11 @@ import br.senac.sp.bookverse.exception.ResourceNotFoundException;
 import br.senac.sp.bookverse.mapper.RatingMapper;
 import br.senac.sp.bookverse.model.Book;
 import br.senac.sp.bookverse.model.Rating;
+import br.senac.sp.bookverse.model.RatingStatus;
 import br.senac.sp.bookverse.model.User;
-import br.senac.sp.bookverse.security.CurrentUserService;
-import br.senac.sp.bookverse.repository.RatingRepository;
 import br.senac.sp.bookverse.repository.BookRepository;
+import br.senac.sp.bookverse.repository.RatingRepository;
+import br.senac.sp.bookverse.security.CurrentUserService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
@@ -55,9 +56,62 @@ public class RatingService {
 	@Transactional(readOnly = true)
 	public List<RatingDTO> listarPorLivro(Long livroId) {
 		validarLivroExiste(livroId);
+		User viewer = tryAuthenticatedUser();
+		boolean canModerate = currentUserService.canModerate(viewer);
+		Long viewerId = viewer != null ? viewer.getId() : null;
+
 		return ratingRepository.findByLivroId(livroId).stream()
+				.filter(rating -> {
+					if (canModerate) {
+						return true;
+					}
+
+					if (viewerId != null && rating.getUsuario() != null && viewerId.equals(rating.getUsuario().getId())) {
+						return true;
+					}
+
+					return isApprovedOrLegacy(rating.getStatus());
+				})
 				.map(RatingMapper::toDTO)
 				.toList();
+	}
+
+	@Transactional(readOnly = true)
+	public List<RatingDTO> listarParaModeracao(String statusFilter, String query) {
+		RatingStatus status = parseStatus(statusFilter);
+		String queryText = String.valueOf(query == null ? "" : query).trim().toLowerCase();
+
+		List<Rating> items = status == null
+				? ratingRepository.findAll()
+				: ratingRepository.findByStatus(status);
+
+		return items.stream()
+				.filter(item -> item.getDescricao() != null && !item.getDescricao().trim().isEmpty())
+				.filter(item -> {
+					if (queryText.isEmpty()) {
+						return true;
+					}
+					String author = item.getUsuario() != null ? String.valueOf(item.getUsuario().getNome()) : "";
+					String book = item.getLivro() != null ? String.valueOf(item.getLivro().getTitulo()) : "";
+					String content = String.valueOf(item.getDescricao());
+					String searchable = String.join(" ", author, book, content).toLowerCase();
+					return searchable.contains(queryText);
+				})
+				.sorted((left, right) -> Long.compare(right.getId(), left.getId()))
+				.map(RatingMapper::toDTO)
+				.toList();
+	}
+
+	@Transactional
+	public RatingDTO atualizarStatusModeracao(Long id, String statusValue) {
+		Rating rating = buscarEntidadePorId(id);
+		rating.setStatus(parseStatusOrThrow(statusValue));
+		Rating saved = ratingRepository.save(rating);
+		Long livroId = saved.getLivro() != null ? saved.getLivro().getId() : null;
+		if (livroId != null) {
+			atualizarMediaAvaliacaoLivro(livroId);
+		}
+		return RatingMapper.toDTO(saved);
 	}
 
 	@Transactional(readOnly = true)
@@ -71,6 +125,7 @@ public class RatingService {
 		Rating avaliacao = new Rating();
 		avaliacao.setNota(dto.nota());
 		avaliacao.setDescricao(dto.descricao());
+		avaliacao.setStatus(resolveStatusForUser(usuario));
 		avaliacao.setUsuario(usuario);
 		avaliacao.setLivro(bookRepository.findById(dto.livroId())
 				.orElseThrow(() -> new ResourceNotFoundException("Book não encontrado.")));
@@ -91,6 +146,7 @@ public class RatingService {
 		avaliacao.setUsuario(usuario);
 		avaliacao.setNota(nota);
 		avaliacao.setDescricao(descricao);
+		avaliacao.setStatus(resolveStatusForUser(usuario));
 
 		Rating salva = ratingRepository.save(avaliacao);
 		atualizarMediaAvaliacaoLivro(livroId);
@@ -107,6 +163,7 @@ public class RatingService {
 
 		avaliacao.setNota(nota);
 		avaliacao.setDescricao(descricao);
+		avaliacao.setStatus(resolveStatusForUser(usuario));
 		Rating salva = ratingRepository.save(avaliacao);
 		atualizarMediaAvaliacaoLivro(livroId);
 		log.info("Avaliação atualizada por livro. livroId={}, usuarioId={}, ratingId={}", livroId, usuario.getId(), salva.getId());
@@ -136,6 +193,7 @@ public class RatingService {
 
 		avaliacao.setNota(dto.nota());
 		avaliacao.setDescricao(dto.descricao());
+		avaliacao.setStatus(resolveStatusForUser(atual));
 		if (dto.livroId() != null) {
 			avaliacao.setLivro(bookRepository.findById(dto.livroId())
 					.orElseThrow(() -> new ResourceNotFoundException("Book não encontrado.")));
@@ -180,6 +238,7 @@ public class RatingService {
 	private void atualizarMediaAvaliacaoLivro(Long livroId) {
 		Book livro = buscarLivroPorId(livroId);
 		double media = ratingRepository.findByLivroId(livroId).stream()
+				.filter(rating -> isApprovedOrLegacy(rating.getStatus()))
 				.map(Rating::getNota)
 				.filter(java.util.Objects::nonNull)
 				.mapToInt(Integer::intValue)
@@ -194,4 +253,41 @@ public class RatingService {
 				.orElseThrow(() -> new ResourceNotFoundException("Avaliação não encontrada."));
 	}
 
+	private User tryAuthenticatedUser() {
+		try {
+			return currentUserService.authenticatedUser();
+		} catch (Exception e) {
+			return null;
+		}
+	}
+
+	private RatingStatus resolveStatusForUser(User user) {
+		if (currentUserService.canModerate(user)) {
+			return RatingStatus.APPROVED;
+		}
+		return RatingStatus.PENDING;
+	}
+
+	private boolean isApprovedOrLegacy(RatingStatus status) {
+		return status == null || RatingStatus.APPROVED.equals(status);
+	}
+
+	private RatingStatus parseStatus(String value) {
+		if (value == null || value.trim().isEmpty() || "all".equalsIgnoreCase(value)) {
+			return null;
+		}
+		String normalized = value.trim().toUpperCase();
+		if ("PENDING".equals(normalized)) return RatingStatus.PENDING;
+		if ("APPROVED".equals(normalized)) return RatingStatus.APPROVED;
+		if ("REJECTED".equals(normalized)) return RatingStatus.REJECTED;
+		return null;
+	}
+
+	private RatingStatus parseStatusOrThrow(String value) {
+		RatingStatus status = parseStatus(value);
+		if (status == null) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Status de moderação inválido.");
+		}
+		return status;
+	}
 }

@@ -4,6 +4,7 @@ import br.senac.sp.bookverse.dto.CommentDTO;
 import br.senac.sp.bookverse.exception.ResourceNotFoundException;
 import br.senac.sp.bookverse.mapper.CommentMapper;
 import br.senac.sp.bookverse.model.CommentLike;
+import br.senac.sp.bookverse.model.CommentStatus;
 import br.senac.sp.bookverse.repository.CommentLikeRepository;
 import br.senac.sp.bookverse.model.Comment;
 import br.senac.sp.bookverse.model.User;
@@ -64,42 +65,101 @@ public class CommentService {
 
 	@Transactional(readOnly = true)
 	public Page<CommentDTO> listarPorDiscussao(Long discussaoId, Pageable pageable) {
-		return commentRepository.findByDiscussaoId(discussaoId, pageable).map(entity -> {
+		User viewer = tryAuthenticatedUser();
+		boolean canModerate = currentUserService.canModerate(viewer);
+		Page<Comment> page = canModerate
+				? commentRepository.findByDiscussaoId(discussaoId, pageable)
+				: commentRepository.findByDiscussaoIdAndStatus(discussaoId, CommentStatus.APPROVED, pageable);
+
+		return page.map(entity -> {
 			CommentDTO dto = CommentMapper.toDTO(entity);
 			long likes = commentLikeRepository.countByCommentIdAndLikedTrue(entity.getId());
 			Boolean liked = false;
-			try {
-				User usuario = currentUserService.authenticatedUser();
-				liked = commentLikeRepository.findByCommentIdAndUsuario(entity.getId(), usuario)
+			if (viewer != null) {
+				liked = commentLikeRepository.findByCommentIdAndUsuario(entity.getId(), viewer)
 						.map(CommentLike::getLiked).orElse(false);
-			} catch (Exception e) {
-				// not authenticated; leave liked = false
 			}
 			return new CommentDTO(
 					dto.id(), dto.conteudo(), dto.data(), dto.discussaoId(), dto.discussaoTitulo(),
-					dto.usuarioId(), dto.usuarioNome(), (int) likes, liked
+					dto.usuarioId(), dto.usuarioNome(), dto.status(), (int) likes, liked
 			);
 		});
 	}
 
 	@Transactional(readOnly = true)
 	public List<CommentDTO> listarPorDiscussao(Long discussaoId) {
-		return commentRepository.findByDiscussaoId(discussaoId).stream().map(entity -> {
+		User viewer = tryAuthenticatedUser();
+		boolean canModerate = currentUserService.canModerate(viewer);
+		List<Comment> comments = canModerate
+				? commentRepository.findByDiscussaoId(discussaoId)
+				: commentRepository.findByDiscussaoIdAndStatus(discussaoId, CommentStatus.APPROVED);
+
+		return comments.stream().map(entity -> {
 			CommentDTO dto = CommentMapper.toDTO(entity);
 			long likes = commentLikeRepository.countByCommentIdAndLikedTrue(entity.getId());
 			Boolean liked = false;
-			try {
-				User usuario = currentUserService.authenticatedUser();
-				liked = commentLikeRepository.findByCommentIdAndUsuario(entity.getId(), usuario)
+			if (viewer != null) {
+				liked = commentLikeRepository.findByCommentIdAndUsuario(entity.getId(), viewer)
 						.map(CommentLike::getLiked).orElse(false);
-			} catch (Exception e) {
-				// ignore
 			}
 			return new CommentDTO(
 					dto.id(), dto.conteudo(), dto.data(), dto.discussaoId(), dto.discussaoTitulo(),
-					dto.usuarioId(), dto.usuarioNome(), (int) likes, liked
+					dto.usuarioId(), dto.usuarioNome(), dto.status(), (int) likes, liked
 			);
 		}).toList();
+	}
+
+	@Transactional(readOnly = true)
+	public List<CommentDTO> listarParaModeracao(String statusFilter, String query) {
+		CommentStatus status = parseStatus(statusFilter);
+		String queryText = String.valueOf(query == null ? "" : query).trim().toLowerCase();
+		List<Comment> items = status == null
+				? commentRepository.findAll()
+				: commentRepository.findByStatus(status);
+
+		return items.stream()
+				.filter(comment -> {
+					if (queryText.isEmpty()) {
+						return true;
+					}
+					String author = comment.getUsuario() != null ? String.valueOf(comment.getUsuario().getNome()) : "";
+					String chapter = comment.getDiscussao() != null ? String.valueOf(comment.getDiscussao().getTitulo()) : "";
+					String book = (comment.getDiscussao() != null && comment.getDiscussao().getLivro() != null)
+							? String.valueOf(comment.getDiscussao().getLivro().getTitulo())
+							: "";
+					String content = String.valueOf(comment.getConteudo());
+					String searchable = String.join(" ", author, chapter, book, content).toLowerCase();
+					return searchable.contains(queryText);
+				})
+				.sorted((left, right) -> {
+					if (left.getData() == null && right.getData() == null) return 0;
+					if (left.getData() == null) return 1;
+					if (right.getData() == null) return -1;
+					return right.getData().compareTo(left.getData());
+				})
+				.map(entity -> {
+					CommentDTO dto = CommentMapper.toDTO(entity);
+					long likes = commentLikeRepository.countByCommentIdAndLikedTrue(entity.getId());
+					return new CommentDTO(
+							dto.id(), dto.conteudo(), dto.data(), dto.discussaoId(), dto.discussaoTitulo(),
+							dto.usuarioId(), dto.usuarioNome(), dto.status(), (int) likes, false
+					);
+				})
+				.toList();
+	}
+
+	@Transactional
+	public CommentDTO atualizarStatusModeracao(Long id, String statusValue) {
+		Comment comentario = buscarEntidadePorId(id);
+		CommentStatus nextStatus = parseStatusOrThrow(statusValue);
+		comentario.setStatus(nextStatus);
+		Comment salvo = commentRepository.save(comentario);
+		CommentDTO dto = CommentMapper.toDTO(salvo);
+		long likes = commentLikeRepository.countByCommentIdAndLikedTrue(salvo.getId());
+		return new CommentDTO(
+				dto.id(), dto.conteudo(), dto.data(), dto.discussaoId(), dto.discussaoTitulo(),
+				dto.usuarioId(), dto.usuarioNome(), dto.status(), (int) likes, false
+		);
 	}
 
 	@Transactional
@@ -118,7 +178,7 @@ public class CommentService {
 		CommentDTO dto = CommentMapper.toDTO(comentario);
 		return new CommentDTO(
 				dto.id(), dto.conteudo(), dto.data(), dto.discussaoId(), dto.discussaoTitulo(),
-				dto.usuarioId(), dto.usuarioNome(), (int) count, commentLike.getLiked()
+				dto.usuarioId(), dto.usuarioNome(), dto.status(), (int) count, commentLike.getLiked()
 		);
 	}
 
@@ -129,6 +189,7 @@ public class CommentService {
 		Comment comentario = new Comment();
 		comentario.setConteudo(dto.conteudo());
 		comentario.setData(LocalDateTime.now());
+		comentario.setStatus(CommentStatus.PENDING);
 		comentario.setUsuario(usuario);
 		comentario.setDiscussao(discussionRepository.findById(dto.discussaoId())
 				.orElseThrow(() -> new ResourceNotFoundException("Discussão não encontrada.")));
@@ -148,6 +209,9 @@ public class CommentService {
 		}
 
 		comentario.setConteudo(dto.conteudo());
+		if (!currentUserService.canModerate(atual)) {
+			comentario.setStatus(CommentStatus.PENDING);
+		}
 		if (dto.discussaoId() != null) {
 			comentario.setDiscussao(discussionRepository.findById(dto.discussaoId())
 					.orElseThrow(() -> new ResourceNotFoundException("Discussão não encontrada.")));
@@ -174,5 +238,33 @@ public class CommentService {
 	private Comment buscarEntidadePorId(Long id) {
 		return commentRepository.findById(id)
 				.orElseThrow(() -> new ResourceNotFoundException("Comentário não encontrado."));
+	}
+
+	private User tryAuthenticatedUser() {
+		try {
+			return currentUserService.authenticatedUser();
+		} catch (Exception e) {
+			return null;
+		}
+	}
+
+	private CommentStatus parseStatus(String value) {
+		if (value == null || value.trim().isEmpty() || "all".equalsIgnoreCase(value)) {
+			return null;
+		}
+
+		String normalized = value.trim().toUpperCase();
+		if ("PENDING".equals(normalized)) return CommentStatus.PENDING;
+		if ("APPROVED".equals(normalized)) return CommentStatus.APPROVED;
+		if ("REJECTED".equals(normalized)) return CommentStatus.REJECTED;
+		return null;
+	}
+
+	private CommentStatus parseStatusOrThrow(String value) {
+		CommentStatus status = parseStatus(value);
+		if (status == null) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Status de moderação inválido.");
+		}
+		return status;
 	}
 }

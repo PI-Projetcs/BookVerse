@@ -1,5 +1,6 @@
 package br.senac.sp.bookverse.dto;
 
+import br.senac.sp.bookverse.model.RatingStatus;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -14,6 +15,7 @@ public record RatingDTO(
 		@NotNull(message = "ID do livro é obrigatório") Long livroId,
 		String livroTitulo,
 		Long usuarioId,
-		String usuarioNome
+		String usuarioNome,
+		RatingStatus status
 ) {
 }
