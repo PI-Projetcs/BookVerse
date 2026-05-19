@@ -130,6 +130,11 @@ public class UserService {
         }
         User alvo = userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado."));
+
+        if (Role.ADMIN.equals(alvo.getRole())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Conta de administrador não pode ser excluída ou inativada.");
+        }
+
         userRepository.delete(alvo);
         log.info("Usuário removido. id={}, executor={}", id, atual.getId());
     }

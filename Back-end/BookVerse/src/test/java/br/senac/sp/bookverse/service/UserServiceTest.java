@@ -68,6 +68,35 @@ class UserServiceTest {
     }
 
     @Test
+    void deletar_deveRetornarForbidden_quandoAlvoEhAdmin() {
+        User adminExecutor = usuario(10L, "Admin", "admin@bookverse.com", Role.ADMIN);
+        User adminAlvo = usuario(11L, "Admin 2", "admin2@bookverse.com", Role.ADMIN);
+
+        when(currentUserService.authenticatedUser()).thenReturn(adminExecutor);
+        when(currentUserService.isAdmin(adminExecutor)).thenReturn(true);
+        when(userRepository.findById(11L)).thenReturn(Optional.of(adminAlvo));
+
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class, () -> usuarioService.deletar(11L));
+
+        assertEquals(403, ex.getStatusCode().value());
+        verify(userRepository, never()).delete(adminAlvo);
+    }
+
+    @Test
+    void deletar_deveRetornarForbidden_quandoAdminTentaSeAutoExcluir() {
+        User admin = usuario(10L, "Admin", "admin@bookverse.com", Role.ADMIN);
+
+        when(currentUserService.authenticatedUser()).thenReturn(admin);
+        when(currentUserService.isAdmin(admin)).thenReturn(true);
+        when(userRepository.findById(10L)).thenReturn(Optional.of(admin));
+
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class, () -> usuarioService.deletar(10L));
+
+        assertEquals(403, ex.getStatusCode().value());
+        verify(userRepository, never()).delete(admin);
+    }
+
+    @Test
     void deletar_deveRetornarNotFound_quandoIdNaoExiste() {
         User admin = usuario(10L, "Admin", "admin@bookverse.com", Role.ADMIN);
 

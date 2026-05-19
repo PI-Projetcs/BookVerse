@@ -149,6 +149,7 @@ export default function ManageUsers({ navigation }) {
             {members.map((member) => {
               const badgeStyle = getStatusBadgeStyle(member.status);
               const isModerator = member.role === 'moderator';
+              const isAdmin = member.role === 'admin';
               return (
                 <View key={member.id} style={styles.card}>
                   <View style={styles.headerRow}>
@@ -188,18 +189,20 @@ export default function ManageUsers({ navigation }) {
                       </Text>
                     </TouchableOpacity>
 
-                    <TouchableOpacity
-                      style={[styles.actionButton, styles.actionButtonWarn]}
-                      onPress={() => handleToggleStatus(member)}
-                      hitSlop={HIT_SLOP}
-                      accessibilityRole="button"
-                      accessibilityLabel={member.status === 'active' ? `Bloquear ${member.name}` : `Reativar ${member.name}`}
-                    >
-                      <Ionicons name="ban-outline" size={14} color="#9f1239" />
-                      <Text style={[styles.actionText, { color: '#9f1239' }]}>
-                        {member.status === 'active' ? 'Bloquear' : 'Reativar'}
-                      </Text>
-                    </TouchableOpacity>
+                    {!isAdmin ? (
+                      <TouchableOpacity
+                        onPress={() => handleToggleStatus(member)}
+                        style={[styles.actionButton, styles.actionButtonWarn]}
+                        hitSlop={HIT_SLOP}
+                        accessibilityRole="button"
+                        accessibilityLabel={member.status === 'active' ? `Bloquear ${member.name}` : `Reativar ${member.name}`}
+                      >
+                        <Ionicons name="ban-outline" size={14} color="#9f1239" />
+                        <Text style={[styles.actionText, { color: '#9f1239' }]}>
+                          {member.status === 'active' ? 'Bloquear' : 'Reativar'}
+                        </Text>
+                      </TouchableOpacity>
+                    ) : null}
                   </View>
                 </View>
               );

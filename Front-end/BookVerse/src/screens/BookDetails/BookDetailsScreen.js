@@ -4,11 +4,10 @@ import { bookDetailsStyles as styles } from '../../styles/bookDetailsStyles';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect, useState } from 'react';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
     ActivityIndicator,
     Image,
-    SafeAreaView,
     ScrollView,
     StatusBar,
     Text,

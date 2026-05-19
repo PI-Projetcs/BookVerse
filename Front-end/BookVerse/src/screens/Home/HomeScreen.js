@@ -1,9 +1,9 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Alert, Image, Modal, SafeAreaView, ScrollView, StatusBar, Text, TextInput, TouchableOpacity, View, useWindowDimensions } from 'react-native';
+import { Alert, Image, Modal, ScrollView, StatusBar, Text, TextInput, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import FooterNav from '../../components/FooterNav';
 import { getHomeViewModel, toggleHomeHighlightLike, updateHomeProgress, updateChapterStatus } from '../../services/homeService';
 import { homeStyles as styles, HOME_CHAPTER_ACTIVE_GRADIENT, HOME_CHAPTER_DONE_GRADIENT, HOME_HEADER_GRADIENT, HOME_PROGRESS_GRADIENT } from '../../styles/homeStyles';

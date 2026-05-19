@@ -4,7 +4,6 @@ import {
   ActivityIndicator,
   View,
   Text,
-  SafeAreaView,
   StatusBar,
   TouchableOpacity,
   ScrollView,
@@ -13,7 +12,7 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Feather, Ionicons } from '@expo/vector-icons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import styles from '../../styles/discussionStyles';
 import FooterNav from '../../components/FooterNav';
 import { getBookById, getDiscussions, createCommentOnDiscussion } from '../../services/bookService';

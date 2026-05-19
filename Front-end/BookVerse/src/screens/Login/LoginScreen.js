@@ -3,7 +3,6 @@ import {
 	Alert,
 	KeyboardAvoidingView,
 	Platform,
-	SafeAreaView,
 	ScrollView,
 	StatusBar,
 	Text,
@@ -13,6 +12,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import Header from '../../components/Header';
 import { useAuth } from '../../context/AuthContext';
 import { loginUser, registerUser } from '../../services/authService';
