@@ -193,8 +193,18 @@ function normalizeBackendDiscussion(discussion = {}, comments = []) {
 }
 
 async function fetchBackendComments(discussionId) {
-	const response = await api.get(`/api/v1/comments/discussion/${discussionId}`);
-	return extractCollection(response.data).map(normalizeBackendComment);
+	try {
+		const response = await api.get(`/api/v1/comments/discussion/${discussionId}/approved`, {
+			params: { size: 200, sort: 'id,desc' },
+		});
+		return extractCollection(response.data).map(normalizeBackendComment);
+	} catch (error) {
+		// Fallback para compatibilidade com ambientes onde o endpoint /approved não esteja disponível.
+		const response = await api.get(`/api/v1/comments/discussion/${discussionId}`, {
+			params: { size: 200, sort: 'id,desc' },
+		});
+		return extractCollection(response.data).map(normalizeBackendComment);
+	}
 }
 
 
@@ -304,7 +314,14 @@ export async function getDiscussions(bookId) {
 		const discussions = extractCollection(response.data);
 		const discussionsWithComments = await Promise.all(
 			discussions.map(async (discussion) => {
-				const comments = discussion?.id ? await fetchBackendComments(discussion.id) : [];
+				let comments = [];
+				if (discussion?.id) {
+					try {
+						comments = await fetchBackendComments(discussion.id);
+					} catch (commentError) {
+						comments = [];
+					}
+				}
 				return normalizeBackendDiscussion(discussion, comments);
 			})
 		);
