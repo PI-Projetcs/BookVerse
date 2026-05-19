@@ -228,6 +228,32 @@ class UserServiceTest {
         verify(userRepository, never()).save(alvo);
     }
 
+    @Test
+    void autoExcluirConta_deveFazerExclusaoLogicaParaUsuarioComum() {
+        User leitor = usuario(1L, "Leitor", "leitor@bookverse.com", Role.USER);
+        leitor.setAtivo(true);
+
+        when(currentUserService.authenticatedUser()).thenReturn(leitor);
+        when(userRepository.save(leitor)).thenReturn(leitor);
+
+        usuarioService.autoExcluirConta();
+
+        assertEquals(Boolean.FALSE, leitor.getAtivo());
+        verify(userRepository).save(leitor);
+    }
+
+    @Test
+    void autoExcluirConta_deveRetornarForbiddenQuandoUsuarioEhAdmin() {
+        User admin = usuario(10L, "Admin", "admin@bookverse.com", Role.ADMIN);
+
+        when(currentUserService.authenticatedUser()).thenReturn(admin);
+
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class, () -> usuarioService.autoExcluirConta());
+
+        assertEquals(403, ex.getStatusCode().value());
+        verify(userRepository, never()).save(admin);
+    }
+
 
     private static User usuario(Long id, String nome, String email, Role role) {
         User usuario = new User();

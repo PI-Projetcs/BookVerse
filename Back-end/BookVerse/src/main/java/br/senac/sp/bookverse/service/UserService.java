@@ -88,6 +88,19 @@ public class UserService {
     }
 
     @Transactional
+    public void autoExcluirConta() {
+        User atual = currentUserService.authenticatedUser();
+
+        if (Role.ADMIN.equals(atual.getRole())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Conta de administrador não pode ser autoexcluída.");
+        }
+
+        atual.setAtivo(false);
+        userRepository.save(atual);
+        log.info("Autoexclusão lógica realizada. usuarioId={}", atual.getId());
+    }
+
+    @Transactional
     public UserResponseDTO atualizar(Long id, UserUpdateDTO dto) {
         User atual = currentUserService.authenticatedUser();
         User alvo = userRepository.findById(id)

@@ -41,7 +41,7 @@ function extractApiErrorMessage(error, fallbackMessage) {
 	}
 
 	if (status === 403) {
-		return 'Conta bloqueada. Entre em contato com o administrador.';
+		return 'Conta excluída. Entre em contato com o administrador.';
 	}
 
 	if (typeof error?.message === 'string' && error.message.trim()) {

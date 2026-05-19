@@ -111,3 +111,12 @@ export async function removeCategoryPreference(categoryName) {
     throw error;
   }
 }
+
+export async function deactivateOwnAccount() {
+  try {
+    await api.delete('/api/v1/users/me');
+    return { success: true };
+  } catch (error) {
+    throw error;
+  }
+}

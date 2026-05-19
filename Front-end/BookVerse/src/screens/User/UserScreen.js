@@ -1,19 +1,50 @@
 import React from 'react';
-import { View, Text, StatusBar, ScrollView, TouchableOpacity } from 'react-native';
+import { Alert, View, Text, StatusBar, ScrollView, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Header from '../../components/Header';
 import FooterNav from '../../components/FooterNav';
 import { styles } from '../../styles/UserStyles';
 import { HEADER_GRADIENT_COLORS } from '../../styles/headerStyles';
 import { useAuth } from '../../context/AuthContext';
+import { deactivateOwnAccount } from '../../services/profileService';
 
 const HIT_SLOP = { top: 10, bottom: 10, left: 10, right: 10 };
+
+function getProfileRoleLabel(role) {
+  const normalized = String(role || '').trim().toLowerCase();
+  if (normalized === 'admin') return 'Administrador';
+  if (normalized === 'moderator') return 'Moderador';
+  if (normalized === 'member') return 'Membro';
+  return role;
+}
 
 const UserScreen = ({ navigation }) => {
   const { session, signOut } = useAuth();
 
   const handleLogout = async () => {
     await signOut();
+  };
+
+  const handleDeactivateOwnAccount = () => {
+    Alert.alert(
+      'Excluir conta',
+      'Deseja excluir sua conta?',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Excluir',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deactivateOwnAccount();
+              await signOut();
+            } catch (error) {
+              console.warn('Falha ao excluir conta', error);
+            }
+          },
+        },
+      ]
+    );
   };
 
   return (
@@ -36,7 +67,7 @@ const UserScreen = ({ navigation }) => {
             <View style={styles.profileInfo}>
               <Text style={styles.profileName}>{session?.name || 'Usuario'}</Text>
               <Text style={styles.profileUsername}>{session?.email || 'Sem email'}</Text>
-              {session?.role ? <Text style={styles.profileBio}>Perfil: {session.role}</Text> : null}
+              {session?.role ? <Text style={styles.profileBio}>Perfil: {getProfileRoleLabel(session.role)}</Text> : null}
             </View>
           </View>
 
@@ -55,6 +86,21 @@ const UserScreen = ({ navigation }) => {
               </View>
               <Text style={styles.statLabel}>Sair</Text>
             </TouchableOpacity>
+
+            {session?.role !== 'admin' ? (
+              <TouchableOpacity
+                style={[styles.statCard, { marginTop: 10, borderColor: '#fecaca', backgroundColor: '#fff1f2' }]}
+                onPress={handleDeactivateOwnAccount}
+                hitSlop={HIT_SLOP}
+                accessibilityRole="button"
+                accessibilityLabel="Excluir minha conta"
+              >
+                <View style={[styles.statIconWrap, { backgroundColor: 'rgba(185,28,28,0.12)' }]}>
+                  <Ionicons name="trash-outline" size={16} color="#b91c1c" />
+                </View>
+                <Text style={[styles.statLabel, { color: '#991b1b' }]}>Excluir</Text>
+              </TouchableOpacity>
+            ) : null}
           </View>
 
           <View style={{ height: 10 }} />

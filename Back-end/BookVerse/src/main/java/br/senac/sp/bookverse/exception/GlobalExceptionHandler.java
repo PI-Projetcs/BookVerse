@@ -33,7 +33,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiErro> contaBloqueada() {
         ApiErro apiErro = ApiErro.builder()
                 .status(HttpStatus.FORBIDDEN)
-                .mensagem("Conta bloqueada. Entre em contato com o administrador.")
+                .mensagem("Conta excluída. Entre em contato com o administrador.")
                 .exception(DisabledException.class.getName())
                 .build();
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(apiErro);
