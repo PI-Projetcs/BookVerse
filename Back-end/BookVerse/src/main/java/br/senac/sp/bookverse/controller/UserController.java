@@ -2,6 +2,7 @@ package br.senac.sp.bookverse.controller;
 
 import br.senac.sp.bookverse.dto.UserUpdateDTO;
 import br.senac.sp.bookverse.dto.UserResponseDTO;
+import br.senac.sp.bookverse.dto.UserStatusUpdateDTO;
 import br.senac.sp.bookverse.service.UserService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -25,6 +26,12 @@ public class UserController {
         return ResponseEntity.ok(userService.perfilAutenticado());
     }
 
+    @DeleteMapping("/me")
+    public ResponseEntity<Void> deleteOwnAccount() {
+        userService.autoExcluirConta();
+        return ResponseEntity.noContent().build();
+    }
+
     @GetMapping
     public ResponseEntity<Page<UserResponseDTO>> list(@PageableDefault(size = 20, sort = "id") Pageable pageable) {
         return ResponseEntity.ok(userService.listarTodos(pageable));
@@ -41,6 +48,14 @@ public class UserController {
             @Valid @RequestBody UserUpdateDTO dto
     ) {
         return ResponseEntity.ok(userService.atualizar(id, dto));
+    }
+
+    @PutMapping("/{id:\\d+}/status")
+    public ResponseEntity<UserResponseDTO> updateStatus(
+            @PathVariable Long id,
+            @Valid @RequestBody UserStatusUpdateDTO dto
+    ) {
+        return ResponseEntity.ok(userService.atualizarStatus(id, dto));
     }
 
     @DeleteMapping("/{id:\\d+}")

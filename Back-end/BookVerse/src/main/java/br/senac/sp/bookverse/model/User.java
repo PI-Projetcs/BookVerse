@@ -32,6 +32,16 @@ public class User {
     @Column(nullable = false)
     private Role role;
 
+    @Column(nullable = false)
+    private Boolean ativo = true;
+
+    @PrePersist
+    private void prePersist() {
+        if (ativo == null) {
+            ativo = true;
+        }
+    }
+
     @OneToMany(mappedBy = "usuario", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Rating> avaliacoes;
 

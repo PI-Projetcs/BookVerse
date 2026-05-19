@@ -7,6 +7,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -26,6 +27,16 @@ public class GlobalExceptionHandler {
                 .exception(BadCredentialsException.class.getName())
                 .build();
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(apiErro);
+    }
+
+    @ExceptionHandler(DisabledException.class)
+    public ResponseEntity<ApiErro> contaBloqueada() {
+        ApiErro apiErro = ApiErro.builder()
+                .status(HttpStatus.FORBIDDEN)
+                .mensagem("Conta bloqueada. Entre em contato com o administrador.")
+                .exception(DisabledException.class.getName())
+                .build();
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(apiErro);
     }
 
     @ExceptionHandler(DataIntegrityViolationException.class)

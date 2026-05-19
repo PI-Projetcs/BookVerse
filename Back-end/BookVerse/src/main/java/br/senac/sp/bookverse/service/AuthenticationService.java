@@ -66,6 +66,10 @@ public class AuthenticationService {
         var usuario = userRepository.findByEmail(email.trim().toLowerCase())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Usuário não encontrado."));
 
+        if (Boolean.FALSE.equals(usuario.getAtivo())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Conta bloqueada.");
+        }
+
         String accessToken = jwtTokenProvider.criarTokenAcesso(usuario.getEmail(), usuario.getId(), usuario.getRole().name());
         String refreshToken = jwtTokenProvider.criarTokenRefresh(usuario.getEmail(), usuario.getId(), usuario.getRole().name());
 

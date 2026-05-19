@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   Image,
   ScrollView,
   StatusBar,
@@ -71,10 +72,14 @@ export default function ManageUsers({ navigation }) {
   const summaryText = useMemo(() => `${members.length} membros listados`, [members.length]);
 
   const handleToggleStatus = async (member) => {
-    const nextStatus = member.status === 'active' ? 'blocked' : 'active';
-    const updated = await updateAdminMemberStatus(member.id, nextStatus);
-    if (!updated) return;
-    setMembers((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
+    try {
+      const nextStatus = member.status === 'active' ? 'blocked' : 'active';
+      const updated = await updateAdminMemberStatus(member.id, nextStatus);
+      if (!updated) return;
+      setMembers((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
+    } catch (error) {
+      Alert.alert('Falha ao atualizar usuário', 'Não foi possível alterar o status deste usuário agora.');
+    }
   };
 
   const handleToggleRole = async (member) => {
@@ -150,6 +155,8 @@ export default function ManageUsers({ navigation }) {
               const badgeStyle = getStatusBadgeStyle(member.status);
               const isModerator = member.role === 'moderator';
               const isAdmin = member.role === 'admin';
+              const canToggleStatus = member.role === 'member';
+              const canToggleRole = !isAdmin;
               return (
                 <View key={member.id} style={styles.card}>
                   <View style={styles.headerRow}>
@@ -165,7 +172,7 @@ export default function ManageUsers({ navigation }) {
 
                   <View style={styles.metaRow}>
                     <View style={styles.metaChip}>
-                      <Text style={styles.metaChipText}>{isModerator ? 'Moderador' : 'Membro'}</Text>
+                      <Text style={styles.metaChipText}>{isAdmin ? 'Administrador' : isModerator ? 'Moderador' : 'Membro'}</Text>
                     </View>
                     <View style={styles.metaChip}>
                       <Text style={styles.metaChipText}>{member.booksRead} livros lidos</Text>
@@ -176,20 +183,22 @@ export default function ManageUsers({ navigation }) {
                   </View>
 
                   <View style={styles.actionsRow}>
-                    <TouchableOpacity
-                      style={[styles.actionButton, styles.actionButtonSoft]}
-                      onPress={() => handleToggleRole(member)}
-                      hitSlop={HIT_SLOP}
-                      accessibilityRole="button"
-                      accessibilityLabel={isModerator ? `Tornar ${member.name} membro` : `Tornar ${member.name} moderador`}
-                    >
-                      <Ionicons name="person-circle-outline" size={14} color="#0f766e" />
-                      <Text style={[styles.actionText, { color: '#0f766e' }]}>
-                        {isModerator ? 'Tornar membro' : 'Tornar moderador'}
-                      </Text>
-                    </TouchableOpacity>
+                    {canToggleRole ? (
+                      <TouchableOpacity
+                        style={[styles.actionButton, styles.actionButtonSoft]}
+                        onPress={() => handleToggleRole(member)}
+                        hitSlop={HIT_SLOP}
+                        accessibilityRole="button"
+                        accessibilityLabel={isModerator ? `Tornar ${member.name} membro` : `Tornar ${member.name} moderador`}
+                      >
+                        <Ionicons name="person-circle-outline" size={14} color="#0f766e" />
+                        <Text style={[styles.actionText, { color: '#0f766e' }]}>
+                          {isModerator ? 'Tornar membro' : 'Tornar moderador'}
+                        </Text>
+                      </TouchableOpacity>
+                    ) : null}
 
-                    {!isAdmin ? (
+                    {canToggleStatus ? (
                       <TouchableOpacity
                         onPress={() => handleToggleStatus(member)}
                         style={[styles.actionButton, styles.actionButtonWarn]}

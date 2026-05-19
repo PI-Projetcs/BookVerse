@@ -12,7 +12,8 @@ public final class UserMapper {
         if (user == null) {
             return null;
         }
-        return new UserResponseDTO(user.getId(), user.getNome(), user.getEmail(), user.getRole());
+        String status = Boolean.FALSE.equals(user.getAtivo()) ? "blocked" : "active";
+        return new UserResponseDTO(user.getId(), user.getNome(), user.getEmail(), user.getRole(), status);
     }
 }
 

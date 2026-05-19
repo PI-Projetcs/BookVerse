@@ -22,9 +22,14 @@ const HIT_SLOP = { top: 10, bottom: 10, left: 10, right: 10 };
 
 function extractApiErrorMessage(error, fallbackMessage) {
 	const data = error?.response?.data;
+	const status = Number(error?.response?.status || 0);
 
 	if (typeof data === 'string' && data.trim()) {
 		return data;
+	}
+
+	if (typeof data?.mensagem === 'string' && data.mensagem.trim()) {
+		return data.mensagem;
 	}
 
 	if (Array.isArray(data?.errors) && data.errors.length > 0) {
@@ -33,6 +38,10 @@ function extractApiErrorMessage(error, fallbackMessage) {
 
 	if (typeof data?.message === 'string' && data.message.trim()) {
 		return data.message;
+	}
+
+	if (status === 403) {
+		return 'Conta bloqueada. Entre em contato com o administrador.';
 	}
 
 	if (typeof error?.message === 'string' && error.message.trim()) {

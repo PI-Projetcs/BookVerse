@@ -3,6 +3,7 @@ package br.senac.sp.bookverse.service;
 import br.senac.sp.bookverse.dto.RegistrationRequest;
 import br.senac.sp.bookverse.dto.UserUpdateDTO;
 import br.senac.sp.bookverse.dto.UserResponseDTO;
+import br.senac.sp.bookverse.dto.UserStatusUpdateDTO;
 import br.senac.sp.bookverse.exception.ResourceNotFoundException;
 import br.senac.sp.bookverse.mapper.UserMapper;
 import br.senac.sp.bookverse.model.Role;
@@ -114,6 +115,11 @@ public class UserService {
             if (!currentUserService.isAdmin(atual)) {
                 throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Apenas administrador pode alterar o papel.");
             }
+
+            if (Role.ADMIN.equals(alvo.getRole()) && !Role.ADMIN.equals(dto.role())) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Conta de administrador não pode ter papel alterado.");
+            }
+
             alvo.setRole(dto.role());
         }
 
@@ -137,5 +143,30 @@ public class UserService {
 
         userRepository.delete(alvo);
         log.info("Usuário removido. id={}, executor={}", id, atual.getId());
+    }
+
+    @Transactional
+    public UserResponseDTO atualizarStatus(Long id, UserStatusUpdateDTO dto) {
+        User atual = currentUserService.authenticatedUser();
+        if (!currentUserService.isAdmin(atual)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Sem permissão para alterar status de usuários.");
+        }
+
+        User alvo = userRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado."));
+
+        if (Role.ADMIN.equals(alvo.getRole())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Conta de administrador não pode ser excluída ou inativada.");
+        }
+
+        String status = dto.status() == null ? "" : dto.status().trim().toLowerCase();
+        if (!"active".equals(status) && !"blocked".equals(status)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Status inválido. Use 'active' ou 'blocked'.");
+        }
+
+        alvo.setAtivo("active".equals(status));
+        User salvo = userRepository.save(alvo);
+        log.info("Status de usuário atualizado. alvo={}, status={}, executor={}", salvo.getId(), status, atual.getId());
+        return UserMapper.toResponse(salvo);
     }
 }

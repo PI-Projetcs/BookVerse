@@ -30,7 +30,8 @@ class AuthenticationControllerTest {
 
         AuthenticationResponse response = AuthenticationResponse.of(
                 "token-123",
-                new UserResponseDTO(1L, "Maria", "maria@bookverse.com", Role.USER)
+                "refresh-123",
+                new UserResponseDTO(1L, "Maria", "maria@bookverse.com", Role.USER, "active")
         );
         org.mockito.Mockito.when(authService.login(any(LoginRequest.class))).thenReturn(response);
 
@@ -62,7 +63,7 @@ class AuthenticationControllerTest {
         UserService userService = mock(UserService.class);
         MockMvc mockMvc = criarMockMvc(authService, userService);
 
-        UserResponseDTO created = new UserResponseDTO(10L, "João", "joao@bookverse.com", Role.USER);
+        UserResponseDTO created = new UserResponseDTO(10L, "João", "joao@bookverse.com", Role.USER, "active");
         org.mockito.Mockito.when(userService.registrar(any(RegistrationRequest.class))).thenReturn(created);
 
         String body = """

@@ -4,8 +4,8 @@ import api from './api';
 function normalizeMember(member = {}, index = 0) {
 	const backendRole = (member.role || '').toUpperCase();
 	let role = 'member';
-	if (backendRole === 'ADMIN') role = 'admin';
-	else if (backendRole === 'MODERATOR' || member.role === 'moderator') role = 'moderator';
+	if (backendRole === 'ADMIN' || backendRole === 'ROLE_ADMIN') role = 'admin';
+	else if (backendRole === 'MODERATOR' || backendRole === 'ROLE_MODERATOR' || member.role === 'moderator') role = 'moderator';
 
 	return {
 		id: Number(member.id ?? index + 1),
