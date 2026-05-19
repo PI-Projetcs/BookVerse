@@ -30,25 +30,26 @@ export const adminBooksStyles = StyleSheet.create({
 		fontSize: 14,
 		color: '#111827',
 	},
-	filterScroll: {
-		paddingRight: 12,
+	chipRow: {
+		flexDirection: 'row',
 		gap: 8,
+		flexWrap: 'wrap',
 	},
-	filterChip: {
+	chip: {
 		paddingHorizontal: 12,
 		paddingVertical: 8,
 		borderRadius: 999,
 		backgroundColor: '#e5e7eb',
 	},
-	filterChipActive: {
+	chipActive: {
 		backgroundColor: '#0f172a',
 	},
-	filterChipText: {
+	chipText: {
 		fontSize: 11,
 		fontWeight: '800',
 		color: '#475569',
 	},
-	filterChipTextActive: {
+	chipTextActive: {
 		color: '#fefce8',
 	},
 	metaRow: {
@@ -83,6 +84,7 @@ export const adminBooksStyles = StyleSheet.create({
 		backgroundColor: '#ffffff',
 		borderRadius: 16,
 		padding: 10,
+		minHeight: 300,
 		borderWidth: 1,
 		borderColor: '#e5e7eb',
 		shadowColor: '#000000',
@@ -107,12 +109,16 @@ export const adminBooksStyles = StyleSheet.create({
 	cardTitle: {
 		marginTop: 10,
 		fontSize: 13,
+		lineHeight: 18,
+		minHeight: 36,
 		fontWeight: '900',
 		color: '#111827',
 	},
 	cardAuthor: {
 		marginTop: 4,
 		fontSize: 11,
+		lineHeight: 16,
+		minHeight: 16,
 		color: '#64748b',
 		fontWeight: '700',
 	},
@@ -129,19 +135,23 @@ export const adminBooksStyles = StyleSheet.create({
 		backgroundColor: '#f8fafc',
 		borderWidth: 1,
 		borderColor: '#e5e7eb',
+		maxWidth: '100%',
 	},
 	cardMetaChipText: {
 		fontSize: 9,
+		lineHeight: 12,
 		fontWeight: '800',
 		color: '#475569',
 	},
 	cardActions: {
-		marginTop: 10,
+		marginTop: 'auto',
+		paddingTop: 10,
 		flexDirection: 'row',
 		gap: 6,
 	},
 	cardActionButton: {
 		flex: 1,
+		minHeight: 34,
 		borderRadius: 10,
 		paddingVertical: 8,
 		alignItems: 'center',

@@ -19,9 +19,11 @@ import { getCatalogBooks } from '../../services/bookService';
 import { catalogStyles as styles } from '../../styles/catalogStyles';
 
 const SORT_OPTIONS = [
-	{ label: 'Título', value: 'title' },
-	{ label: 'Nota', value: 'rating' },
 	{ label: 'Ano', value: 'year' },
+	{ label: 'Autor', value: 'author' },
+	{ label: 'Avaliação', value: 'rating' },
+	{ label: 'Gênero', value: 'genre' },
+	{ label: 'Título', value: 'title' },
 ];
 const HIT_SLOP = { top: 10, bottom: 10, left: 10, right: 10 };
 

@@ -9,7 +9,6 @@ import {
 	TextInput,
 	TouchableOpacity,
 	View,
-	ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Header from '../../components/Header';
@@ -114,13 +113,13 @@ export default function AdminBooks({ navigation }) {
 			<Text style={styles.cardAuthor} numberOfLines={1}>{item.author}</Text>
 			<View style={styles.cardMeta}>
 				<View style={[styles.cardMetaChip, genreChipStyle]}>
-					<Text style={[styles.cardMetaChipText, genreTextStyle]}>{genreLabel}</Text>
+					<Text style={[styles.cardMetaChipText, genreTextStyle]} numberOfLines={1}>{genreLabel}</Text>
 				</View>
 				<View style={styles.cardMetaChip}>
-					<Text style={styles.cardMetaChipText}>{item.year || 'Sem ano'}</Text>
+					<Text style={styles.cardMetaChipText} numberOfLines={1}>{item.year || 'Sem ano'}</Text>
 				</View>
 				<View style={styles.cardMetaChip}>
-					<Text style={styles.cardMetaChipText}>{(item.chapters?.length || 0)} capítulos</Text>
+					<Text style={styles.cardMetaChipText} numberOfLines={1}>{(item.chapters?.length || 0)} capítulos</Text>
 				</View>
 			</View>
 			<View style={styles.cardActions}>
@@ -184,24 +183,24 @@ export default function AdminBooks({ navigation }) {
 						/>
 					</View>
 
-					<ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterScroll}>
+					<View style={styles.chipRow}>
 						{genreOptions.map((option) => {
 							const isActive = genreFilter === option;
 							return (
 								<TouchableOpacity
 									key={option}
-									style={[styles.filterChip, isActive && styles.filterChipActive]}
+									style={[styles.chip, isActive && styles.chipActive]}
 									onPress={() => setGenreFilter(option)}
 									hitSlop={HIT_SLOP}
 									accessibilityRole="button"
 									accessibilityLabel={`Filtrar livros por ${option}`}
 									accessibilityState={{ selected: isActive }}
 								>
-									<Text style={[styles.filterChipText, isActive && styles.filterChipTextActive]}>{option}</Text>
+									<Text style={[styles.chipText, isActive && styles.chipTextActive]}>{option}</Text>
 								</TouchableOpacity>
 							);
 						})}
-					</ScrollView>
+					</View>
 				</View>
 
 				<View style={styles.contentArea}>

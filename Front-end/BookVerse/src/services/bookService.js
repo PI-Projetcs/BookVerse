@@ -6,6 +6,14 @@ function mapCatalogSortToBackend(sortBy = 'title') {
 		return 'mediaAvaliacao';
 	}
 
+	if (sortBy === 'genre') {
+		return 'genero';
+	}
+
+	if (sortBy === 'author') {
+		return 'autor';
+	}
+
 	if (sortBy === 'year') {
 		return 'ano';
 	}
@@ -75,6 +83,14 @@ function filterAndSortBooks(items, { query = '', sortBy = 'title' } = {}) {
 	return filtered.sort((left, right) => {
 		if (sortBy === 'rating') {
 			return (right.rating || 0) - (left.rating || 0);
+		}
+
+		if (sortBy === 'genre') {
+			return String(left.genre || '').localeCompare(String(right.genre || ''), 'pt-BR');
+		}
+
+		if (sortBy === 'author') {
+			return String(left.author || '').localeCompare(String(right.author || ''), 'pt-BR');
 		}
 
 		if (sortBy === 'year') {
@@ -194,15 +210,15 @@ export async function getCatalogBooks({ query = '', sortBy = 'title' } = {}) {
 		});
 
 		if (Array.isArray(response.data)) {
-			return normalizeList(response.data);
+			return filterAndSortBooks(normalizeList(response.data), { query, sortBy });
 		}
 
 		if (Array.isArray(response.data?.items)) {
-			return normalizeList(response.data.items);
+			return filterAndSortBooks(normalizeList(response.data.items), { query, sortBy });
 		}
 
 		if (Array.isArray(response.data?.content)) {
-			return normalizeList(response.data.content);
+			return filterAndSortBooks(normalizeList(response.data.content), { query, sortBy });
 		}
 
 		return [];
