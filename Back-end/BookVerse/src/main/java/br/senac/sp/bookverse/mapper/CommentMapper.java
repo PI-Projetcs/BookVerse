@@ -20,6 +20,7 @@ public final class CommentMapper {
                 comment.getDiscussao() != null ? comment.getDiscussao().getTitulo() : null,
                 comment.getUsuario() != null ? comment.getUsuario().getId() : null,
                 comment.getUsuario() != null ? comment.getUsuario().getNome() : null,
+            comment.getStatus(),
                 0,
                 false
         );

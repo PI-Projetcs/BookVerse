@@ -58,7 +58,6 @@ public final class BookMapper {
         book.setAuthorBio(dto.authorBio());
         book.setPaginas(dto.paginas());
         book.setDestaque(dto.destaque());
-        book.setMediaAvaliacao(dto.mediaAvaliacao());
         book.setCapitulos(toEntityChapters(dto.chapters()));
     }
 

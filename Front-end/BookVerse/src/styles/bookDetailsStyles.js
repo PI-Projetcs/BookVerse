@@ -197,6 +197,58 @@ export const bookDetailsStyles = StyleSheet.create({
 		fontSize: 13,
 		color: '#64748b',
 	},
+	starsRow: {
+		flexDirection: 'row',
+		alignItems: 'center',
+		gap: 6,
+		marginBottom: 10,
+	},
+	reviewInput: {
+		minHeight: 86,
+		borderWidth: 1,
+		borderColor: '#d1d5db',
+		borderRadius: 10,
+		paddingHorizontal: 10,
+		paddingVertical: 8,
+		fontSize: 13,
+		lineHeight: 18,
+		color: '#0f172a',
+		backgroundColor: '#f8fafc',
+		textAlignVertical: 'top',
+	},
+	ratingActionsRow: {
+		marginTop: 10,
+		flexDirection: 'row',
+		gap: 8,
+	},
+	ratingActionButton: {
+		flex: 1,
+		minHeight: 38,
+		borderRadius: 10,
+		alignItems: 'center',
+		justifyContent: 'center',
+	},
+	ratingSaveButton: {
+		backgroundColor: '#065f46',
+	},
+	ratingDeleteButton: {
+		backgroundColor: '#fdf2f8',
+		borderWidth: 1,
+		borderColor: '#fecdd3',
+	},
+	ratingSaveButtonText: {
+		fontSize: 13,
+		fontWeight: '800',
+		color: '#ecfeff',
+	},
+	ratingDeleteButtonText: {
+		fontSize: 13,
+		fontWeight: '800',
+		color: '#9f1239',
+	},
+	ratingButtonDisabled: {
+		opacity: 0.6,
+	},
 	centeredContainer: {
 		flex: 1,
 		justifyContent: 'center',

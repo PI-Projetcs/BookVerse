@@ -1,20 +1,30 @@
 import FooterNav from '../../components/FooterNav';
-import { getBookById, getDiscussions } from '../../services/bookService';
+import {
+	deleteBookRating,
+	getBookById,
+	getBookRatings,
+	getDiscussions,
+	rateBook,
+	updateBookRating,
+} from '../../services/bookService';
 import { bookDetailsStyles as styles } from '../../styles/bookDetailsStyles';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
+	Alert,
     ActivityIndicator,
     Image,
     ScrollView,
     StatusBar,
     Text,
+	TextInput,
     TouchableOpacity,
     View,
 } from 'react-native';
 import { GENRE_CHIP_STYLES, normalizeGenreKey } from '../../constants/genreThemes';
+import { useAuth } from '../../context/AuthContext';
 
 const FALLBACK_COVER = 'https://placehold.co/420x640/0f172a/f8fafc?text=Sem+Capa';
 const HIT_SLOP = { top: 10, bottom: 10, left: 10, right: 10 };
@@ -39,50 +49,137 @@ function extractMemberComments(chapters = []) {
 
 export default function BookDetailsScreen({ navigation, route }) {
 	const insets = useSafeAreaInsets();
+	const { session, isAuthenticated } = useAuth();
 	const bookId = route?.params?.id;
 	const [book, setBook] = useState(null);
+	const [ratings, setRatings] = useState([]);
 	const [memberComments, setMemberComments] = useState([]);
 	const [isLoading, setIsLoading] = useState(true);
 	const [errorMessage, setErrorMessage] = useState('');
+	const [myRating, setMyRating] = useState(0);
+	const [myReview, setMyReview] = useState('');
+	const [isSavingRating, setIsSavingRating] = useState(false);
+
+	const myExistingRating = useMemo(() => {
+		if (!session?.id) {
+			return null;
+		}
+
+		return ratings.find((item) => Number(item.userId) === Number(session.id)) || null;
+	}, [ratings, session?.id]);
+
+	const averageRating = useMemo(() => {
+		if (!ratings.length) {
+			return Number(book?.rating || 0);
+		}
+
+		const sum = ratings.reduce((acc, item) => acc + Number(item?.rating || 0), 0);
+		return sum / ratings.length;
+	}, [book?.rating, ratings]);
+
+	const totalRatings = ratings.length;
+
+	const loadDetails = useCallback(async () => {
+		try {
+			setIsLoading(true);
+			setErrorMessage('');
+			const [bookResult, discussionsResult] = await Promise.all([
+				getBookById(bookId),
+				getDiscussions(bookId),
+			]);
+			setBook(bookResult || null);
+			setMemberComments(extractMemberComments(discussionsResult));
+
+			try {
+				const ratingsResult = await getBookRatings(bookId);
+				setRatings(Array.isArray(ratingsResult?.items) ? ratingsResult.items : []);
+			} catch (ratingsError) {
+				setRatings([]);
+			}
+		} catch (error) {
+			setErrorMessage('Não foi possível carregar os detalhes do livro.');
+			setMemberComments([]);
+			setRatings([]);
+		} finally {
+			setIsLoading(false);
+		}
+	}, [bookId]);
 
 	useEffect(() => {
-		let isMounted = true;
-
-		const loadDetails = async () => {
-			try {
-				setIsLoading(true);
-				setErrorMessage('');
-				const [bookResult, discussionsResult] = await Promise.all([
-					getBookById(bookId),
-					getDiscussions(bookId),
-				]);
-				if (isMounted) {
-					setBook(bookResult || null);
-					setMemberComments(extractMemberComments(discussionsResult));
-				}
-			} catch (error) {
-				if (isMounted) {
-					setErrorMessage('Não foi possível carregar os detalhes do livro.');
-					setMemberComments([]);
-				}
-			} finally {
-				if (isMounted) {
-					setIsLoading(false);
-				}
-			}
-		};
-
 		if (bookId) {
 			loadDetails();
 		} else {
 			setErrorMessage('Livro não encontrado.');
 			setIsLoading(false);
 		}
+	}, [bookId, loadDetails]);
 
-		return () => {
-			isMounted = false;
-		};
-	}, [bookId]);
+	useEffect(() => {
+		if (myExistingRating) {
+			setMyRating(Number(myExistingRating.rating || 0));
+			setMyReview(myExistingRating.review || '');
+			return;
+		}
+
+		setMyRating(0);
+		setMyReview('');
+	}, [myExistingRating]);
+
+	const handleSaveRating = async () => {
+		if (!isAuthenticated) {
+			Alert.alert('Atenção', 'Faça login para avaliar este livro.');
+			return;
+		}
+
+		if (!Number.isInteger(myRating) || myRating < 1 || myRating > 5) {
+			Alert.alert('Avaliação inválida', 'Selecione de 1 a 5 estrelas.');
+			return;
+		}
+
+		try {
+			setIsSavingRating(true);
+			if (myExistingRating) {
+				await updateBookRating(bookId, myRating, myReview);
+				Alert.alert('Sucesso', 'Sua avaliação foi atualizada.');
+			} else {
+				await rateBook(bookId, myRating, myReview);
+				Alert.alert('Sucesso', 'Sua avaliação foi enviada.');
+			}
+			await loadDetails();
+		} catch (error) {
+			Alert.alert('Erro', 'Não foi possível salvar sua avaliação agora.');
+		} finally {
+			setIsSavingRating(false);
+		}
+	};
+
+	const handleDeleteRating = async () => {
+		if (!myExistingRating) {
+			return;
+		}
+
+		Alert.alert('Excluir avaliação', 'Deseja remover sua avaliação deste livro?', [
+			{ text: 'Cancelar', style: 'cancel' },
+			{
+				text: 'Excluir',
+				style: 'destructive',
+				onPress: async () => {
+					try {
+						setIsSavingRating(true);
+						await deleteBookRating(bookId);
+						setMyRating(0);
+						setMyReview('');
+						await loadDetails();
+						Alert.alert('Sucesso', 'Sua avaliação foi removida.');
+					} catch (error) {
+						Alert.alert('Erro', 'Não foi possível excluir sua avaliação agora.');
+					} finally {
+						setIsSavingRating(false);
+					}
+				},
+			},
+		]);
+	};
 
 	return (
 		<SafeAreaView style={styles.safeArea}>
@@ -125,11 +222,6 @@ export default function BookDetailsScreen({ navigation, route }) {
 				<View style={styles.bodyArea}>
 					<ScrollView contentContainerStyle={styles.content}>
 						{(() => {
-							const totalRatings =
-								Number(book.ratingsCount ?? book.ratings_count) ||
-								Number(book.reviewsCount ?? book.reviews_count) ||
-								memberComments.length;
-
 							return (
 						<LinearGradient
 							colors={['#003f2f', '#0f172b', '#0f172b']}
@@ -160,7 +252,7 @@ export default function BookDetailsScreen({ navigation, route }) {
 										<Ionicons name="star-outline" size={16} color="#BB4D00" style={{ position: 'absolute' }} />
 									</View>
 									<Text style={styles.ratingText}>
-										{Number(book.rating || 0).toFixed(1)}
+										{Number(averageRating || 0).toFixed(1)}
 										<Text style={styles.ratingCountText}> ({totalRatings} avaliações)</Text>
 									</Text>
 								</View>
@@ -184,6 +276,67 @@ export default function BookDetailsScreen({ navigation, route }) {
 									<Text style={styles.sectionTitle}>Sobre o Autor</Text>
 								</View>
 								<Text style={styles.sectionText}>{book.authorBio || 'Sem biografia cadastrada.'}</Text>
+							</View>
+
+							<View style={styles.sectionCard}>
+								<View style={styles.sectionHeaderRow}>
+									<Ionicons name="star-outline" size={18} color="#006045" />
+									<Text style={styles.sectionTitle}>Sua Avaliação</Text>
+								</View>
+								{!isAuthenticated ? (
+									<Text style={styles.commentsEmptyText}>Faça login para avaliar este livro.</Text>
+								) : (
+									<>
+										<View style={styles.starsRow}>
+											{[1, 2, 3, 4, 5].map((star) => (
+												<TouchableOpacity
+													key={star}
+													onPress={() => setMyRating(star)}
+													hitSlop={HIT_SLOP}
+													accessibilityRole="button"
+													accessibilityLabel={`Selecionar ${star} estrela${star > 1 ? 's' : ''}`}
+												>
+													<Ionicons
+														name={star <= myRating ? 'star' : 'star-outline'}
+														size={26}
+														color={star <= myRating ? '#f59e0b' : '#94a3b8'}
+													/>
+												</TouchableOpacity>
+											))}
+										</View>
+										<TextInput
+											value={myReview}
+											onChangeText={setMyReview}
+											placeholder="Escreva um comentário opcional sobre o livro"
+											placeholderTextColor="#94a3b8"
+											multiline
+											style={styles.reviewInput}
+											accessibilityLabel="Comentário da sua avaliação"
+										/>
+										<View style={styles.ratingActionsRow}>
+											<TouchableOpacity
+												style={[styles.ratingActionButton, styles.ratingSaveButton, isSavingRating && styles.ratingButtonDisabled]}
+												onPress={handleSaveRating}
+												disabled={isSavingRating}
+												accessibilityRole="button"
+												accessibilityLabel={myExistingRating ? 'Atualizar avaliação' : 'Salvar avaliação'}
+											>
+												<Text style={styles.ratingSaveButtonText}>{myExistingRating ? 'Atualizar' : 'Salvar'}</Text>
+											</TouchableOpacity>
+											{myExistingRating ? (
+												<TouchableOpacity
+													style={[styles.ratingActionButton, styles.ratingDeleteButton, isSavingRating && styles.ratingButtonDisabled]}
+													onPress={handleDeleteRating}
+													disabled={isSavingRating}
+													accessibilityRole="button"
+													accessibilityLabel="Excluir avaliação"
+												>
+													<Text style={styles.ratingDeleteButtonText}>Excluir</Text>
+												</TouchableOpacity>
+											) : null}
+										</View>
+									</>
+								)}
 							</View>
 
 							<View style={styles.sectionCard}>

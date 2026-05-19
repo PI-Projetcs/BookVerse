@@ -16,6 +16,10 @@ public class Comment {
     private String conteudo;
     private LocalDateTime data;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private CommentStatus status = CommentStatus.PENDING;
+
     @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)
     private User usuario;

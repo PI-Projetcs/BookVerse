@@ -1,5 +1,6 @@
 package br.senac.sp.bookverse.dto;
 
+import br.senac.sp.bookverse.model.CommentStatus;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
@@ -13,6 +14,7 @@ public record CommentDTO(
 		String discussaoTitulo,
 		Long usuarioId,
 		String usuarioNome,
+		CommentStatus status,
 		Integer likes,
 		Boolean liked
 ) {

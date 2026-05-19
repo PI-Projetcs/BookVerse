@@ -42,7 +42,6 @@ const EMPTY_FORM = {
   authorBio: '',
   genre: '',
   year: '',
-  rating: '',
   coverUrl: '',
   synopsis: '',
   pages: '',
@@ -75,7 +74,6 @@ function mapBookToForm(book) {
     authorBio: book?.authorBio || '',
     genre: book?.genre || '',
     year: book?.year ? String(book.year) : '',
-    rating: Number.isFinite(book?.rating) ? String(book.rating) : '',
     coverUrl: book?.coverUrl || '',
     synopsis: book?.synopsis || '',
     pages: book?.pages ? String(book.pages) : '',
@@ -180,7 +178,6 @@ export default function RegisterBook({ navigation, route }) {
       authorBio: form.authorBio.trim(),
       genre: form.genre.trim(),
       year: form.year ? Number(form.year) : null,
-      rating: form.rating ? Number(form.rating) : 0,
       coverUrl: form.coverUrl.trim(),
       synopsis: form.synopsis.trim(),
       pages: form.pages ? Number(form.pages) : null,
@@ -195,11 +192,6 @@ export default function RegisterBook({ navigation, route }) {
 
     if (payload.year && !Number.isFinite(payload.year)) {
       Alert.alert('Ano inválido', 'Informe um ano numérico válido.');
-      return;
-    }
-
-    if (!Number.isFinite(payload.rating)) {
-      Alert.alert('Nota inválida', 'Informe uma nota numérica válida.');
       return;
     }
 
@@ -372,31 +364,15 @@ export default function RegisterBook({ navigation, route }) {
               </View>
             </View>
 
-            <View style={styles.row}>
-              <View style={styles.column}>
-                <Text style={styles.fieldLabel}>Nota</Text>
-                <TextInput
-                  value={form.rating}
-                  onChangeText={(value) => handleChange('rating', value.replace(/[^\d.]/g, ''))}
-                  placeholder="4.5"
-                  placeholderTextColor="#94a3b8"
-                  keyboardType="decimal-pad"
-                  style={styles.input}
-                  accessibilityLabel="Nota do livro"
-                />
-              </View>
-              <View style={styles.column}>
-                <Text style={styles.fieldLabel}>URL da capa</Text>
-                <TextInput
-                  value={form.coverUrl}
-                  onChangeText={(value) => handleChange('coverUrl', value)}
-                  placeholder="https://..."
-                  placeholderTextColor="#94a3b8"
-                  style={styles.input}
-                  accessibilityLabel="URL da capa do livro"
-                />
-              </View>
-            </View>
+            <Text style={styles.fieldLabel}>URL da capa</Text>
+            <TextInput
+              value={form.coverUrl}
+              onChangeText={(value) => handleChange('coverUrl', value)}
+              placeholder="https://..."
+              placeholderTextColor="#94a3b8"
+              style={styles.input}
+              accessibilityLabel="URL da capa do livro"
+            />
 
             <Text style={styles.fieldLabel}>Sinopse</Text>
             <TextInput

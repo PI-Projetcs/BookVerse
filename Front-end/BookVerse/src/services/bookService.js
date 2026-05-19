@@ -30,7 +30,6 @@ function toBackendBookPayload(bookData = {}) {
 		sinopse: bookData?.sinopse || bookData?.synopsis || '',
 		coverUrl: bookData?.coverUrl || '',
 		authorBio: bookData?.authorBio || bookData?.author_bio || bookData?.aboutAuthor || '',
-		mediaAvaliacao: bookData?.mediaAvaliacao ?? bookData?.rating ?? 0,
 		paginas: bookData?.paginas ?? bookData?.pages ?? null,
 		destaque: Boolean(bookData?.destaque ?? bookData?.highlight ?? false),
 		// Include chapters payload to allow backend to persist chapter list
@@ -371,10 +370,10 @@ const mockRatingsStore = {};
 function normalizeRating(rating = {}) {
 	return {
 		id: rating?.id || null,
-		bookId: Number(rating?.bookId ?? rating?.book_id) || null,
-		userId: Number(rating?.userId ?? rating?.user_id) || null,
-		rating: Number(rating?.rating ?? rating?.avaliacao) || 0,
-		review: rating?.review || rating?.resenha || '',
+		bookId: Number(rating?.bookId ?? rating?.book_id ?? rating?.livroId) || null,
+		userId: Number(rating?.userId ?? rating?.user_id ?? rating?.usuarioId) || null,
+		rating: Number(rating?.rating ?? rating?.avaliacao ?? rating?.nota) || 0,
+		review: rating?.review || rating?.resenha || rating?.descricao || '',
 		createdAt: rating?.createdAt || rating?.created_at || new Date().toISOString(),
 		updatedAt: rating?.updatedAt || rating?.updated_at || new Date().toISOString(),
 	};
