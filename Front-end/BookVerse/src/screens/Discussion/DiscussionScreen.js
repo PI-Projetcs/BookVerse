@@ -29,7 +29,22 @@ export default function DiscussionScreen({ navigation, route }) {
   const [book, setBook] = useState(null);
   const [threads, setThreads] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+
+  const getCommentStatusMeta = (status) => {
+    const normalized = String(status || '').toUpperCase();
+    if (normalized === 'APPROVED') {
+      return { label: 'Aprovado', bg: '#ecfeff', border: '#67e8f9', color: '#0f766e' };
+    }
+    if (normalized === 'PENDING') {
+      return { label: 'Pendente', bg: '#fff7ed', border: '#fdba74', color: '#9a3412' };
+    }
+    if (normalized === 'REJECTED') {
+      return { label: 'Rejeitado', bg: '#fef2f2', border: '#fda4af', color: '#9f1239' };
+    }
+    return null;
+  };
 
   useEffect(() => {
     let isMounted = true;
@@ -126,6 +141,39 @@ export default function DiscussionScreen({ navigation, route }) {
     setExpandedThreads((prev) => ({ ...prev, [threadId]: !prev[threadId] }));
   };
 
+  const handleRefreshComments = async () => {
+    try {
+      setIsRefreshing(true);
+      const discussionsResult = await getDiscussions(bookId);
+      const safeDiscussions = Array.isArray(discussionsResult) ? discussionsResult : [];
+      const discussionsById = new Map(
+        safeDiscussions
+          .filter((discussion) => Number.isFinite(Number(discussion?.id)))
+          .map((discussion) => [Number(discussion.id), discussion])
+      );
+
+      setThreads((prev) =>
+        prev.map((thread) => {
+          const discussion = discussionsById.get(Number(thread.discussionId));
+          if (!discussion) {
+            return thread;
+          }
+
+          return {
+            ...thread,
+            discussionTitle: discussion.title || thread.discussionTitle,
+            discussionDescription: discussion.description || thread.discussionDescription,
+            comments: Array.isArray(discussion.comments) ? discussion.comments : [],
+          };
+        })
+      );
+    } catch (error) {
+      Alert.alert('Erro', 'Não foi possível atualizar os comentários agora.');
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
   const handleAddComment = async (thread) => {
     const text = (newComments[thread.id] || '').trim();
     if (!text) {
@@ -163,6 +211,26 @@ export default function DiscussionScreen({ navigation, route }) {
       }
 
       await createChapterComment(discussionId, { conteudo: text });
+      const pendingComment = {
+        id: Date.now(),
+        author: 'Você',
+        date: 'Agora mesmo',
+        text,
+        likes: 0,
+        replies: 0,
+        avatar: 'https://i.pravatar.cc/100?img=5',
+        status: 'PENDING',
+      };
+      setThreads((prev) =>
+        prev.map((item) =>
+          item.id === thread.id
+            ? {
+                ...item,
+                comments: [pendingComment, ...(Array.isArray(item.comments) ? item.comments : [])],
+              }
+            : item
+        )
+      );
       setNewComments((prev) => ({ ...prev, [thread.id]: '' }));
       Alert.alert('Comentário enviado', 'Seu comentário foi enviado para aprovação do moderador/admin.');
     } catch (error) {
@@ -205,12 +273,17 @@ export default function DiscussionScreen({ navigation, route }) {
 
             <TouchableOpacity
               style={[styles.moderationButton, styles.headerActionSpacing]}
-              disabled
+              onPress={handleRefreshComments}
+              disabled={isRefreshing}
               accessibilityRole="button"
-              accessibilityLabel="Atalho de mensagens indisponível"
-              accessibilityState={{ disabled: true }}
+              accessibilityLabel="Atualizar comentários"
+              accessibilityState={{ disabled: isRefreshing }}
             >
-              <Feather name="message-square" size={18} color="#fff" />
+              {isRefreshing ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <Feather name="refresh-cw" size={18} color="#fff" />
+              )}
             </TouchableOpacity>
           </View>
         </View>
@@ -336,16 +409,36 @@ export default function DiscussionScreen({ navigation, route }) {
                   ) : (
                     chapter.comments.map((comment) => (
                       <View key={comment.id} style={styles.commentCard}>
+                        {(() => {
+                          const statusMeta = getCommentStatusMeta(comment.status);
+                          return (
                         <View style={styles.commentHeader}>
-                          <View style={styles.commentProfileRow}>
-                            <Image source={{ uri: comment.avatar }} style={styles.avatar} />
+                          <View style={styles.commentTopRow}>
+                            <View style={styles.commentProfileRow}>
+                              <Image source={{ uri: comment.avatar }} style={styles.avatar} />
 
-                            <View style={styles.commentProfileText}>
-                              <Text style={styles.commentAuthor}>{comment.author}</Text>
-                              <Text style={styles.commentTime}>{comment.date}</Text>
+                              <View style={styles.commentProfileText}>
+                                <Text style={styles.commentAuthor}>{comment.author}</Text>
+                                <Text style={styles.commentTime}>{comment.date}</Text>
+                              </View>
                             </View>
+
+                            {statusMeta ? (
+                              <View
+                                style={[
+                                  styles.commentStatusBadge,
+                                  { backgroundColor: statusMeta.bg, borderColor: statusMeta.border },
+                                ]}
+                              >
+                                <Text style={[styles.commentStatusText, { color: statusMeta.color }]}>
+                                  {statusMeta.label}
+                                </Text>
+                              </View>
+                            ) : null}
                           </View>
                         </View>
+                          );
+                        })()}
 
                         <Text style={styles.commentText}>{comment.text}</Text>
                       </View>

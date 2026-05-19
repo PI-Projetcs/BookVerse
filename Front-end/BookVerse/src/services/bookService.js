@@ -177,6 +177,8 @@ function normalizeBackendComment(comment = {}) {
 		replies: Number(comment.replies) || 0,
 		avatar: comment.avatar || 'https://i.pravatar.cc/100?img=5',
 		reported: Boolean(comment.reported),
+		status: (comment.status || '').toString().toUpperCase() || null,
+		userId: Number(comment.usuarioId ?? comment.userId) || null,
 		discussionId: Number(comment.discussaoId ?? comment.discussionId) || null,
 	};
 }

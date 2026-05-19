@@ -193,6 +193,12 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
 
+  commentTopRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+  },
+
   commentProfileRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -208,6 +214,19 @@ const styles = StyleSheet.create({
 
   commentProfileText: {
     flex: 1,
+  },
+
+  commentStatusBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 999,
+    borderWidth: 1,
+    marginLeft: 8,
+  },
+
+  commentStatusText: {
+    fontSize: 11,
+    fontWeight: '700',
   },
 
   commentAuthor: {
