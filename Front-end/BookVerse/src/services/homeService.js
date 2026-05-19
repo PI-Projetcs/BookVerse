@@ -28,11 +28,23 @@ function normalizeProgress(progress = {}) {
 }
 
 function normalizeChapter(chapter = {}, index = 0) {
+	const normalizedStatus = String(chapter.status || '').trim();
+	const rawState = String(chapter.state || '').trim().toLowerCase();
+
+	const resolvedState =
+		rawState === 'locked'
+			? 'locked'
+			: normalizedStatus === 'Concluído'
+				? 'done'
+				: normalizedStatus === 'Em leitura'
+					? 'active'
+					: 'idle';
+
 	return {
 		id: Number(chapter.id) || index + 1,
 		title: chapter.title || `Capitulo ${index + 1}`,
-		status: chapter.status || '',
-		state: chapter.state || 'active',
+		status: normalizedStatus,
+		state: resolvedState,
 	};
 }
 

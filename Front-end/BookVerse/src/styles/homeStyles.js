@@ -281,14 +281,14 @@ export const homeStyles = StyleSheet.create({
 		paddingVertical: 4,
 		paddingHorizontal: 10,
 		borderRadius: 999,
-		backgroundColor: '#f1f5f9',
+		backgroundColor: '#f3f4f6',
 		borderWidth: 1,
-		borderColor: '#e5e7eb',
+		borderColor: '#d1d5db',
 	},
 	chapterStatusPillText: {
 		fontSize: 11,
 		fontWeight: '900',
-		color: '#475569',
+		color: '#4b5563',
 	},
 	chapterStatusPillDone: {
 		backgroundColor: 'rgba(107,124,89,0.12)',
@@ -425,21 +425,25 @@ export const homeStyles = StyleSheet.create({
 		alignItems: 'center',
 		justifyContent: 'center',
 	},
+	modalButtonStacked: {
+		flex: 0,
+		alignSelf: 'stretch',
+	},
 	modalButtonPrimary: {
-		backgroundColor: '#0f172a',
+		backgroundColor: '#7D1F3E',
 	},
 	modalButtonGhost: {
-		backgroundColor: '#f1f5f9',
+		backgroundColor: '#fff7ed',
 		borderWidth: 1,
-		borderColor: '#e2e8f0',
+		borderColor: '#e7c9a5',
 	},
 	modalButtonText: {
 		fontSize: 12,
 		fontWeight: '900',
-		color: '#fef3c7',
+		color: '#fff8f1',
 	},
 	modalButtonTextGhost: {
-		color: '#0f172a',
+		color: '#7D1F3E',
 	},
 	toastContainer: {
 		position: 'absolute',

@@ -110,6 +110,10 @@ export default function HomeScreen({ navigation }) {
 	};
 
 	const handleSelectChapter = (chapter) => {
+		if (statusPillPressRef.current) {
+			return;
+		}
+
 		if (chapter?.state === 'locked') {
 			Alert.alert('Capítulo bloqueado', 'Conclua os capítulos anteriores para desbloquear este capítulo.');
 			return;
@@ -205,12 +209,22 @@ export default function HomeScreen({ navigation }) {
 	// Chapter status modal
 	const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
 	const [selectedChapter, setSelectedChapter] = useState(null);
+	const statusPillPressRef = useRef(false);
+	const statusPillResetTimeoutRef = useRef(null);
 
 	const handleChangeChapterStatus = async (chapterId, nextStatus) => {
+		const normalizedStatus = String(nextStatus || '').trim();
+		const nextState =
+			normalizedStatus === 'Concluído'
+				? 'done'
+				: normalizedStatus === 'Em leitura'
+					? 'active'
+					: 'idle';
+
 		setChapters((prev) =>
 			prev.map((c) =>
 				c.id === chapterId
-					? { ...c, status: nextStatus, state: nextStatus === 'Concluído' ? 'done' : 'active' }
+					? { ...c, status: normalizedStatus, state: nextState }
 					: c
 			)
 		);
@@ -225,7 +239,11 @@ export default function HomeScreen({ navigation }) {
 		}
 
 		// show feedback
-		showToast(`Capítulo ${chapterId} marcado como ${nextStatus}`);
+		showToast(
+			normalizedStatus
+				? `Capítulo ${chapterId} marcado como ${normalizedStatus}`
+				: `Status do capítulo ${chapterId} limpo`
+		);
 	};
 
 	// Toast feedback
@@ -249,6 +267,9 @@ export default function HomeScreen({ navigation }) {
 		return () => {
 			if (toastTimeoutRef.current) {
 				clearTimeout(toastTimeoutRef.current);
+			}
+			if (statusPillResetTimeoutRef.current) {
+				clearTimeout(statusPillResetTimeoutRef.current);
 			}
 		};
 	}, []);
@@ -448,11 +469,24 @@ export default function HomeScreen({ navigation }) {
 														<TouchableOpacity
 															activeOpacity={isLocked ? 1 : 0.8}
 															disabled={isLocked}
-															onPress={() => {
+															onPress={(event) => {
+																event?.stopPropagation?.();
 																if (isLocked) return;
 																setSelectedChapter(ch);
 																setIsStatusModalOpen(true);
 															}}
+															onPressIn={(event) => {
+																event?.stopPropagation?.();
+																statusPillPressRef.current = true;
+																if (statusPillResetTimeoutRef.current) {
+																	clearTimeout(statusPillResetTimeoutRef.current);
+																}
+																statusPillResetTimeoutRef.current = setTimeout(() => {
+																	statusPillPressRef.current = false;
+																	statusPillResetTimeoutRef.current = null;
+																}, 250);
+															}}
+															hitSlop={HIT_SLOP}
 															style={[
 																styles.chapterStatusPill,
 																isDone && styles.chapterStatusPillDone,
@@ -627,24 +661,39 @@ export default function HomeScreen({ navigation }) {
 
 						<View style={{ marginTop: 12 }}>
 							<TouchableOpacity
-								style={[styles.modalButton, { marginBottom: 8 }]}
+								style={[
+									styles.modalButton,
+									styles.modalButtonStacked,
+									{ marginBottom: 8, backgroundColor: '#6B7C59', borderWidth: 1, borderColor: '#4A5840' },
+								]}
 								onPress={() => handleChangeChapterStatus(selectedChapter?.id, 'Concluído')}
 							>
-								<Text style={[styles.modalButtonText, { color: '#ffffff' }]}>Concluído</Text>
+								<Text style={styles.modalButtonText}>Concluído</Text>
 							</TouchableOpacity>
 							<TouchableOpacity
-								style={[styles.modalButton, styles.modalButtonGhost]}
+								style={[
+									styles.modalButton,
+									styles.modalButtonStacked,
+									{ marginBottom: 8, backgroundColor: '#D4AF37', borderWidth: 1, borderColor: '#B8941F' },
+								]}
 								onPress={() => handleChangeChapterStatus(selectedChapter?.id, 'Em leitura')}
 							>
-								<Text style={[styles.modalButtonTextGhost]}>Em leitura</Text>
+								<Text style={[styles.modalButtonText, { color: '#111827' }]}>Em leitura</Text>
 							</TouchableOpacity>
 						</View>
 						<View style={{ marginTop: 12 }}>
-							<TouchableOpacity style={[styles.modalButton, styles.modalButtonGhost]} onPress={() => handleChangeChapterStatus(selectedChapter?.id, '')}>
-								<Text style={[styles.modalButtonTextGhost]}>Limpar status</Text>
+							<TouchableOpacity style={[styles.modalButton, styles.modalButtonStacked, styles.modalButtonGhost]} onPress={() => handleChangeChapterStatus(selectedChapter?.id, '')}>
+								<Text style={[styles.modalButtonText, styles.modalButtonTextGhost]}>Limpar status</Text>
 							</TouchableOpacity>
-							<TouchableOpacity style={[styles.modalButton, styles.modalButtonGhost, { marginTop: 8 }]} onPress={() => setIsStatusModalOpen(false)}>
-								<Text style={[styles.modalButtonTextGhost]}>Cancelar</Text>
+							<TouchableOpacity
+								style={[
+									styles.modalButton,
+									styles.modalButtonStacked,
+									{ marginTop: 8, backgroundColor: '#7D1F3E', borderWidth: 1, borderColor: '#6B0F2E' },
+								]}
+								onPress={() => setIsStatusModalOpen(false)}
+							>
+								<Text style={styles.modalButtonText}>Cancelar</Text>
 							</TouchableOpacity>
 						</View>
 					</View>
