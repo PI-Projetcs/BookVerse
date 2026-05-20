@@ -63,10 +63,13 @@ export default function LoginScreen({ navigation, route }) {
 	const [loginEmail, setLoginEmail] = useState('');
 	const [loginPassword, setLoginPassword] = useState('');
 
+	const [loginError, setLoginError] = useState(null);
+
 	const [registerName, setRegisterName] = useState('');
 	const [registerEmail, setRegisterEmail] = useState('');
 	const [registerPassword, setRegisterPassword] = useState('');
 	const [registerConfirmPassword, setRegisterConfirmPassword] = useState('');
+	const [registerError, setRegisterError] = useState(null);
 
 	// Navegação de teste - substituir por lógica real de autenticação
 	// const goTo = (routeName) => {
@@ -82,8 +85,22 @@ export default function LoginScreen({ navigation, route }) {
 	}, [initialTab]);
 
 	const handleLogin = async () => {
+		setLoginError(null);
+
 		if (!loginEmail || !loginPassword) {
-			Alert.alert('Atenção', 'Por favor, preencha todos os campos.');
+			setLoginError('Por favor, preencha todos os campos.');
+			return;
+		}
+
+		const emailPattern = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
+		if (!emailPattern.test(loginEmail)) {
+			setLoginError('Formato de email inválido.');
+			return;
+		}
+
+		const passwordAllowed = /^[\x21-\x7E]+$/;
+		if (!passwordAllowed.test(loginPassword)) {
+			setLoginError('Senha contém caracteres inválidos.');
 			return;
 		}
 
@@ -99,13 +116,16 @@ export default function LoginScreen({ navigation, route }) {
 				session.role === 'admin' ? 'Bem-vindo, Administrador!' : 'Login realizado com sucesso!'
 			);
 		} catch (error) {
-			Alert.alert('Falha no login', extractApiErrorMessage(error, 'Nao foi possivel autenticar com o servidor.'));
+			const msg = extractApiErrorMessage(error, 'Nao foi possivel autenticar com o servidor.');
+			setLoginError(msg);
 		}
 	};
 
 	const handleRegister = async () => {
+		setRegisterError(null);
+
 		if (!registerName || !registerEmail || !registerPassword || !registerConfirmPassword) {
-			Alert.alert('Atenção', 'Por favor, preencha todos os campos.');
+			setRegisterError('Por favor, preencha todos os campos.');
 			return;
 		}
 
@@ -115,7 +135,19 @@ export default function LoginScreen({ navigation, route }) {
 		}
 
 		if (registerPassword.length < 6) {
-			Alert.alert('Atenção', 'A senha deve ter pelo menos 6 caracteres.');
+			setRegisterError('A senha deve ter pelo menos 6 caracteres.');
+			return;
+		}
+
+		const emailPattern = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
+		if (!emailPattern.test(registerEmail)) {
+			setRegisterError('Formato de email inválido.');
+			return;
+		}
+
+		const passwordAllowed = /^[\x21-\x7E]+$/;
+		if (!passwordAllowed.test(registerPassword)) {
+			setRegisterError('Senha contém caracteres inválidos.');
 			return;
 		}
 
@@ -130,7 +162,8 @@ export default function LoginScreen({ navigation, route }) {
 			await signIn(session);
 			Alert.alert('Sucesso', 'Cadastro realizado com sucesso!');
 		} catch (error) {
-			Alert.alert('Falha no cadastro', extractApiErrorMessage(error, 'Nao foi possivel concluir o cadastro no servidor.'));
+			const msg = extractApiErrorMessage(error, 'Nao foi possivel concluir o cadastro no servidor.');
+			setRegisterError(msg);
 		}
 	};
 
@@ -189,6 +222,8 @@ export default function LoginScreen({ navigation, route }) {
 										accessibilityLabel="Campo de email para login"
 									/>
 								</View>
+
+								{loginError ? <Text style={{ color: 'red', marginTop: 8 }}>{loginError}</Text> : null}
 
 								<Text style={styles.label}>Senha</Text>
 								<View style={styles.inputWrapper}>
@@ -251,6 +286,7 @@ export default function LoginScreen({ navigation, route }) {
 										<Text style={styles.infoText}>Membro: user@test.com / user123 (Toque para preencher)</Text>
 									</TouchableOpacity>
 								</View>
+
 							</View>
 						) : (
 							<View style={styles.form}>

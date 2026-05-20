@@ -20,12 +20,13 @@ public class GlobalExceptionHandler {
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     @ExceptionHandler(BadCredentialsException.class)
-    public ResponseEntity<ApiErro> credenciaisInvalidas() {
+    public ResponseEntity<ApiErro> credenciaisInvalidas(BadCredentialsException e) {
+        String msg = e.getMessage() != null && !e.getMessage().isBlank() ? e.getMessage() : "Email ou senha incorretos.";
         ApiErro apiErro = ApiErro.builder()
-                .status(HttpStatus.UNAUTHORIZED)
-                .mensagem("Email ou senha incorretos.")
-                .exception(BadCredentialsException.class.getName())
-                .build();
+            .status(HttpStatus.UNAUTHORIZED)
+            .mensagem(msg)
+            .exception(BadCredentialsException.class.getName())
+            .build();
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(apiErro);
     }
 

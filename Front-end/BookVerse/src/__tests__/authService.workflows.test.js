@@ -43,6 +43,19 @@ describe('authService workflows', () => {
 		await expect(loginUser({ email: 'admin@bookverse.com', password: 'admin123' })).rejects.toThrow('Network Error');
 	});
 
+	it('propagates backend error messages (403/401) to caller', async () => {
+		api.post.mockRejectedValueOnce({ response: { status: 403, data: { mensagem: 'Conta excluída. Entre em contato.' } } });
+
+		await expect(loginUser({ email: 'blocked@bookverse.com', password: 'any' })).rejects.toEqual(
+			expect.objectContaining({ response: { status: 403, data: { mensagem: 'Conta excluída. Entre em contato.' } } })
+		);
+
+		api.post.mockRejectedValueOnce({ response: { status: 401, data: { mensagem: 'Senha incorreta.' } } });
+		await expect(loginUser({ email: 'user@test.com', password: 'wrong' })).rejects.toEqual(
+			expect.objectContaining({ response: { status: 401, data: { mensagem: 'Senha incorreta.' } } })
+		);
+	});
+
 	it('throws backend auth errors instead of silently authenticating', async () => {
 		api.post.mockRejectedValueOnce({ response: { status: 401 } });
 

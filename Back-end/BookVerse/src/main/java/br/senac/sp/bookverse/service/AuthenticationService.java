@@ -39,11 +39,20 @@ public class AuthenticationService {
     public AuthenticationResponse login(LoginRequest request) {
         String email = request.email().trim().toLowerCase();
         log.debug("Tentativa de login recebida. email={}", email);
-        authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(email, request.senha()));
 
-        var usuario = userRepository.findByEmail(email)
-                .orElseThrow(() -> new BadCredentialsException("Usuário não encontrado após autenticação."));
+        var usuarioOpt = userRepository.findByEmail(email);
+        if (usuarioOpt.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email inválido.");
+        }
+
+        try {
+            authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(email, request.senha()));
+        } catch (BadCredentialsException ex) {
+            throw new BadCredentialsException("Senha incorreta.");
+        }
+
+        var usuario = usuarioOpt.get();
 
         String accessToken = jwtTokenProvider.criarTokenAcesso(usuario.getEmail(), usuario.getId(), usuario.getRole().name());
         String refreshToken = jwtTokenProvider.criarTokenRefresh(usuario.getEmail(), usuario.getId(), usuario.getRole().name());

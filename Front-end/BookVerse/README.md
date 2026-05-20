@@ -170,3 +170,58 @@ Observações:
 
 ---
 *Projeto desenvolvido para fins acadêmicos - BookVerse 2024.*
+
+## 🔐 Fluxo de Login e Validações
+
+- Requisição: `POST /api/v1/auth/login` com payload JSON `{ "email": "user@example.com", "senha": "string" }` (o frontend envia `email` e `password` e o service normaliza para `senha`).
+- Validações no Front-end:
+   - Formato de email validado via regex (ex: `nome@dominio.ext`).
+   - Senha aceita apenas caracteres ASCII imprimíveis (evita emojis/idiomas exóticos no campo de senha).
+   - Mensagens de erro são exibidas inline no formulário (não apenas Alerts): formato inválido, campos vazios, caracteres proibidos.
+- Validações no Back-end:
+   - DTOs de `LoginRequest` e `RegistrationRequest` possuem validação com `@Email`, `@Pattern` e `@Size`.
+   - Erros de validação retornam JSON padronizado `{ status, mensagem, exception }`.
+- Mensagens de erro específicas do back-end agora retornam:
+   - `400` com `mensagem: "Email inválido."` quando o email não existe.
+   - `401` com `mensagem: "Senha incorreta."` quando a senha falha na autenticação.
+   - `403` com `mensagem: "Conta excluída. Entre em contato com o administrador."` quando a conta está desativada.
+
+## 📌 Configuração do Axios (detalhes)
+
+- Base URL: configurada via `EXPO_PUBLIC_API_URL` ou detectada automaticamente (`src/services/api.js`).
+- Interceptors:
+   - Request: injeta header `Authorization: Bearer <token>` quando sessão aplicada.
+   - Response: intercepta `401` para tentativa de refresh de token; intercepta erros e propaga `response.data` com `mensagem` para o front-end.
+
+## ✅ Como o front-end apresenta erros de login
+
+- Erros de validação do cliente (formato de email inválido, caracteres inválidos na senha) são mostrados abaixo dos campos do formulário.
+- Erros retornados pelo servidor são exibidos inline com a mensagem exata enviada no corpo JSON (`mensagem`).
+
+## 🔁 Exemplo de uso (Login via curl)
+
+```bash
+curl -X POST http://localhost:8080/api/v1/auth/login \
+   -H "Content-Type: application/json" \
+   -d '{"email":"user@test.com","senha":"user123"}'
+```
+
+Resposta de sucesso (exemplo):
+
+```json
+{
+   "accessToken": "<jwt>",
+   "refreshToken": "<refresh>",
+   "item": { "user": { "id": 1, "name": "User", "email": "user@test.com", "role": "member" } }
+}
+```
+
+Resposta de erro (exemplo - senha incorreta):
+
+```json
+{
+   "status": 401,
+   "mensagem": "Senha incorreta.",
+   "exception": "org.springframework.security.authentication.BadCredentialsException"
+}
+```
