@@ -14,6 +14,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
@@ -33,6 +34,9 @@ class UserServiceTest {
 
     @Mock
     private CurrentUserService currentUserService;
+
+    @Mock
+    private PasswordEncoder passwordEncoder;
 
     @InjectMocks
     private UserService usuarioService;
@@ -104,7 +108,7 @@ class UserServiceTest {
         when(currentUserService.isAdmin(admin)).thenReturn(true);
         when(userRepository.findById(99L)).thenReturn(Optional.empty());
 
-        assertThrows(ResourceNotFoundException.class, () -> usuarioService.deletar(99L));
+        assertThrows(br.senac.sp.bookverse.exception.ResourceNotFoundException.class, () -> usuarioService.deletar(99L));
     }
 
     @Test
@@ -119,6 +123,27 @@ class UserServiceTest {
 
         assertEquals(1, resultado.getTotalElements());
         assertEquals("Leitor", resultado.getContent().get(0).nome());
+    }
+
+    @Test
+    void registrar_deveReativarUsuarioInativo_quandoEmailJaExiste() {
+        User inativo = usuario(3L, "Conta Antiga", "conta@bookverse.com", Role.USER);
+        inativo.setAtivo(false);
+
+        when(userRepository.findByEmail("conta@bookverse.com")).thenReturn(Optional.of(inativo));
+        when(passwordEncoder.encode("nova-senha")).thenReturn("senha-criptografada");
+        when(userRepository.save(inativo)).thenReturn(inativo);
+
+        var resultado = usuarioService.registrar(new br.senac.sp.bookverse.dto.RegistrationRequest(
+                "Conta Nova",
+                "conta@bookverse.com",
+                "nova-senha"
+        ));
+
+        assertEquals(Boolean.TRUE, inativo.getAtivo());
+        assertEquals("Conta Nova", resultado.nome());
+        assertEquals("conta@bookverse.com", resultado.email());
+        verify(userRepository).save(inativo);
     }
 
     @Test

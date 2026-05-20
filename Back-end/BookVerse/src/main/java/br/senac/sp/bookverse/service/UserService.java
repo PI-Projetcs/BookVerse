@@ -45,7 +45,19 @@ public class UserService {
     @Transactional
     public UserResponseDTO registrar(RegistrationRequest request) {
         String email = request.email().trim().toLowerCase();
-        if (userRepository.findByEmail(email).isPresent()) {
+        var existente = userRepository.findByEmail(email);
+        if (existente.isPresent()) {
+            User usuarioExistente = existente.get();
+
+            if (Boolean.FALSE.equals(usuarioExistente.getAtivo()) && Role.USER.equals(usuarioExistente.getRole())) {
+                usuarioExistente.setNome(request.nome().trim());
+                usuarioExistente.setSenha(passwordEncoder.encode(request.senha()));
+                usuarioExistente.setAtivo(true);
+                User reativado = userRepository.save(usuarioExistente);
+                log.info("Usuário reativado. id={}, email={}", reativado.getId(), reativado.getEmail());
+                return UserMapper.toResponse(reativado);
+            }
+
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email já cadastrado.");
         }
         User usuario = new User();
