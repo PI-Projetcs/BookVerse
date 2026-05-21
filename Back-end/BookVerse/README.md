@@ -51,6 +51,16 @@ src/main/java/br/senac/sp/bookverse/
    ```
 5. Acesse a documentação Swagger: `http://localhost:8080/swagger-ui.html`
 
+## 🗃️ Migrações de Banco
+
+O backend agora usa **Flyway** para aplicar migrações SQL automaticamente na inicialização.
+
+- O arquivo de migração atual está em `src/main/resources/db/migration/V1__add_moderation_columns.sql`.
+- Ao subir a aplicação com `./mvnw spring-boot:run`, o Flyway cria as colunas de moderação em `comments` e `ratings`.
+- Nos testes, o Flyway fica desabilitado para manter o perfil H2 com `create-drop`.
+
+Se você preferir executar manualmente no MySQL antes de subir a aplicação, rode o conteúdo do arquivo acima no seu cliente SQL.
+
 ## 🔗 Integração com o Front-end
 
 A API está configurada para aceitar requisições do front-end através de:
