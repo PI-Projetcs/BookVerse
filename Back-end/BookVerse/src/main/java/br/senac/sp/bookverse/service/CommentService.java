@@ -122,25 +122,6 @@ public class CommentService {
 					if (queryText.isEmpty()) {
 						return true;
 					}
-
-					@Transactional(readOnly = true)
-					public List<java.util.Map<String, Object>> listarComentariosDoAutorAutenticado() {
-						User atual = currentUserService.authenticatedUser();
-						Long userId = atual.getId();
-						List<Comment> comments = commentRepository.findByUsuarioId(userId);
-						return comments.stream().map(c -> {
-							java.util.Map<String, Object> m = new java.util.HashMap<>();
-							m.put("id", c.getId());
-							m.put("discussionTitle", c.getDiscussao() != null ? c.getDiscussao().getTitulo() : null);
-							m.put("bookTitle", c.getDiscussao() != null && c.getDiscussao().getLivro() != null ? c.getDiscussao().getLivro().getTitulo() : null);
-							m.put("date", c.getData());
-							m.put("text", c.getConteudo());
-							m.put("status", c.getStatus() != null ? c.getStatus().name().toLowerCase() : "pending");
-							m.put("adminFeedback", c.getAdminFeedback());
-							m.put("moderatedAt", c.getModeratedAt());
-							return m;
-						}).toList();
-					}
 					String author = comment.getUsuario() != null ? String.valueOf(comment.getUsuario().getNome()) : "";
 					String chapter = comment.getDiscussao() != null ? String.valueOf(comment.getDiscussao().getTitulo()) : "";
 					String book = (comment.getDiscussao() != null && comment.getDiscussao().getLivro() != null)
@@ -165,6 +146,25 @@ public class CommentService {
 					);
 				})
 				.toList();
+	}
+
+	@Transactional(readOnly = true)
+	public List<java.util.Map<String, Object>> listarComentariosDoAutorAutenticado() {
+		User atual = currentUserService.authenticatedUser();
+		Long userId = atual.getId();
+		List<Comment> comments = commentRepository.findByUsuarioId(userId);
+		return comments.stream().map(c -> {
+			java.util.Map<String, Object> m = new java.util.HashMap<>();
+			m.put("id", c.getId());
+			m.put("discussionTitle", c.getDiscussao() != null ? c.getDiscussao().getTitulo() : null);
+			m.put("bookTitle", c.getDiscussao() != null && c.getDiscussao().getLivro() != null ? c.getDiscussao().getLivro().getTitulo() : null);
+			m.put("date", c.getData());
+			m.put("text", c.getConteudo());
+			m.put("status", c.getStatus() != null ? c.getStatus().name().toLowerCase() : "pending");
+			m.put("adminFeedback", c.getAdminFeedback());
+			m.put("moderatedAt", c.getModeratedAt());
+			return m;
+		}).toList();
 	}
 
 	@Transactional

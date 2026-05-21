@@ -98,7 +98,7 @@ export async function promoteAdminMember(memberId) {
 
 export async function getModerationItems(params = {}) {
 	try {
-		const response = await api.get('/api/v1/admin/moderation', {
+		const response = await api.get('/api/v1/admin/comments-moderation', {
 			params: {
 				status: params?.status || 'pending',
 				query: params?.query || '',
@@ -121,7 +121,7 @@ export async function setModerationStatus(itemId, nextStatus) {
 		? nextStatus
 		: 'pending';
 	try {
-		const response = await api.post(`/api/v1/admin/moderation/${encodeURIComponent(String(itemId))}/status`, { status });
+		const response = await api.post(`/api/v1/admin/comments-moderation/${encodeURIComponent(String(itemId))}/status`, { status });
 		return normalizeModerationItem(response.data || { id: itemId, status });
 	} catch (error) {
 		throw error;
@@ -130,7 +130,7 @@ export async function setModerationStatus(itemId, nextStatus) {
 
 export async function approveComment(commentId) {
 	try {
-		const response = await api.post(`/api/v1/admin/moderation/comments/${encodeURIComponent(String(commentId))}/approve`);
+		const response = await api.post(`/api/v1/admin/comments-moderation/comments/${encodeURIComponent(String(commentId))}/approve`);
 		return normalizeModerationItem(response.data || { id: commentId, status: 'approved' });
 	} catch (error) {
 		throw error;
@@ -139,7 +139,7 @@ export async function approveComment(commentId) {
 
 export async function rejectComment(commentId, feedback) {
 	try {
-		const response = await api.post(`/api/v1/admin/moderation/comments/${encodeURIComponent(String(commentId))}/reject`, { feedback });
+		const response = await api.post(`/api/v1/admin/comments-moderation/comments/${encodeURIComponent(String(commentId))}/reject`, { feedback });
 		return normalizeModerationItem(response.data || { id: commentId, status: 'rejected' });
 	} catch (error) {
 		throw error;

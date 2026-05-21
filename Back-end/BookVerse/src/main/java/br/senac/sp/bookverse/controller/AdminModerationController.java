@@ -12,16 +12,12 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping({"/api/v1/admin/moderation", "/admin/moderation"})
+@RequestMapping({"/api/v1/admin/comments-moderation", "/admin/comments-moderation"})
 public class AdminModerationController {
 
     private final CommentService commentService;
     private final RatingService ratingService;
-
-    public AdminModerationController(CommentService commentService, RatingService ratingService) {
-        this.commentService = commentService;
-        this.ratingService = ratingService;
-    }
+    private final CommentRepository commentRepository;
 
     public AdminModerationController(CommentService commentService, RatingService ratingService, CommentRepository commentRepository) {
         this.commentService = commentService;
