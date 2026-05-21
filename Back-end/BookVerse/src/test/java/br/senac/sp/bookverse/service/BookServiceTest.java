@@ -49,6 +49,19 @@ class BookServiceTest {
     }
 
     @Test
+    void listarTodos_paginado_deveRetornarSomenteLivrosAtivosPorPadrao() {
+        Book livroAtivo = livro(new BookDTO(1L, "Book C", "Autor C", "Ação", 2022, "Sinopse C", "", "Biografia C", true, 4.8));
+        livroAtivo.setId(1L);
+        Page<Book> page = new PageImpl<>(List.of(livroAtivo));
+        when(bookRepository.findVisibleBooks(PageRequest.of(0, 20, org.springframework.data.domain.Sort.by("id")))).thenReturn(page);
+
+        Page<BookDTO> resultado = bookService.listarTodos(PageRequest.of(0, 20, org.springframework.data.domain.Sort.by("id")));
+
+        assertEquals(1, resultado.getTotalElements());
+        assertEquals("Book C", resultado.getContent().get(0).titulo());
+    }
+
+    @Test
     void buscarPorId_deveLancarException_quandoNaoExiste() {
         when(bookRepository.findById(99L)).thenReturn(Optional.empty());
 
@@ -72,7 +85,7 @@ class BookServiceTest {
         Book livro = livro(new BookDTO(1L, "Book C", "Autor C", "Ação", 2022, "Sinopse C", "", "Biografia C", true, 4.8));
         livro.setId(1L);
         Page<Book> page = new PageImpl<>(List.of(livro));
-        when(bookRepository.findAll(PageRequest.of(0, 20, org.springframework.data.domain.Sort.by("id")))).thenReturn(page);
+        when(bookRepository.findVisibleBooks(PageRequest.of(0, 20, org.springframework.data.domain.Sort.by("id")))).thenReturn(page);
 
         Page<BookDTO> resultado = bookService.listarTodos(PageRequest.of(0, 20, org.springframework.data.domain.Sort.by("id")));
 
@@ -85,7 +98,7 @@ class BookServiceTest {
         Book livro = livro(new BookDTO(1L, "Book D", "Autor D", "Ficção", 2024, "Sinopse D", "", "Biografia D", false, 4.5));
         livro.setId(1L);
         when(bookRepository.findById(1L)).thenReturn(Optional.of(livro));
-        when(bookRepository.findByDestaqueTrue()).thenReturn(List.of());
+        when(bookRepository.findVisibleFeaturedBooks()).thenReturn(List.of());
         when(bookRepository.save(org.mockito.ArgumentMatchers.any(Book.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         BookDTO resultado = bookService.definirLivroDoMes(1L);
@@ -106,7 +119,7 @@ class BookServiceTest {
         livroNovo.setId(1L);
 
         when(bookRepository.findById(1L)).thenReturn(Optional.of(livroNovo));
-        when(bookRepository.findByDestaqueTrue()).thenReturn(List.of(livroAntigo));
+        when(bookRepository.findVisibleFeaturedBooks()).thenReturn(List.of(livroAntigo));
         when(bookRepository.save(org.mockito.ArgumentMatchers.any(Book.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         bookService.definirLivroDoMes(1L);
@@ -116,12 +129,27 @@ class BookServiceTest {
     }
 
     @Test
+    void atualizarStatusAtivo_deveDesativarLivroERemoverDestaque() {
+        Book livro = livro(new BookDTO(1L, "Book E", "Autor E", "Drama", 2024, "Sinopse E", "", "Biografia E", true, 4.5));
+        livro.setId(1L);
+        livro.setDestaqueData(LocalDateTime.now());
+
+        when(bookRepository.findById(1L)).thenReturn(Optional.of(livro));
+        when(bookRepository.save(org.mockito.ArgumentMatchers.any(Book.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        BookDTO resultado = bookService.atualizarStatusAtivo(1L, false);
+
+        assertEquals(false, resultado.ativo());
+        assertEquals(false, resultado.destaque());
+    }
+
+    @Test
     void filtrarPorAutor_deveRetornarLivrosDoAutor() {
         Book livro1 = livro(new BookDTO(1L, "Book A", "Autor A", "Ficção", 2024, "Sinopse", "", "Biografia A", true, 4.5));
         Book livro2 = livro(new BookDTO(2L, "Book B", "Autor A", "Drama", 2023, "Sinopse", "", "Biografia B", false, 4.0));
         Book livro3 = livro(new BookDTO(3L, "Book C", "Autor B", "Ação", 2022, "Sinopse", "", "Biografia C", false, 4.8));
 
-        when(bookRepository.findByAutor("Autor A")).thenReturn(List.of(livro1, livro2));
+        when(bookRepository.findVisibleBooksByAutor("Autor A")).thenReturn(List.of(livro1, livro2));
 
         List<BookDTO> resultado = bookService.filtrarPorAutor("Autor A");
 
@@ -134,7 +162,7 @@ class BookServiceTest {
         Book livro1 = livro(new BookDTO(1L, "Book A", "Autor A", "Ficção", 2024, "Sinopse", "", "Biografia A", true, 4.5));
         Book livro2 = livro(new BookDTO(2L, "Book B", "Autor B", "Ficção", 2023, "Sinopse", "", "Biografia B", false, 4.0));
 
-        when(bookRepository.findByGenero("Ficção")).thenReturn(List.of(livro1, livro2));
+        when(bookRepository.findVisibleBooksByGenero("Ficção")).thenReturn(List.of(livro1, livro2));
 
         List<BookDTO> resultado = bookService.filtrarPorGenero("Ficção");
 
@@ -147,7 +175,7 @@ class BookServiceTest {
         Book livro1 = livro(new BookDTO(1L, "Book A", "Autor A", "Ficção", 2024, "Sinopse", "", "Biografia A", true, 4.5));
         Book livro2 = livro(new BookDTO(2L, "Book B", "Autor B", "Drama", 2024, "Sinopse", "", "Biografia B", false, 4.0));
 
-        when(bookRepository.findByAno(2024)).thenReturn(List.of(livro1, livro2));
+        when(bookRepository.findVisibleBooksByAno(2024)).thenReturn(List.of(livro1, livro2));
 
         List<BookDTO> resultado = bookService.filtrarPorAno(2024);
 
@@ -160,7 +188,7 @@ class BookServiceTest {
         Book livro1 = livro(new BookDTO(1L, "Book A", "Autor A", "Ficção", 2024, "Sinopse", "", "Biografia A", true, 4.5));
         Book livro2 = livro(new BookDTO(2L, "Book B", "Autor B", "Drama", 2023, "Sinopse", "", "Biografia B", false, 4.8));
 
-        when(bookRepository.findByMediaAvaliacaoGreaterThanEqual(4.0)).thenReturn(List.of(livro1, livro2));
+        when(bookRepository.findVisibleBooksByMediaAvaliacaoGreaterThanEqual(4.0)).thenReturn(List.of(livro1, livro2));
 
         List<BookDTO> resultado = bookService.filtrarPorAvaliacao(4.0);
 
@@ -176,8 +204,9 @@ class BookServiceTest {
         livro.setAno(dto.ano());
         livro.setSinopse(dto.sinopse());
         livro.setAuthorBio(dto.authorBio());
+        livro.setAtivo(true);
         livro.setDestaque(dto.destaque());
-            livro.setMediaAvaliacao(dto.mediaAvaliacao());
+        livro.setMediaAvaliacao(dto.mediaAvaliacao());
         return livro;
     }
 }

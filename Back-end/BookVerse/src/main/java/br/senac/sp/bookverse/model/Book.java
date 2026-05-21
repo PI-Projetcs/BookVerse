@@ -25,9 +25,19 @@ public class Book {
     @Column(columnDefinition = "TEXT")
     private String authorBio;
     private Integer paginas;
+    @Column(nullable = false)
+    private Boolean ativo = true;
     private Boolean destaque;
     private Double mediaAvaliacao;
     private LocalDateTime destaqueData;
+
+    @PrePersist
+    @PreUpdate
+    void ensureDefaultVisibility() {
+        if (ativo == null) {
+            ativo = true;
+        }
+    }
 
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "book_chapters", joinColumns = @JoinColumn(name = "book_id"))

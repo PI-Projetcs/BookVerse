@@ -51,11 +51,12 @@ export default function BookOfMonth({ navigation }) {
 
 	const filteredBooks = useMemo(() => {
 		const query = searchText.trim().toLowerCase();
+		const activeBooks = books.filter((book) => book.active !== false);
 		if (!query) {
-			return books;
+			return activeBooks;
 		}
 
-		return books.filter((book) =>
+		return activeBooks.filter((book) =>
 			[book.title, book.author, book.genre].join(' ').toLowerCase().includes(query)
 		);
 	}, [books, searchText]);

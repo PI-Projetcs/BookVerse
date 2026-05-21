@@ -5,6 +5,7 @@ import br.senac.sp.bookverse.dto.LoginRequest;
 import br.senac.sp.bookverse.dto.RefreshTokenRequest;
 import br.senac.sp.bookverse.dto.RefreshTokenResponse;
 import br.senac.sp.bookverse.mapper.UserMapper;
+import br.senac.sp.bookverse.model.User;
 import br.senac.sp.bookverse.repository.UserRepository;
 import br.senac.sp.bookverse.security.JwtTokenProvider;
 import io.jsonwebtoken.Claims;
@@ -16,6 +17,7 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 @Service
 public class AuthenticationService {
@@ -25,15 +27,18 @@ public class AuthenticationService {
     private final AuthenticationManager authenticationManager;
     private final UserRepository userRepository;
     private final JwtTokenProvider jwtTokenProvider;
+    private final PasswordEncoder passwordEncoder;
 
     public AuthenticationService(
             AuthenticationManager authenticationManager,
             UserRepository userRepository,
-            JwtTokenProvider jwtTokenProvider
+            JwtTokenProvider jwtTokenProvider,
+            PasswordEncoder passwordEncoder
     ) {
         this.authenticationManager = authenticationManager;
         this.userRepository = userRepository;
         this.jwtTokenProvider = jwtTokenProvider;
+        this.passwordEncoder = passwordEncoder;
     }
 
     public AuthenticationResponse login(LoginRequest request) {
@@ -49,7 +54,14 @@ public class AuthenticationService {
             authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(email, request.senha()));
         } catch (BadCredentialsException ex) {
-            throw new BadCredentialsException("Senha incorreta.");
+            if (loginLegadoComSenhaEmTextoPuro(usuarioOpt.get(), request.senha())) {
+                User usuarioLegado = usuarioOpt.get();
+                usuarioLegado.setSenha(passwordEncoder.encode(request.senha()));
+                userRepository.save(usuarioLegado);
+                log.info("Senha legada migrada para BCrypt. usuarioId={}, email={}", usuarioLegado.getId(), usuarioLegado.getEmail());
+            } else {
+                throw new BadCredentialsException("Senha incorreta.");
+            }
         }
 
         var usuario = usuarioOpt.get();
@@ -58,6 +70,27 @@ public class AuthenticationService {
         String refreshToken = jwtTokenProvider.criarTokenRefresh(usuario.getEmail(), usuario.getId(), usuario.getRole().name());
         log.info("Login realizado com sucesso. usuarioId={}, email={}", usuario.getId(), usuario.getEmail());
         return AuthenticationResponse.of(accessToken, refreshToken, UserMapper.toResponse(usuario));
+    }
+
+    private boolean loginLegadoComSenhaEmTextoPuro(User usuario, String senhaInformada) {
+        if (usuario == null || senhaInformada == null) {
+            return false;
+        }
+
+        String senhaArmazenada = usuario.getSenha();
+        if (senhaArmazenada == null || senhaArmazenada.isBlank()) {
+            return false;
+        }
+
+        if (senhaArmazenada.equals(senhaInformada)) {
+            return true;
+        }
+
+        try {
+            return passwordEncoder.matches(senhaInformada, senhaArmazenada);
+        } catch (IllegalArgumentException ex) {
+            return false;
+        }
     }
 
     public RefreshTokenResponse refreshToken(RefreshTokenRequest request) {

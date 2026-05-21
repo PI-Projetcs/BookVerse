@@ -28,6 +28,7 @@ public final class BookMapper {
                 book.getCoverUrl(),
                 book.getAuthorBio(),
                 book.getPaginas(),
+                book.getAtivo(),
                 book.getDestaque(),
                 book.getMediaAvaliacao(),
                 toChapterDTOs(book.getCapitulos())
@@ -57,6 +58,7 @@ public final class BookMapper {
         book.setCoverUrl(dto.coverUrl());
         book.setAuthorBio(dto.authorBio());
         book.setPaginas(dto.paginas());
+        book.setAtivo(dto.ativo() != null ? dto.ativo() : book.getAtivo() != null ? book.getAtivo() : true);
         book.setDestaque(dto.destaque());
         book.setCapitulos(toEntityChapters(dto.chapters()));
     }

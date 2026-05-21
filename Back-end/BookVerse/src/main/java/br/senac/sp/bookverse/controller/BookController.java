@@ -7,6 +7,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -35,8 +36,11 @@ public class BookController {
     }
 
     @GetMapping
-        public ResponseEntity<Page<BookDTO>> getBooks(@PageableDefault(size = 20, sort = "id") Pageable pageable) {
-            return ResponseEntity.ok(bookService.listarTodos(pageable));
+        public ResponseEntity<Page<BookDTO>> getBooks(
+                @PageableDefault(size = 20, sort = "id") Pageable pageable,
+                @RequestParam(defaultValue = "false") boolean includeInactive
+        ) {
+            return ResponseEntity.ok(bookService.listarTodos(pageable, includeInactive));
     }
 
     @PostMapping
@@ -52,6 +56,16 @@ public class BookController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<BookDTO> updateBook(@PathVariable Long id, @Valid @RequestBody BookDTO dto) {
         return ResponseEntity.ok(bookService.atualizar(id, dto));
+    }
+
+    @PatchMapping("/{id}/active")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<BookDTO> updateBookActiveStatus(@PathVariable Long id, @RequestBody ActiveStatusRequest request) {
+        if (request == null || request.ativo() == null) {
+            throw new org.springframework.web.server.ResponseStatusException(HttpStatus.BAD_REQUEST, "Campo ativo é obrigatório.");
+        }
+
+        return ResponseEntity.ok(bookService.atualizarStatusAtivo(id, request.ativo()));
     }
 
     @DeleteMapping("/{id}")
@@ -109,5 +123,8 @@ public class BookController {
         }
         var result = commentService.toggleCommentLike(commentId, liked);
         return ResponseEntity.ok(java.util.Map.of("item", result));
+    }
+
+    private record ActiveStatusRequest(Boolean ativo) {
     }
 }

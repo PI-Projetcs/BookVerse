@@ -67,7 +67,7 @@ public class HomeService {
             log.debug("Home acessado sem autenticação - retornando dados públicos");
         }
 
-        Optional<Book> livroDoMes = bookRepository.findByDestaqueTrue().stream().findFirst();
+        Optional<Book> livroDoMes = bookRepository.findByAtivoTrueAndDestaqueTrue().stream().findFirst();
         var livroDoMesDTO = livroDoMes.map(BookMapper::toDTO).orElse(null);
 
         List<ReadingHistory> historicoLeitura = usuarioAtual != null
@@ -98,7 +98,7 @@ public class HomeService {
             return new ProgressDTO(0, 0, 0, 1);
         }
 
-        Optional<Book> livroDoMes = bookRepository.findByDestaqueTrue().stream().findFirst();
+        Optional<Book> livroDoMes = bookRepository.findByAtivoTrueAndDestaqueTrue().stream().findFirst();
         ReadingHistory historicoUsuario = null;
         if (livroDoMes.isPresent()) {
             historicoUsuario = readingHistoryRepository.findByUsuarioAndLivro(usuario, livroDoMes.get())
@@ -218,7 +218,7 @@ public class HomeService {
         log.info("Atualizando progresso de leitura");
 
         User usuario = currentUserService.authenticatedUser();
-        Book livroDoMes = bookRepository.findByDestaqueTrue().stream()
+        Book livroDoMes = bookRepository.findByAtivoTrueAndDestaqueTrue().stream()
             .findFirst()
             .orElseThrow(() -> new IllegalStateException("Livro do mês não encontrado."));
 

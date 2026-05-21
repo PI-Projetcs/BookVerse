@@ -2,6 +2,7 @@ package br.senac.sp.bookverse.service;
 
 import br.senac.sp.bookverse.dto.LoginRequest;
 import br.senac.sp.bookverse.model.User;
+import br.senac.sp.bookverse.model.Role;
 import br.senac.sp.bookverse.repository.UserRepository;
 import br.senac.sp.bookverse.security.JwtTokenProvider;
 import org.junit.jupiter.api.BeforeEach;
@@ -12,12 +13,14 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -31,6 +34,9 @@ class AuthenticationServiceTest {
 
     @Mock
     private JwtTokenProvider jwtTokenProvider;
+
+    @Mock
+    private PasswordEncoder passwordEncoder;
 
     @InjectMocks
     private AuthenticationService authenticationService;
@@ -59,6 +65,7 @@ class AuthenticationServiceTest {
         when(userRepository.findByEmail("user@test.com")).thenReturn(Optional.of(user));
         when(authenticationManager.authenticate(org.mockito.ArgumentMatchers.any()))
                 .thenThrow(new BadCredentialsException("bad"));
+        when(passwordEncoder.matches("wrongpass", "encoded")).thenReturn(false);
 
         BadCredentialsException ex = assertThrows(BadCredentialsException.class, () ->
                 authenticationService.login(new LoginRequest("user@test.com", "wrongpass"))
@@ -66,4 +73,28 @@ class AuthenticationServiceTest {
 
         assertEquals("Senha incorreta.", ex.getMessage());
     }
+
+        @Test
+        void login_shouldMigrarSenhaLegada_quandoSenhaEstiverEmTextoPuro() {
+        User user = new User();
+        user.setId(1L);
+        user.setEmail("admin@bookverse.com");
+        user.setSenha("admin123");
+        user.setNome("Administrador");
+        user.setRole(Role.ADMIN);
+        when(userRepository.findByEmail("admin@bookverse.com")).thenReturn(Optional.of(user));
+        when(authenticationManager.authenticate(org.mockito.ArgumentMatchers.any()))
+            .thenThrow(new BadCredentialsException("bad"));
+        when(passwordEncoder.encode("admin123")).thenReturn("bcrypt-admin123");
+        when(jwtTokenProvider.criarTokenAcesso(org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.anyLong(), org.mockito.ArgumentMatchers.anyString()))
+            .thenReturn("access-token");
+        when(jwtTokenProvider.criarTokenRefresh(org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.anyLong(), org.mockito.ArgumentMatchers.anyString()))
+            .thenReturn("refresh-token");
+
+        var response = authenticationService.login(new LoginRequest("admin@bookverse.com", "admin123"));
+
+        assertEquals("access-token", response.accessToken());
+        assertEquals("refresh-token", response.refreshToken());
+        verify(userRepository).save(user);
+        }
 }

@@ -26,7 +26,7 @@ class BookRepositoryTest {
                 livro("Livro 3", "Autor B", "Ficção", false)
         ));
 
-        List<Book> resultado = bookRepository.findByAutor("Autor A");
+        List<Book> resultado = bookRepository.findVisibleBooksByAutor("Autor A");
 
         assertEquals(2, resultado.size());
         assertTrue(resultado.stream().allMatch(book -> "Autor A".equals(book.getAutor())));
@@ -40,7 +40,7 @@ class BookRepositoryTest {
                 livro("Livro 3", "Autor C", "Drama", false)
         ));
 
-        List<Book> resultado = bookRepository.findByGenero("Ficção");
+        List<Book> resultado = bookRepository.findVisibleBooksByGenero("Ficção");
 
         assertEquals(2, resultado.size());
         assertTrue(resultado.stream().allMatch(book -> "Ficção".equals(book.getGenero())));
@@ -53,7 +53,7 @@ class BookRepositoryTest {
                 livro("Livro do Mês", "Autor B", "Drama", true)
         ));
 
-        List<Book> resultado = bookRepository.findByDestaqueTrue();
+        List<Book> resultado = bookRepository.findVisibleFeaturedBooks();
 
         assertEquals(1, resultado.size());
         assertEquals("Livro do Mês", resultado.get(0).getTitulo());
@@ -72,7 +72,7 @@ class BookRepositoryTest {
 
         bookRepository.saveAll(List.of(livro2020, livro2021, livro2024));
 
-        List<Book> resultado = bookRepository.findByAno(2021);
+        List<Book> resultado = bookRepository.findVisibleBooksByAno(2021);
 
         assertEquals(1, resultado.size());
         assertEquals("Livro 2021", resultado.get(0).getTitulo());
@@ -92,10 +92,23 @@ class BookRepositoryTest {
 
         bookRepository.saveAll(List.of(livro1, livro2, livro3));
 
-        List<Book> resultado = bookRepository.findByMediaAvaliacaoGreaterThanEqual(4.0);
+        List<Book> resultado = bookRepository.findVisibleBooksByMediaAvaliacaoGreaterThanEqual(4.0);
 
         assertEquals(2, resultado.size());
         assertTrue(resultado.stream().allMatch(book -> book.getMediaAvaliacao() >= 4.0));
+    }
+
+    @Test
+    void findByAtivoTrue_deveRetornarSomenteLivrosAtivos() {
+        bookRepository.saveAll(List.of(
+                livro("Livro Ativo", "Autor A", "Ficção", false),
+                livroInativo("Livro Inativo", "Autor B", "Drama", false)
+        ));
+
+        List<Book> resultado = bookRepository.findVisibleBooks();
+
+        assertEquals(1, resultado.size());
+        assertTrue(resultado.stream().allMatch(book -> Boolean.TRUE.equals(book.getAtivo())));
     }
 
     private static Book livro(String titulo, String autor, String genero, boolean destaque) {
@@ -105,8 +118,15 @@ class BookRepositoryTest {
         livro.setGenero(genero);
         livro.setAno(2024);
         livro.setSinopse("Sinopse " + titulo);
+        livro.setAtivo(true);
         livro.setDestaque(destaque);
         livro.setMediaAvaliacao(4.0);
+        return livro;
+    }
+
+    private static Book livroInativo(String titulo, String autor, String genero, boolean destaque) {
+        Book livro = livro(titulo, autor, genero, destaque);
+        livro.setAtivo(false);
         return livro;
     }
 }

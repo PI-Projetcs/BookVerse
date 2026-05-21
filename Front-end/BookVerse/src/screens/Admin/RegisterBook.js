@@ -45,6 +45,7 @@ const EMPTY_FORM = {
   coverUrl: '',
   synopsis: '',
   pages: '',
+  isActive: true,
   isHighlight: false,
   chapters: [],
 };
@@ -77,6 +78,7 @@ function mapBookToForm(book) {
     coverUrl: book?.coverUrl || '',
     synopsis: book?.synopsis || '',
     pages: book?.pages ? String(book.pages) : '',
+    isActive: book?.active !== false,
     isHighlight: Boolean(book?.highlight),
     chapters: normalizeChapters(book?.chapters),
   };
@@ -181,6 +183,7 @@ export default function RegisterBook({ navigation, route }) {
       coverUrl: form.coverUrl.trim(),
       synopsis: form.synopsis.trim(),
       pages: form.pages ? Number(form.pages) : null,
+      active: form.isActive,
       highlight: form.isHighlight,
       chapters: form.chapters
         .map((chapter, index) => ({
@@ -471,6 +474,32 @@ export default function RegisterBook({ navigation, route }) {
                   accessibilityLabel="Total de páginas"
                 />
               </View>
+              <View style={styles.column}>
+                <Text style={styles.fieldLabel}>Disponível</Text>
+                <TouchableOpacity
+                  style={[styles.input, { justifyContent: 'center' }]}
+                  onPress={() => handleChange('isActive', !form.isActive)}
+                  activeOpacity={0.7}
+                  hitSlop={HIT_SLOP}
+                  accessibilityRole="switch"
+                  accessibilityLabel="Marcar como livro disponível"
+                  accessibilityState={{ checked: form.isActive }}
+                >
+                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <Text style={form.isActive ? { color: '#0f766e', fontWeight: '600' } : { color: '#94a3b8' }}>
+                      {form.isActive ? 'Sim' : 'Não'}
+                    </Text>
+                    <Ionicons
+                      name={form.isActive ? 'checkbox' : 'checkbox-outline'}
+                      size={20}
+                      color={form.isActive ? '#0f766e' : '#cbd5e1'}
+                    />
+                  </View>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            <View style={styles.row}>
               <View style={styles.column}>
                 <Text style={styles.fieldLabel}>Destaque</Text>
                 <TouchableOpacity

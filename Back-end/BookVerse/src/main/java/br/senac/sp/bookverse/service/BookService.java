@@ -9,8 +9,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -28,19 +30,33 @@ public class BookService {
 
     @Transactional(readOnly = true)
     public List<BookDTO> listarTodos() {
-        return StreamSupport.stream(bookRepository.findAll().spliterator(), false)
+        return listarTodos(false);
+    }
+
+    @Transactional(readOnly = true)
+    public List<BookDTO> listarTodos(boolean incluirInativos) {
+        Iterable<Book> livros = incluirInativos ? bookRepository.findAll() : bookRepository.findVisibleBooks();
+        return StreamSupport.stream(livros.spliterator(), false)
                 .map(BookMapper::toDTO)
                 .toList();
     }
 
     @Transactional(readOnly = true)
     public Page<BookDTO> listarTodos(Pageable pageable) {
-        return bookRepository.findAll(pageable).map(BookMapper::toDTO);
+        return listarTodos(pageable, false);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<BookDTO> listarTodos(Pageable pageable, boolean incluirInativos) {
+        Page<Book> pagina = incluirInativos
+                ? bookRepository.findAll(pageable)
+                : bookRepository.findVisibleBooks(pageable);
+        return pagina.map(BookMapper::toDTO);
     }
 
     @Transactional(readOnly = true)
     public BookDTO buscarPorId(Long id) {
-        return BookMapper.toDTO(buscarEntidadePorId(id));
+        return BookMapper.toDTO(buscarEntidadeAtivaPorId(id));
     }
 
     @Transactional
@@ -60,6 +76,22 @@ public class BookService {
     }
 
     @Transactional
+    public BookDTO atualizarStatusAtivo(Long id, Boolean ativo) {
+        Book livro = buscarEntidadePorId(id);
+        boolean novoStatus = ativo == null || ativo;
+
+        livro.setAtivo(novoStatus);
+        if (!novoStatus) {
+            livro.setDestaque(false);
+            livro.setDestaqueData(null);
+        }
+
+        Book salvo = bookRepository.save(livro);
+        log.info("Status de visibilidade atualizado. id={}, ativo={}", id, novoStatus);
+        return BookMapper.toDTO(salvo);
+    }
+
+    @Transactional
     public void deletar(Long id) {
         Book livro = buscarEntidadePorId(id);
         bookRepository.delete(livro);
@@ -70,8 +102,12 @@ public class BookService {
     public BookDTO definirLivroDoMes(Long id) {
         Book livro = buscarEntidadePorId(id);
 
+        if (!Boolean.TRUE.equals(livro.getAtivo())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Livro inativo não pode ser definido como livro do mês.");
+        }
+
         // Remove destaque de outros livros do mês
-        bookRepository.findByDestaqueTrue()
+        bookRepository.findVisibleFeaturedBooks()
                 .forEach(b -> {
                     b.setDestaque(false);
                     b.setDestaqueData(null);
@@ -88,7 +124,7 @@ public class BookService {
     @Transactional(readOnly = true)
     public List<BookDTO> filtrarPorAutor(String autor) {
         log.debug("Filtrando livros por autor: {}", autor);
-        return bookRepository.findByAutor(autor).stream()
+        return bookRepository.findVisibleBooksByAutor(autor).stream()
                 .map(BookMapper::toDTO)
                 .toList();
     }
@@ -96,7 +132,7 @@ public class BookService {
     @Transactional(readOnly = true)
     public List<BookDTO> filtrarPorGenero(String genero) {
         log.debug("Filtrando livros por gênero: {}", genero);
-        return bookRepository.findByGenero(genero).stream()
+        return bookRepository.findVisibleBooksByGenero(genero).stream()
                 .map(BookMapper::toDTO)
                 .toList();
     }
@@ -104,7 +140,7 @@ public class BookService {
     @Transactional(readOnly = true)
     public List<BookDTO> filtrarPorAno(Integer ano) {
         log.debug("Filtrando livros por ano: {}", ano);
-        return bookRepository.findByAno(ano).stream()
+        return bookRepository.findVisibleBooksByAno(ano).stream()
                 .map(BookMapper::toDTO)
                 .toList();
     }
@@ -112,9 +148,15 @@ public class BookService {
     @Transactional(readOnly = true)
     public List<BookDTO> filtrarPorAvaliacao(Double minima) {
         log.debug("Filtrando livros com avaliação mínima: {}", minima);
-        return bookRepository.findByMediaAvaliacaoGreaterThanEqual(minima).stream()
+        return bookRepository.findVisibleBooksByMediaAvaliacaoGreaterThanEqual(minima).stream()
                 .map(BookMapper::toDTO)
                 .toList();
+    }
+
+    private Book buscarEntidadeAtivaPorId(Long id) {
+        return bookRepository.findById(id)
+            .filter(book -> !Boolean.FALSE.equals(book.getAtivo()))
+                .orElseThrow(() -> new ResourceNotFoundException("Book não encontrado."));
     }
 
     private Book buscarEntidadePorId(Long id) {

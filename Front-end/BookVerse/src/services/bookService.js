@@ -31,6 +31,7 @@ function toBackendBookPayload(bookData = {}) {
 		coverUrl: bookData?.coverUrl || '',
 		authorBio: bookData?.authorBio || bookData?.author_bio || bookData?.aboutAuthor || '',
 		paginas: bookData?.paginas ?? bookData?.pages ?? null,
+		ativo: Boolean(bookData?.ativo ?? bookData?.active ?? bookData?.available ?? true),
 		destaque: Boolean(bookData?.destaque ?? bookData?.highlight ?? false),
 		// Include chapters payload to allow backend to persist chapter list
 		chapters: Array.isArray(bookData?.chapters)
@@ -54,6 +55,7 @@ function normalizeBook(book = {}, index = 0) {
 		authorBio: book.authorBio || book.author_bio || '',
 		synopsis: book.synopsis || book.sinopse || '',
 		pages: Number(book.pages ?? book.paginas) || null,
+		active: Boolean(book.active ?? book.ativo ?? true),
 		highlight: Boolean(book.highlight ?? book.destaque ?? false),
 		chapters: Array.isArray(book.chapters)
 			? book.chapters.map((ch, idx) => ({ id: Number(ch.id ?? idx + 1), title: ch.title || ch.titulo || String(ch) }))
@@ -221,15 +223,15 @@ export async function getCatalogBooks({ query = '', sortBy = 'title' } = {}) {
 		});
 
 		if (Array.isArray(response.data)) {
-			return filterAndSortBooks(normalizeList(response.data), { query, sortBy });
+			return filterAndSortBooks(normalizeList(response.data).filter((book) => book.active !== false), { query, sortBy });
 		}
 
 		if (Array.isArray(response.data?.items)) {
-			return filterAndSortBooks(normalizeList(response.data.items), { query, sortBy });
+			return filterAndSortBooks(normalizeList(response.data.items).filter((book) => book.active !== false), { query, sortBy });
 		}
 
 		if (Array.isArray(response.data?.content)) {
-			return filterAndSortBooks(normalizeList(response.data.content), { query, sortBy });
+			return filterAndSortBooks(normalizeList(response.data.content).filter((book) => book.active !== false), { query, sortBy });
 		}
 
 		return [];
@@ -254,7 +256,11 @@ export async function getBookById(bookId) {
 
 export async function getAdminBooks() {
 	try {
-		const response = await api.get('/api/v1/books');
+		const response = await api.get('/api/v1/books', {
+			params: {
+				includeInactive: true,
+			},
+		});
 
 		if (Array.isArray(response.data)) {
 			return normalizeList(response.data).sort((left, right) => right.id - left.id);
@@ -288,6 +294,20 @@ export async function updateAdminBook(bookId, bookData) {
 
 	try {
 		const response = await api.put(`/api/v1/books/${bookId}`, toBackendBookPayload(bookData));
+
+		if (response.data?.item) {
+			return normalizeBook(response.data.item);
+		}
+
+		return normalizeBook(response.data);
+	} catch (error) {
+		throw error;
+	}
+}
+
+export async function updateAdminBookStatus(bookId, ativo) {
+	try {
+		const response = await api.patch(`/api/v1/books/${bookId}/active`, { ativo: Boolean(ativo) });
 
 		if (response.data?.item) {
 			return normalizeBook(response.data.item);

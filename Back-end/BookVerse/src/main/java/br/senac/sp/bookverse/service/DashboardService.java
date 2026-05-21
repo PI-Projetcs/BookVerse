@@ -51,7 +51,7 @@ public class DashboardService {
                 .average()
                 .orElse(0.0);
 
-        String livroDestaqueAtual = bookRepository.findByDestaqueTrue()
+        String livroDestaqueAtual = bookRepository.findByAtivoTrueAndDestaqueTrue()
                 .stream()
                 .map(Book::getTitulo)
                 .collect(Collectors.joining(", "));

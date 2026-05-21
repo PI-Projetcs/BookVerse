@@ -15,7 +15,7 @@ import Header from '../../components/Header';
 import FooterNav from '../../components/FooterNav';
 import { ADMIN_FOOTER_ITEMS } from '../../constants/adminFooterItems';
 import { GENRE_CHIP_STYLES, normalizeGenreKey } from '../../constants/genreThemes';
-import { deleteAdminBook, getAdminBooks } from '../../services/bookService';
+import { deleteAdminBook, getAdminBooks, updateAdminBookStatus } from '../../services/bookService';
 import { adminBooksStyles as styles } from '../../styles/adminBooksStyles';
 
 const COVER_PLACEHOLDER = 'https://placehold.co/180x240/e5e7eb/475569?text=BookV';
@@ -91,6 +91,15 @@ export default function AdminBooks({ navigation }) {
 		]);
 	};
 
+	const handleToggleActive = async (book) => {
+		try {
+			const updated = await updateAdminBookStatus(book.id, !book.active);
+			setBooks((prev) => prev.map((item) => (item.id === book.id ? { ...item, ...updated } : item)));
+		} catch (error) {
+			Alert.alert('Erro', 'Não foi possível atualizar a disponibilidade do livro.');
+		}
+	};
+
 	const renderBookCard = ({ item }) => (
 		(() => {
 			const genreLabel = item.genre || 'Geral';
@@ -101,7 +110,7 @@ export default function AdminBooks({ navigation }) {
 			const genreTextStyle = genreTheme ? { color: genreTheme.textColor } : null;
 
 			return (
-		<View style={styles.card}>
+			<View style={[styles.card, item.active === false ? { opacity: 0.72 } : null]}>
 			<View style={styles.coverFrame}>
 				<Image
 					source={{ uri: item.coverUrl || COVER_PLACEHOLDER }}
@@ -115,6 +124,11 @@ export default function AdminBooks({ navigation }) {
 				<View style={[styles.cardMetaChip, genreChipStyle]}>
 					<Text style={[styles.cardMetaChipText, genreTextStyle]} numberOfLines={1}>{genreLabel}</Text>
 				</View>
+					<View style={[styles.cardMetaChip, item.active === false ? { backgroundColor: 'rgba(239,68,68,0.12)', borderColor: 'rgba(239,68,68,0.35)' } : { backgroundColor: 'rgba(16,185,129,0.12)', borderColor: 'rgba(16,185,129,0.25)' }]}>
+						<Text style={[styles.cardMetaChipText, { color: item.active === false ? '#b91c1c' : '#047857' }]} numberOfLines={1}>
+							{item.active === false ? 'Inativo' : 'Ativo'}
+						</Text>
+					</View>
 				<View style={styles.cardMetaChip}>
 					<Text style={styles.cardMetaChipText} numberOfLines={1}>{item.year || 'Sem ano'}</Text>
 				</View>
@@ -145,6 +159,19 @@ export default function AdminBooks({ navigation }) {
 					<Ionicons name="trash-outline" size={14} color="#9f1239" />
 					<Text style={[styles.cardActionText, { color: '#9f1239' }]}>Excluir</Text>
 				</TouchableOpacity>
+					<TouchableOpacity
+						style={[styles.cardActionButton, { backgroundColor: item.active === false ? '#ecfdf5' : '#fff1f2' }]}
+						activeOpacity={0.85}
+						onPress={() => handleToggleActive(item)}
+						hitSlop={HIT_SLOP}
+						accessibilityRole="button"
+						accessibilityLabel={item.active === false ? `Ativar livro ${item.title}` : `Desativar livro ${item.title}`}
+					>
+						<Ionicons name={item.active === false ? 'checkmark-circle-outline' : 'ban-outline'} size={14} color={item.active === false ? '#047857' : '#b91c1c'} />
+						<Text style={[styles.cardActionText, { color: item.active === false ? '#047857' : '#b91c1c' }]}>
+							{item.active === false ? 'Ativar' : 'Desativar'}
+						</Text>
+					</TouchableOpacity>
 			</View>
 		</View>
 			);

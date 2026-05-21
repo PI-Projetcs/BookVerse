@@ -16,17 +16,26 @@ public record BookDTO(
         @Size(max = 4000, message = "Sobre o autor deve ter no máximo 4000 caracteres")
         String authorBio,
         Integer paginas,
+        Boolean ativo,
         Boolean destaque,
         @Min(value = 0, message = "Avaliação mínima é 0")
         @Max(value = 5, message = "Avaliação máxima é 5") Double mediaAvaliacao,
         List<ChapterDTO> chapters
 ) {
         public BookDTO(Long id, String titulo, String autor, String genero, Integer ano, String sinopse, String coverUrl, String authorBio, Boolean destaque, Double mediaAvaliacao) {
-                this(id, titulo, autor, genero, ano, sinopse, coverUrl, authorBio, null, destaque, mediaAvaliacao, List.of());
+                this(id, titulo, autor, genero, ano, sinopse, coverUrl, authorBio, null, true, destaque, mediaAvaliacao, List.of());
         }
 
         public BookDTO(Long id, String titulo, String autor, String genero, Integer ano, String sinopse, String coverUrl, String authorBio, Integer paginas, Boolean destaque, Double mediaAvaliacao) {
-                this(id, titulo, autor, genero, ano, sinopse, coverUrl, authorBio, paginas, destaque, mediaAvaliacao, List.of());
+                this(id, titulo, autor, genero, ano, sinopse, coverUrl, authorBio, paginas, true, destaque, mediaAvaliacao, List.of());
+        }
+
+        public BookDTO(Long id, String titulo, String autor, String genero, Integer ano, String sinopse, String coverUrl, String authorBio, Boolean ativo, Boolean destaque, Double mediaAvaliacao) {
+                this(id, titulo, autor, genero, ano, sinopse, coverUrl, authorBio, null, ativo, destaque, mediaAvaliacao, List.of());
+        }
+
+        public BookDTO(Long id, String titulo, String autor, String genero, Integer ano, String sinopse, String coverUrl, String authorBio, Integer paginas, Boolean ativo, Boolean destaque, Double mediaAvaliacao) {
+                this(id, titulo, autor, genero, ano, sinopse, coverUrl, authorBio, paginas, ativo, destaque, mediaAvaliacao, List.of());
         }
 
     public record ChapterDTO(
