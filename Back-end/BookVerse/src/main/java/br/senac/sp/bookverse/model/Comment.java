@@ -27,4 +27,14 @@ public class Comment {
     @ManyToOne
     @JoinColumn(name = "discussion_id", nullable = false)
     private Discussion discussao;
+
+    @Lob
+    @Column(name = "admin_feedback")
+    private String adminFeedback;
+
+    @ManyToOne
+    @JoinColumn(name = "moderated_by")
+    private User moderatedBy;
+
+    private LocalDateTime moderatedAt;
 }

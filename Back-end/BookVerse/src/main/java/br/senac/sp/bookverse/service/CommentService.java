@@ -163,6 +163,46 @@ public class CommentService {
 	}
 
 	@Transactional
+	public CommentDTO approveComment(Long id) {
+		Comment comentario = buscarEntidadePorId(id);
+		User atual = currentUserService.authenticatedUser();
+		if (!currentUserService.isAdmin(atual)) {
+			throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Apenas administrador pode aprovar comentários.");
+		}
+		comentario.setStatus(CommentStatus.APPROVED);
+		comentario.setModeratedBy(atual);
+		comentario.setModeratedAt(LocalDateTime.now());
+		comentario.setAdminFeedback(null);
+		Comment salvo = commentRepository.save(comentario);
+		CommentDTO dto = CommentMapper.toDTO(salvo);
+		long likes = commentLikeRepository.countByCommentIdAndLikedTrue(salvo.getId());
+		return new CommentDTO(
+				dto.id(), dto.conteudo(), dto.data(), dto.discussaoId(), dto.discussaoTitulo(),
+				dto.usuarioId(), dto.usuarioNome(), dto.status(), (int) likes, false
+		);
+	}
+
+	@Transactional
+	public CommentDTO rejectComment(Long id, String feedback) {
+		Comment comentario = buscarEntidadePorId(id);
+		User atual = currentUserService.authenticatedUser();
+		if (!currentUserService.isAdmin(atual)) {
+			throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Apenas administrador pode rejeitar comentários.");
+		}
+		comentario.setStatus(CommentStatus.REJECTED);
+		comentario.setModeratedBy(atual);
+		comentario.setModeratedAt(LocalDateTime.now());
+		comentario.setAdminFeedback(feedback);
+		Comment salvo = commentRepository.save(comentario);
+		CommentDTO dto = CommentMapper.toDTO(salvo);
+		long likes = commentLikeRepository.countByCommentIdAndLikedTrue(salvo.getId());
+		return new CommentDTO(
+				dto.id(), dto.conteudo(), dto.data(), dto.discussaoId(), dto.discussaoTitulo(),
+				dto.usuarioId(), dto.usuarioNome(), dto.status(), (int) likes, false
+		);
+	}
+
+	@Transactional
 	public CommentDTO toggleCommentLike(Long commentId, Boolean liked) {
 		Comment comentario = buscarEntidadePorId(commentId);
 		User usuario = currentUserService.authenticatedUser();

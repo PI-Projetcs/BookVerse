@@ -24,4 +24,14 @@ public class Rating {
     @ManyToOne
     @JoinColumn(name = "book_id", nullable = false)
     private Book livro;
+
+    @Lob
+    @Column(name = "admin_feedback")
+    private String adminFeedback;
+
+    @ManyToOne
+    @JoinColumn(name = "moderated_by")
+    private User moderatedBy;
+
+    private java.time.LocalDateTime moderatedAt;
 }

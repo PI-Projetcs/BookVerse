@@ -8,6 +8,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
 import java.util.Optional;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 public interface RatingRepository extends JpaRepository<Rating, Long> {
     List<Rating> findByUsuarioId(Long usuarioId);
@@ -16,5 +18,10 @@ public interface RatingRepository extends JpaRepository<Rating, Long> {
     Page<Rating> findByLivroId(Long livroId, Pageable pageable);
     Optional<Rating> findByLivroIdAndUsuarioId(Long livroId, Long usuarioId);
     List<Rating> findByStatus(RatingStatus status);
+
+    @Query("select avg(r.nota) from Rating r where r.livro.id = :bookId and r.status = 'APPROVED' and r.nota is not null")
+    Double findAverageRatingForBook(@Param("bookId") Long bookId);
+
+    long countByLivroIdAndStatusAndNotaNotNull(Long livroId, RatingStatus status);
 }
 

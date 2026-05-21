@@ -114,6 +114,44 @@ public class RatingService {
 		return RatingMapper.toDTO(saved);
 	}
 
+	@Transactional
+	public RatingDTO approveRating(Long id) {
+		Rating rating = buscarEntidadePorId(id);
+		User atual = currentUserService.authenticatedUser();
+		if (!currentUserService.isAdmin(atual)) {
+			throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Apenas administrador pode aprovar avaliações.");
+		}
+		rating.setStatus(RatingStatus.APPROVED);
+		rating.setModeratedBy(atual);
+		rating.setModeratedAt(java.time.LocalDateTime.now());
+		rating.setAdminFeedback(null);
+		Rating saved = ratingRepository.save(rating);
+		Long livroId = saved.getLivro() != null ? saved.getLivro().getId() : null;
+		if (livroId != null) {
+			atualizarMediaAvaliacaoLivro(livroId);
+		}
+		return RatingMapper.toDTO(saved);
+	}
+
+	@Transactional
+	public RatingDTO rejectRating(Long id, String feedback) {
+		Rating rating = buscarEntidadePorId(id);
+		User atual = currentUserService.authenticatedUser();
+		if (!currentUserService.isAdmin(atual)) {
+			throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Apenas administrador pode rejeitar avaliações.");
+		}
+		rating.setStatus(RatingStatus.REJECTED);
+		rating.setModeratedBy(atual);
+		rating.setModeratedAt(java.time.LocalDateTime.now());
+		rating.setAdminFeedback(feedback);
+		Rating saved = ratingRepository.save(rating);
+		Long livroId = saved.getLivro() != null ? saved.getLivro().getId() : null;
+		if (livroId != null) {
+			atualizarMediaAvaliacaoLivro(livroId);
+		}
+		return RatingMapper.toDTO(saved);
+	}
+
 	@Transactional(readOnly = true)
 	public RatingDTO buscarPorId(Long id) {
 		return RatingMapper.toDTO(buscarEntidadePorId(id));
