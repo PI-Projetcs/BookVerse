@@ -16,7 +16,7 @@ import Header from '../../components/Header';
 import { ADMIN_FOOTER_ITEMS } from '../../constants/adminFooterItems';
 import {
   getAdminMembers,
-  updateAdminMemberRole,
+  promoteAdminMember,
   updateAdminMemberStatus,
 } from '../../services/adminService';
 import { adminMembersStyles as styles } from '../../styles/adminMembersStyles';
@@ -90,12 +90,11 @@ export default function ManageUsers({ navigation }) {
 
     try {
       setRoleUpdatingMemberId(member.id);
-      const nextRole = member.role === 'moderator' ? 'member' : 'moderator';
-      const updated = await updateAdminMemberRole(member.id, nextRole);
+      const updated = await promoteAdminMember(member.id);
       if (!updated) return;
       setMembers((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
         } catch (error) {
-          let backendMsg = 'Não foi possível alterar o papel deste usuário agora.';
+          let backendMsg = 'Não foi possível promover este usuário agora.';
           if (error?.response?.data?.message) {
             backendMsg = error.response.data.message;
           } else if (error?.response?.data?.error) {
@@ -173,11 +172,10 @@ export default function ManageUsers({ navigation }) {
           <ScrollView contentContainerStyle={styles.listContent} showsVerticalScrollIndicator={false}>
             {members.map((member) => {
               const badgeStyle = getStatusBadgeStyle(member.status);
-              const isModerator = member.role === 'moderator';
               const isAdmin = member.role === 'admin';
               const isRoleUpdating = roleUpdatingMemberId === member.id;
-              const canToggleStatus = member.role === 'member';
-              const canToggleRole = !isAdmin;
+              const canToggleStatus = !isAdmin;
+              const canPromote = member.role === 'member';
               return (
                 <View key={member.id} style={styles.card}>
                   <View style={styles.headerRow}>
@@ -193,7 +191,7 @@ export default function ManageUsers({ navigation }) {
 
                   <View style={styles.metaRow}>
                     <View style={styles.metaChip}>
-                      <Text style={styles.metaChipText}>{isAdmin ? 'Administrador' : isModerator ? 'Moderador' : 'Membro'}</Text>
+                      <Text style={styles.metaChipText}>{isAdmin ? 'Administrador' : 'Membro'}</Text>
                     </View>
                     <View style={styles.metaChip}>
                       <Text style={styles.metaChipText}>{member.booksRead} livros lidos</Text>
@@ -204,23 +202,23 @@ export default function ManageUsers({ navigation }) {
                   </View>
 
                   <View style={styles.actionsRow}>
-                    {canToggleRole ? (
+                    {canPromote ? (
                       <TouchableOpacity
                         style={[styles.actionButton, styles.actionButtonSoft, isRoleUpdating && { opacity: 0.65 }]}
                         onPress={() => handleToggleRole(member)}
                         disabled={isRoleUpdating}
                         hitSlop={HIT_SLOP}
                         accessibilityRole="button"
-                        accessibilityLabel={isModerator ? `Tornar ${member.name} membro` : `Tornar ${member.name} moderador`}
+                        accessibilityLabel={`Promover ${member.name} para administrador`}
                         accessibilityState={{ disabled: isRoleUpdating, busy: isRoleUpdating }}
                       >
                         {isRoleUpdating ? (
                           <ActivityIndicator size="small" color="#0f766e" />
                         ) : (
-                          <Ionicons name="person-circle-outline" size={14} color="#0f766e" />
+                          <Ionicons name="shield-checkmark-outline" size={14} color="#0f766e" />
                         )}
                         <Text style={[styles.actionText, { color: '#0f766e' }]}>
-                          {isRoleUpdating ? 'Atualizando...' : isModerator ? 'Tornar membro' : 'Tornar moderador'}
+                          {isRoleUpdating ? 'Atualizando...' : 'Promover para admin'}
                         </Text>
                       </TouchableOpacity>
                     ) : null}

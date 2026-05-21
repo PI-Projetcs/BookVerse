@@ -3,9 +3,11 @@ package br.senac.sp.bookverse.controller;
 import br.senac.sp.bookverse.dto.CommentDTO;
 import br.senac.sp.bookverse.dto.DashboardDTO;
 import br.senac.sp.bookverse.dto.RatingDTO;
+import br.senac.sp.bookverse.dto.UserResponseDTO;
 import br.senac.sp.bookverse.service.CommentService;
 import br.senac.sp.bookverse.service.DashboardService;
 import br.senac.sp.bookverse.service.RatingService;
+import br.senac.sp.bookverse.service.UserService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -32,11 +34,13 @@ public class AdminController {
     private final DashboardService dashboardService;
     private final CommentService commentService;
     private final RatingService ratingService;
+    private final UserService userService;
 
-    public AdminController(DashboardService dashboardService, CommentService commentService, RatingService ratingService) {
+    public AdminController(DashboardService dashboardService, CommentService commentService, RatingService ratingService, UserService userService) {
         this.dashboardService = dashboardService;
         this.commentService = commentService;
         this.ratingService = ratingService;
+        this.userService = userService;
     }
 
     @GetMapping("/dashboard")
@@ -55,6 +59,11 @@ public class AdminController {
 
         items.sort(Comparator.comparing(ModerationItemResponse::date).reversed());
         return ResponseEntity.ok(items);
+    }
+
+    @PostMapping("/users/{id}/promote")
+    public ResponseEntity<UserResponseDTO> promoteUser(@PathVariable Long id) {
+        return ResponseEntity.ok(userService.promoverParaAdmin(id));
     }
 
     @PostMapping("/moderation/{itemId}/status")

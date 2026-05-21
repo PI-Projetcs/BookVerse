@@ -6,7 +6,7 @@ describe('adminService workflows (mock mode)', () => {
 	it('updates member role and status', async () => {
 		const {
 			getAdminMembers,
-			updateAdminMemberRole,
+			promoteAdminMember,
 			updateAdminMemberStatus,
 		} = require('../services/adminService');
 
@@ -14,11 +14,10 @@ describe('adminService workflows (mock mode)', () => {
 		expect(members.length).toBeGreaterThan(0);
 
 		const target = members[0];
-		const nextRole = target.role === 'moderator' ? 'member' : 'moderator';
 		const nextStatus = target.status === 'active' ? 'blocked' : 'active';
 
-		const roleUpdated = await updateAdminMemberRole(target.id, nextRole);
-		expect(roleUpdated?.role).toBe(nextRole);
+		const roleUpdated = await promoteAdminMember(target.id);
+		expect(roleUpdated?.role).toBe('admin');
 
 		const statusUpdated = await updateAdminMemberStatus(target.id, nextStatus);
 		expect(statusUpdated?.status).toBe(nextStatus);

@@ -194,4 +194,28 @@ public class UserService {
         log.info("Status de usuário atualizado. alvo={}, status={}, executor={}", salvo.getId(), status, atual.getId());
         return UserMapper.toResponse(salvo);
     }
+
+    @Transactional
+    public UserResponseDTO promoverParaAdmin(Long id) {
+        User atual = currentUserService.authenticatedUser();
+        if (!currentUserService.isAdmin(atual)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Sem permissão para promover usuários.");
+        }
+
+        User alvo = userRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado."));
+
+        if (Role.ADMIN.equals(alvo.getRole())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Usuário já é administrador.");
+        }
+
+        if (atual.getId() != null && atual.getId().equals(alvo.getId())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Auto promoção não é permitida.");
+        }
+
+        alvo.setRole(Role.ADMIN);
+        User salvo = userRepository.save(alvo);
+        log.info("Usuário promovido para admin. alvo={}, executor={}", salvo.getId(), atual.getId());
+        return UserMapper.toResponse(salvo);
+    }
 }

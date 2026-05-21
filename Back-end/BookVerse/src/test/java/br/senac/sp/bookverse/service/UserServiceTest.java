@@ -254,6 +254,56 @@ class UserServiceTest {
     }
 
     @Test
+    void promoverParaAdmin_devePromoverUsuarioComum_quandoExecutorEhAdmin() {
+        User admin = usuario(10L, "Admin", "admin@bookverse.com", Role.ADMIN);
+        User alvo = usuario(2L, "Alvo", "alvo@bookverse.com", Role.USER);
+        alvo.setAtivo(true);
+
+        when(currentUserService.authenticatedUser()).thenReturn(admin);
+        when(currentUserService.isAdmin(admin)).thenReturn(true);
+        when(userRepository.findById(2L)).thenReturn(Optional.of(alvo));
+        when(userRepository.save(alvo)).thenReturn(alvo);
+
+        var resultado = usuarioService.promoverParaAdmin(2L);
+
+        assertEquals(Role.ADMIN, resultado.role());
+        verify(userRepository).save(alvo);
+    }
+
+    @Test
+    void promoverParaAdmin_deveRetornarForbidden_quandoExecutorNaoEhAdmin() {
+        User leitor = usuario(1L, "Leitor", "leitor@bookverse.com", Role.USER);
+
+        when(currentUserService.authenticatedUser()).thenReturn(leitor);
+        when(currentUserService.isAdmin(leitor)).thenReturn(false);
+
+        ResponseStatusException ex = assertThrows(
+                ResponseStatusException.class,
+                () -> usuarioService.promoverParaAdmin(2L)
+        );
+
+        assertEquals(403, ex.getStatusCode().value());
+    }
+
+    @Test
+    void promoverParaAdmin_deveRetornarBadRequest_quandoUsuarioJaEhAdmin() {
+        User admin = usuario(10L, "Admin", "admin@bookverse.com", Role.ADMIN);
+        User alvo = usuario(2L, "Alvo", "alvo@bookverse.com", Role.ADMIN);
+
+        when(currentUserService.authenticatedUser()).thenReturn(admin);
+        when(currentUserService.isAdmin(admin)).thenReturn(true);
+        when(userRepository.findById(2L)).thenReturn(Optional.of(alvo));
+
+        ResponseStatusException ex = assertThrows(
+                ResponseStatusException.class,
+                () -> usuarioService.promoverParaAdmin(2L)
+        );
+
+        assertEquals(400, ex.getStatusCode().value());
+        verify(userRepository, never()).save(alvo);
+    }
+
+    @Test
     void autoExcluirConta_deveFazerExclusaoLogicaParaUsuarioComum() {
         User leitor = usuario(1L, "Leitor", "leitor@bookverse.com", Role.USER);
         leitor.setAtivo(true);

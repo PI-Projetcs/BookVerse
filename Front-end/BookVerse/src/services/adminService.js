@@ -3,9 +3,7 @@ import api from './api';
 
 function normalizeMember(member = {}, index = 0) {
 	const backendRole = (member.role || '').toUpperCase();
-	let role = 'member';
-	if (backendRole === 'ADMIN' || backendRole === 'ROLE_ADMIN') role = 'admin';
-	else if (backendRole === 'MODERATOR' || backendRole === 'ROLE_MODERATOR' || member.role === 'moderator') role = 'moderator';
+	const role = backendRole === 'ADMIN' || backendRole === 'ROLE_ADMIN' ? 'admin' : 'member';
 
 	return {
 		id: Number(member.id ?? index + 1),
@@ -89,16 +87,10 @@ export async function updateAdminMemberStatus(memberId, nextStatus) {
 	}
 }
 
-export async function updateAdminMemberRole(memberId, nextRole) {
-	let backendRole = 'USER';
-	if (nextRole === 'admin') {
-		backendRole = 'ADMIN';
-	} else if (nextRole === 'moderator') {
-		backendRole = 'MODERATOR';
-	}
+export async function promoteAdminMember(memberId) {
 	try {
-		const response = await api.put(`/api/v1/users/${memberId}`, { role: backendRole });
-		return normalizeMember(response.data || { id: memberId, role: backendRole });
+		const response = await api.post(`/api/v1/admin/users/${memberId}/promote`);
+		return normalizeMember(response.data || { id: memberId, role: 'ADMIN' });
 	} catch (error) {
 		throw error;
 	}

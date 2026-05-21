@@ -13,7 +13,6 @@ const HIT_SLOP = { top: 10, bottom: 10, left: 10, right: 10 };
 function getProfileRoleLabel(role) {
   const normalized = String(role || '').trim().toLowerCase();
   if (normalized === 'admin') return 'Administrador';
-  if (normalized === 'moderator') return 'Moderador';
   if (normalized === 'member') return 'Membro';
   return role;
 }
