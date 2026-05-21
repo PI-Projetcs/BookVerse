@@ -72,5 +72,10 @@ public class CommentController {
         commentService.deletar(id);
         return ResponseEntity.noContent().build();
     }
+
+    @GetMapping("/me/moderation")
+    public ResponseEntity<?> getMyModerationComments() {
+        return ResponseEntity.ok(commentService.listarComentariosDoAutorAutenticado());
+    }
 }
 

@@ -128,6 +128,24 @@ export async function setModerationStatus(itemId, nextStatus) {
 	}
 }
 
+export async function approveComment(commentId) {
+	try {
+		const response = await api.post(`/api/v1/admin/moderation/comments/${encodeURIComponent(String(commentId))}/approve`);
+		return normalizeModerationItem(response.data || { id: commentId, status: 'approved' });
+	} catch (error) {
+		throw error;
+	}
+}
+
+export async function rejectComment(commentId, feedback) {
+	try {
+		const response = await api.post(`/api/v1/admin/moderation/comments/${encodeURIComponent(String(commentId))}/reject`, { feedback });
+		return normalizeModerationItem(response.data || { id: commentId, status: 'rejected' });
+	} catch (error) {
+		throw error;
+	}
+}
+
 // Mock store for dashboard
 const mockDashboardStore = {
 	totalUsers: 245,

@@ -8,6 +8,7 @@ import DiscussionScreen from "../screens/Discussion/DiscussionScreen";
 import HomeScreen from "../screens/Home/HomeScreen";
 import LoginScreen from "../screens/Login/LoginScreen";
 import UserScreen from "../screens/User/UserScreen";
+import MyModeration from "../screens/User/MyModeration";
 import Admin from "../screens/Admin/Admin";
 import BookOfMonth from "../screens/Admin/BookOfMonth";
 import ManageUsers from "../screens/Admin/ManageUsers";
@@ -72,6 +73,7 @@ export default function AppNavigator() {
 						<RootStack.Screen name="Catalog" component={BookScreen} />
 						<RootStack.Screen name="Discussion" component={DiscussionScreen} />
 						<RootStack.Screen name="Profile" component={UserScreen} />
+						<RootStack.Screen name="MyModeration" component={MyModeration} />
 						<RootStack.Screen
 							name="BookDetails"
 							component={BookDetailsScreen}

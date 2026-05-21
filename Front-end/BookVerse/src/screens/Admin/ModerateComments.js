@@ -12,7 +12,7 @@ import { Ionicons } from '@expo/vector-icons';
 import FooterNav from '../../components/FooterNav';
 import Header from '../../components/Header';
 import { ADMIN_FOOTER_ITEMS } from '../../constants/adminFooterItems';
-import { getModerationItems, setModerationStatus } from '../../services/adminService';
+import { getModerationItems, setModerationStatus, approveComment, rejectComment } from '../../services/adminService';
 import { adminModerationStyles as styles } from '../../styles/adminModerationStyles';
 
 const STATUS_FILTERS = [
@@ -75,9 +75,45 @@ export default function ModerateComments({ navigation }) {
   const summaryText = useMemo(() => `${items.length} comentários na lista`, [items.length]);
 
   const handleSetStatus = async (item, status) => {
+    if (status === 'approved') {
+      try {
+        const updated = await approveComment(item.id);
+        setItems((prev) => prev.map((entry) => (entry.id === updated.id ? updated : entry)));
+      } catch (err) {
+        // handle error
+      }
+      return;
+    }
+
+    if (status === 'rejected') {
+      // open modal to collect feedback
+      setCurrentRejectItem(item);
+      setShowRejectModal(true);
+      return;
+    }
+
+    // fallback to generic status
     const updated = await setModerationStatus(item.id, status);
     if (!updated) return;
     setItems((prev) => prev.map((entry) => (entry.id === updated.id ? updated : entry)));
+  };
+
+  const [showRejectModal, setShowRejectModal] = useState(false);
+  const [currentRejectItem, setCurrentRejectItem] = useState(null);
+  const [rejectFeedback, setRejectFeedback] = useState('');
+
+  const handleConfirmReject = async () => {
+    if (!currentRejectItem) return;
+    try {
+      const updated = await rejectComment(currentRejectItem.id, rejectFeedback.trim());
+      setItems((prev) => prev.map((entry) => (entry.id === updated.id ? updated : entry)));
+    } catch (err) {
+      // handle error
+    } finally {
+      setShowRejectModal(false);
+      setCurrentRejectItem(null);
+      setRejectFeedback('');
+    }
   };
 
   return (
@@ -199,6 +235,34 @@ export default function ModerateComments({ navigation }) {
       </View>
 
       <FooterNav navigation={navigation} activeKey="moderar" items={ADMIN_FOOTER_ITEMS} />
+
+      {/* Reject feedback modal */}
+      {showRejectModal ? (
+        <View style={{
+          position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.4)',
+          alignItems: 'center', justifyContent: 'center', padding: 20,
+        }}>
+          <View style={{ width: '100%', maxWidth: 620, backgroundColor: '#fff', borderRadius: 12, padding: 16 }}>
+            <Text style={{ fontWeight: '800', fontSize: 16, marginBottom: 8 }}>Rejeitar comentário</Text>
+            <Text style={{ color: '#64748b', marginBottom: 8 }}>Informe um motivo ou orientação que será enviado ao autor (visível apenas para ele).</Text>
+            <TextInput
+              value={rejectFeedback}
+              onChangeText={setRejectFeedback}
+              placeholder="Digite o feedback ao autor"
+              style={{ minHeight: 80, borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 8, padding: 10, textAlignVertical: 'top' }}
+              multiline
+            />
+            <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: 8, marginTop: 12 }}>
+              <TouchableOpacity onPress={() => { setShowRejectModal(false); setCurrentRejectItem(null); setRejectFeedback(''); }} style={{ paddingHorizontal: 12, paddingVertical: 8 }}>
+                <Text style={{ color: '#64748b', fontWeight: '700' }}>Cancelar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={handleConfirmReject} style={{ paddingHorizontal: 14, paddingVertical: 8, backgroundColor: '#9f1239', borderRadius: 8 }}>
+                <Text style={{ color: '#fff', fontWeight: '800' }}>Confirmar rejeição</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      ) : null}
     </View>
   );
 }

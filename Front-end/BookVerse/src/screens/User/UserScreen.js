@@ -75,6 +75,18 @@ const UserScreen = ({ navigation }) => {
             <Text style={styles.profileBio}>Este perfil usa apenas dados da sessao e do backend.</Text>
             <TouchableOpacity
               style={[styles.statCard, { marginTop: 12 }]}
+              onPress={() => navigation.navigate('MyModeration')}
+              hitSlop={HIT_SLOP}
+              accessibilityRole="button"
+              accessibilityLabel="Ver feedbacks de moderação"
+            >
+              <View style={[styles.statIconWrap, { backgroundColor: 'rgba(15,118,110,0.12)' }]}>
+                <Ionicons name="chatbubble-ellipses-outline" size={16} color="#0f766e" />
+              </View>
+              <Text style={styles.statLabel}>Meus feedbacks de moderação</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.statCard, { marginTop: 12 }]}
               onPress={handleLogout}
               hitSlop={HIT_SLOP}
               accessibilityRole="button"
