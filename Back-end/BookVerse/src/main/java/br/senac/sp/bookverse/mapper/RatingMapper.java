@@ -13,14 +13,16 @@ public final class RatingMapper {
             return null;
         }
         return new RatingDTO(
-                rating.getId(),
-                rating.getNota(),
-                rating.getDescricao(),
-                rating.getLivro() != null ? rating.getLivro().getId() : null,
-                rating.getLivro() != null ? rating.getLivro().getTitulo() : null,
-                rating.getUsuario() != null ? rating.getUsuario().getId() : null,
-                rating.getUsuario() != null ? rating.getUsuario().getNome() : null,
-                rating.getStatus()
+            rating.getId(),
+            rating.getNota(),
+            rating.getDescricao(),
+            rating.getLivro() != null ? rating.getLivro().getId() : null,
+            rating.getLivro() != null ? rating.getLivro().getTitulo() : null,
+            rating.getUsuario() != null ? rating.getUsuario().getId() : null,
+            rating.getUsuario() != null ? rating.getUsuario().getNome() : null,
+            rating.getStatus(),
+            rating.getAdminFeedback(),
+            rating.getModeratedAt()
         );
     }
 }

@@ -16,6 +16,7 @@ public interface BookRepository extends JpaRepository<Book, Long> {
     List<Book> findByAtivoTrueAndGenero(String genero);
     List<Book> findByAtivoTrueAndAno(Integer ano);
     List<Book> findByAtivoTrueAndDestaqueTrue();
+    List<Book> findByDestaqueTrue();
     List<Book> findByAtivoTrueAndMediaAvaliacaoGreaterThanEqual(Double mediaAvaliacao);
 
     @Query(value = "select b from Book b where b.ativo = true or b.ativo is null", countQuery = "select count(b) from Book b where b.ativo = true or b.ativo is null")

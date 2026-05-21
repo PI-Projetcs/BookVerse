@@ -79,10 +79,10 @@ public class CommentService {
 				liked = commentLikeRepository.findByCommentIdAndUsuario(entity.getId(), viewer)
 						.map(CommentLike::getLiked).orElse(false);
 			}
-			return new CommentDTO(
-					dto.id(), dto.conteudo(), dto.data(), dto.discussaoId(), dto.discussaoTitulo(),
-					dto.usuarioId(), dto.usuarioNome(), dto.status(), (int) likes, liked
-			);
+			    return new CommentDTO(
+				    dto.id(), dto.conteudo(), dto.data(), dto.discussaoId(), dto.discussaoTitulo(),
+				    dto.usuarioId(), dto.usuarioNome(), dto.status(), dto.adminFeedback(), dto.moderatedAt(), (int) likes, liked
+			    );
 		});
 	}
 
@@ -102,10 +102,10 @@ public class CommentService {
 				liked = commentLikeRepository.findByCommentIdAndUsuario(entity.getId(), viewer)
 						.map(CommentLike::getLiked).orElse(false);
 			}
-			return new CommentDTO(
-					dto.id(), dto.conteudo(), dto.data(), dto.discussaoId(), dto.discussaoTitulo(),
-					dto.usuarioId(), dto.usuarioNome(), dto.status(), (int) likes, liked
-			);
+			    return new CommentDTO(
+				    dto.id(), dto.conteudo(), dto.data(), dto.discussaoId(), dto.discussaoTitulo(),
+				    dto.usuarioId(), dto.usuarioNome(), dto.status(), dto.adminFeedback(), dto.moderatedAt(), (int) likes, liked
+			    );
 		}).toList();
 	}
 
@@ -140,10 +140,10 @@ public class CommentService {
 				.map(entity -> {
 					CommentDTO dto = CommentMapper.toDTO(entity);
 					long likes = commentLikeRepository.countByCommentIdAndLikedTrue(entity.getId());
-					return new CommentDTO(
-							dto.id(), dto.conteudo(), dto.data(), dto.discussaoId(), dto.discussaoTitulo(),
-							dto.usuarioId(), dto.usuarioNome(), dto.status(), (int) likes, false
-					);
+					    return new CommentDTO(
+						    dto.id(), dto.conteudo(), dto.data(), dto.discussaoId(), dto.discussaoTitulo(),
+						    dto.usuarioId(), dto.usuarioNome(), dto.status(), dto.adminFeedback(), dto.moderatedAt(), (int) likes, false
+					    );
 				})
 				.toList();
 	}
@@ -176,8 +176,8 @@ public class CommentService {
 		CommentDTO dto = CommentMapper.toDTO(salvo);
 		long likes = commentLikeRepository.countByCommentIdAndLikedTrue(salvo.getId());
 		return new CommentDTO(
-				dto.id(), dto.conteudo(), dto.data(), dto.discussaoId(), dto.discussaoTitulo(),
-				dto.usuarioId(), dto.usuarioNome(), dto.status(), (int) likes, false
+			dto.id(), dto.conteudo(), dto.data(), dto.discussaoId(), dto.discussaoTitulo(),
+			dto.usuarioId(), dto.usuarioNome(), dto.status(), dto.adminFeedback(), dto.moderatedAt(), (int) likes, false
 		);
 	}
 
@@ -196,8 +196,8 @@ public class CommentService {
 		CommentDTO dto = CommentMapper.toDTO(salvo);
 		long likes = commentLikeRepository.countByCommentIdAndLikedTrue(salvo.getId());
 		return new CommentDTO(
-				dto.id(), dto.conteudo(), dto.data(), dto.discussaoId(), dto.discussaoTitulo(),
-				dto.usuarioId(), dto.usuarioNome(), dto.status(), (int) likes, false
+			dto.id(), dto.conteudo(), dto.data(), dto.discussaoId(), dto.discussaoTitulo(),
+			dto.usuarioId(), dto.usuarioNome(), dto.status(), dto.adminFeedback(), dto.moderatedAt(), (int) likes, false
 		);
 	}
 
@@ -216,8 +216,8 @@ public class CommentService {
 		CommentDTO dto = CommentMapper.toDTO(salvo);
 		long likes = commentLikeRepository.countByCommentIdAndLikedTrue(salvo.getId());
 		return new CommentDTO(
-				dto.id(), dto.conteudo(), dto.data(), dto.discussaoId(), dto.discussaoTitulo(),
-				dto.usuarioId(), dto.usuarioNome(), dto.status(), (int) likes, false
+			dto.id(), dto.conteudo(), dto.data(), dto.discussaoId(), dto.discussaoTitulo(),
+			dto.usuarioId(), dto.usuarioNome(), dto.status(), dto.adminFeedback(), dto.moderatedAt(), (int) likes, false
 		);
 	}
 
@@ -236,8 +236,8 @@ public class CommentService {
 
 		CommentDTO dto = CommentMapper.toDTO(comentario);
 		return new CommentDTO(
-				dto.id(), dto.conteudo(), dto.data(), dto.discussaoId(), dto.discussaoTitulo(),
-				dto.usuarioId(), dto.usuarioNome(), dto.status(), (int) count, commentLike.getLiked()
+			dto.id(), dto.conteudo(), dto.data(), dto.discussaoId(), dto.discussaoTitulo(),
+			dto.usuarioId(), dto.usuarioNome(), dto.status(), dto.adminFeedback(), dto.moderatedAt(), (int) count, commentLike.getLiked()
 		);
 	}
 

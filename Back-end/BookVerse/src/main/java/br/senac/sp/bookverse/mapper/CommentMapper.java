@@ -13,16 +13,18 @@ public final class CommentMapper {
             return null;
         }
         return new CommentDTO(
-                comment.getId(),
-                comment.getConteudo(),
-                comment.getData(),
-                comment.getDiscussao() != null ? comment.getDiscussao().getId() : null,
-                comment.getDiscussao() != null ? comment.getDiscussao().getTitulo() : null,
-                comment.getUsuario() != null ? comment.getUsuario().getId() : null,
-                comment.getUsuario() != null ? comment.getUsuario().getNome() : null,
+            comment.getId(),
+            comment.getConteudo(),
+            comment.getData(),
+            comment.getDiscussao() != null ? comment.getDiscussao().getId() : null,
+            comment.getDiscussao() != null ? comment.getDiscussao().getTitulo() : null,
+            comment.getUsuario() != null ? comment.getUsuario().getId() : null,
+            comment.getUsuario() != null ? comment.getUsuario().getNome() : null,
             comment.getStatus(),
-                0,
-                false
+            comment.getAdminFeedback(),
+            comment.getModeratedAt(),
+            0,
+            false
         );
     }
 }

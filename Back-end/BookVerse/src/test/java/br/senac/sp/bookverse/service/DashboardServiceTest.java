@@ -44,7 +44,7 @@ class DashboardServiceTest {
         when(commentRepository.count()).thenReturn(20L);
         when(ratingRepository.count()).thenReturn(25L);
         when(ratingRepository.findAll()).thenReturn(List.of());
-        when(bookRepository.findByDestaqueTrue()).thenReturn(List.of());
+        when(bookRepository.findByAtivoTrueAndDestaqueTrue()).thenReturn(List.of());
 
         DashboardDTO dashboard = dashboardService.obterDashboard();
 
@@ -68,7 +68,7 @@ class DashboardServiceTest {
         when(commentRepository.count()).thenReturn(0L);
         when(ratingRepository.count()).thenReturn(0L);
         when(ratingRepository.findAll()).thenReturn(List.of());
-        when(bookRepository.findByDestaqueTrue()).thenReturn(List.of(livro));
+        when(bookRepository.findByAtivoTrueAndDestaqueTrue()).thenReturn(List.of(livro));
 
         DashboardDTO dashboard = dashboardService.obterDashboard();
 
@@ -87,7 +87,7 @@ class DashboardServiceTest {
         when(commentRepository.count()).thenReturn(0L);
         when(ratingRepository.count()).thenReturn(1L);
         when(ratingRepository.findAll()).thenReturn(List.of(rating));
-        when(bookRepository.findByDestaqueTrue()).thenReturn(List.of());
+        when(bookRepository.findByAtivoTrueAndDestaqueTrue()).thenReturn(List.of());
 
         DashboardDTO dashboard = dashboardService.obterDashboard();
 

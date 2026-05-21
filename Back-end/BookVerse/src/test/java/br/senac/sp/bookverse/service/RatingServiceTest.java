@@ -56,7 +56,7 @@ class RatingServiceTest {
         salva.setLivro(livro);
         when(ratingRepository.save(org.mockito.ArgumentMatchers.any(Rating.class))).thenReturn(salva);
 
-        RatingDTO resultado = ratingService.criar(new RatingDTO(null, 5, "Ótimo", 2L, null, null, null));
+        RatingDTO resultado = ratingService.criar(new RatingDTO(null, 5, "Ótimo", 2L, null, null, null, null, null, null));
 
         assertEquals(9L, resultado.id());
         assertEquals(5, resultado.nota());
@@ -77,7 +77,7 @@ class RatingServiceTest {
         when(currentUserService.isAdmin(atual)).thenReturn(false);
         when(ratingRepository.findById(7L)).thenReturn(Optional.of(avaliacao));
 
-        assertThrows(ResponseStatusException.class, () -> ratingService.atualizar(7L, new RatingDTO(null, 5, "x", 3L, null, null, null)));
+        assertThrows(ResponseStatusException.class, () -> ratingService.atualizar(7L, new RatingDTO(null, 5, "x", 3L, null, null, null, null, null, null)));
     }
 
     @Test
@@ -86,7 +86,7 @@ class RatingServiceTest {
         when(currentUserService.authenticatedUser()).thenReturn(usuario);
         when(bookRepository.findById(99L)).thenReturn(Optional.empty());
 
-        assertThrows(ResourceNotFoundException.class, () -> ratingService.criar(new RatingDTO(null, 5, "x", 99L, null, null, null)));
+        assertThrows(ResourceNotFoundException.class, () -> ratingService.criar(new RatingDTO(null, 5, "x", 99L, null, null, null, null, null, null)));
     }
 
     private static User usuario(Long id, Role role) {
