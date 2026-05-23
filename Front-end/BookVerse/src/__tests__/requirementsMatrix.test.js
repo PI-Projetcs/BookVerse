@@ -21,8 +21,12 @@ describe('front-end requirements matrix', () => {
 		expect(content).toContain('RF13');
 		expect(content).toContain('RF14');
 		expect(content).toContain('RF15');
+		expect(content).toContain('RF16');
+		expect(content).toContain('RF17');
 		expect(content).toContain('Removido');
 		expect(content).toContain('Coberto');
 		expect(content).toContain('Parcial');
+		expect(content).toContain('Nao coberto');
+		expect(content).toContain('Testes sugeridos');
 	});
 });

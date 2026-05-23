@@ -211,4 +211,34 @@ describe('profileService workflows (mock mode)', () => {
       expect(retrieved.name).toBe(newName);
     });
   });
+
+  describe('achievement visibility and progress (RF17)', () => {
+    it('lists the user achievements catalog and updates progress from reading activity', async () => {
+      const profile = await profileService.getUserProfile();
+      expect(profile.achievements).toEqual(expect.any(Array));
+
+      const beforeCatalog = await profileService.getAchievementsCatalog();
+      const beforeProgress = beforeCatalog.find((item) => item.id === 104);
+      expect(beforeProgress).toMatchObject({
+        id: 104,
+        currentValue: 0,
+        completed: false,
+      });
+
+      await profileService.addFavoriteBook(1);
+      await profileService.addFavoriteBook(2);
+      await profileService.addFavoriteBook(3);
+
+      const afterCatalog = await profileService.getAchievementsCatalog();
+      const afterProgress = afterCatalog.find((item) => item.id === 104);
+      expect(afterProgress).toMatchObject({
+        id: 104,
+        currentValue: 3,
+        completed: true,
+      });
+
+      const userAchievements = await profileService.getUserAchievements();
+      expect(Array.isArray(userAchievements)).toBe(true);
+    });
+  });
 });
