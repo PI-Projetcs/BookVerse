@@ -12,7 +12,14 @@ public final class AchievementMapper {
         if (achievement == null) {
             return null;
         }
-        return new AchievementDTO(achievement.getId(), achievement.getNome(), achievement.getDescricao());
+        return new AchievementDTO(
+                achievement.getId(),
+                achievement.getNome(),
+                achievement.getDescricao(),
+                achievement.getCriteriaType(),
+                achievement.getTargetValue(),
+                achievement.getAtivo()
+        );
     }
 
     public static Achievement toEntity(AchievementDTO dto) {
@@ -23,6 +30,9 @@ public final class AchievementMapper {
         achievement.setId(dto.id());
         achievement.setNome(dto.nome());
         achievement.setDescricao(dto.descricao());
+        achievement.setCriteriaType(dto.criteriaType());
+        achievement.setTargetValue(dto.targetValue());
+        achievement.setAtivo(dto.ativo() != null ? dto.ativo() : true);
         return achievement;
     }
 
@@ -32,6 +42,9 @@ public final class AchievementMapper {
         }
         achievement.setNome(dto.nome());
         achievement.setDescricao(dto.descricao());
+        achievement.setCriteriaType(dto.criteriaType());
+        achievement.setTargetValue(dto.targetValue());
+        achievement.setAtivo(dto.ativo() != null ? dto.ativo() : achievement.getAtivo());
     }
 }
 

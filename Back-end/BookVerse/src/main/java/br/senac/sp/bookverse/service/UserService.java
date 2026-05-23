@@ -55,6 +55,7 @@ public class UserService {
     private final RatingRepository ratingRepository;
     private final ReadingHistoryRepository readingHistoryRepository;
     private final AchievementRepository achievementRepository;
+    private final AchievementService achievementService;
 
     public UserService(
             UserRepository userRepository,
@@ -64,7 +65,8 @@ public class UserService {
             BookRepository bookRepository,
             RatingRepository ratingRepository,
             ReadingHistoryRepository readingHistoryRepository,
-            AchievementRepository achievementRepository
+            AchievementRepository achievementRepository,
+            AchievementService achievementService
     ) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
@@ -74,6 +76,7 @@ public class UserService {
         this.ratingRepository = ratingRepository;
         this.readingHistoryRepository = readingHistoryRepository;
         this.achievementRepository = achievementRepository;
+        this.achievementService = achievementService;
     }
 
     @Transactional
@@ -172,6 +175,7 @@ public class UserService {
         Book livro = buscarLivroPorId(livroId);
         perfil.adicionarFavorito(livro);
         perfilUsuarioRepository.save(perfil);
+        achievementService.avaliarERegistrarConquistasDoUsuario(usuario.getId());
         log.info("Favorito adicionado. usuarioId={}, livroId={}", usuario.getId(), livroId);
         return montarPerfilDto(usuario, perfil);
     }
@@ -183,6 +187,7 @@ public class UserService {
         Book livro = buscarLivroPorId(livroId);
         perfil.removerFavorito(livro);
         perfilUsuarioRepository.save(perfil);
+        achievementService.avaliarERegistrarConquistasDoUsuario(usuario.getId());
         log.info("Favorito removido. usuarioId={}, livroId={}", usuario.getId(), livroId);
         return montarPerfilDto(usuario, perfil);
     }

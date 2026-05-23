@@ -7,5 +7,6 @@ import java.util.List;
 
 public interface AchievementRepository extends JpaRepository<Achievement, Long> {
     List<Achievement> findByNome(String nome);
+    List<Achievement> findByAtivoTrue();
 }
 

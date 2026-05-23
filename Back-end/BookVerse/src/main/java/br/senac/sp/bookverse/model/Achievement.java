@@ -16,6 +16,16 @@ public class Achievement {
     private String nome;
     private String descricao;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private AchievementCriteriaType criteriaType;
+
+    @Column(nullable = false)
+    private Integer targetValue;
+
+    @Column(nullable = false)
+    private Boolean ativo = true;
+
     @ManyToMany(mappedBy = "conquistas")
     private List<User> usuarios;
 }

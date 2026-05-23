@@ -28,15 +28,18 @@ public class ReadingHistoryService {
 	private final ReadingHistoryRepository readingHistoryRepository;
 	private final BookRepository bookRepository;
 	private final CurrentUserService currentUserService;
+	private final AchievementService achievementService;
 
 	public ReadingHistoryService(
 			ReadingHistoryRepository readingHistoryRepository,
 			BookRepository bookRepository,
-			CurrentUserService currentUserService
+			CurrentUserService currentUserService,
+			AchievementService achievementService
 	) {
 		this.readingHistoryRepository = readingHistoryRepository;
 		this.bookRepository = bookRepository;
 		this.currentUserService = currentUserService;
+		this.achievementService = achievementService;
 	}
 
 	@Transactional(readOnly = true)
@@ -82,6 +85,7 @@ public class ReadingHistoryService {
 				.orElseThrow(() -> new ResourceNotFoundException("Book não encontrado.")));
 
 		ReadingHistory salvo = readingHistoryRepository.save(historico);
+		achievementService.avaliarERegistrarConquistasDoUsuario(usuario.getId());
 		log.info("Histórico de leitura criado. id={}, usuario={}", salvo.getId(), usuario.getId());
 		return ReadingHistoryMapper.toDTO(salvo);
 	}
@@ -103,6 +107,7 @@ public class ReadingHistoryService {
 		}
 
 		ReadingHistory salvo = readingHistoryRepository.save(historico);
+		achievementService.avaliarERegistrarConquistasDoUsuario(atual.getId());
 		log.info("Histórico de leitura atualizado. id={}", id);
 		return ReadingHistoryMapper.toDTO(salvo);
 	}

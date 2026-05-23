@@ -34,6 +34,28 @@ function normalizeModerationItem(item = {}, index = 0) {
 	};
 }
 
+function normalizeAchievement(item = {}, index = 0) {
+	return {
+		id: Number(item.id ?? index + 1),
+		name: item.nome || item.name || 'Conquista',
+		description: item.descricao || item.description || '',
+		criteriaType: item.criteriaType || item.criteria_type || 'READ_BOOKS',
+		targetValue: Number(item.targetValue ?? item.target_value) || 1,
+		active: item.ativo ?? item.active ?? true,
+	};
+}
+
+function normalizeAchievementProgress(item = {}, index = 0) {
+	return {
+		achievementId: Number(item.achievementId ?? item.achievement_id ?? index + 1),
+		label: item.label || '',
+		criteriaType: item.criteriaType || item.criteria_type || '',
+		currentValue: Math.max(0, Number(item.currentValue ?? item.current_value) || 0),
+		targetValue: Math.max(0, Number(item.targetValue ?? item.target_value) || 0),
+		completed: Boolean(item.completed),
+	};
+}
+
 function filterMembers(items, { query = '', status = 'all' } = {}) {
 	const text = String(query || '').trim().toLowerCase();
 	return items.filter((member) => {
@@ -177,6 +199,98 @@ export async function getAdminDashboard() {
 		return {
 			item: normalizeDashboard(response.data?.item || response.data),
 		};
+	} catch (error) {
+		throw error;
+	}
+}
+
+export async function getAchievements() {
+	try {
+		const response = await api.get('/api/v1/achievements');
+		const items = Array.isArray(response.data?.content)
+			? response.data.content
+			: Array.isArray(response.data)
+				? response.data
+				: [];
+		return items.map(normalizeAchievement);
+	} catch (error) {
+		throw error;
+	}
+}
+
+export async function getAchievementProgress() {
+	try {
+		const response = await api.get('/api/v1/achievements/progress');
+		const items = Array.isArray(response.data)
+			? response.data
+			: Array.isArray(response.data?.content)
+				? response.data.content
+				: [];
+		return items.map(normalizeAchievementProgress);
+	} catch (error) {
+		throw error;
+	}
+}
+
+export async function createAchievement(payload = {}) {
+	try {
+		const response = await api.post('/api/v1/achievements', {
+			nome: payload?.name || payload?.nome || '',
+			descricao: payload?.description || payload?.descricao || '',
+			criteriaType: payload?.criteriaType || payload?.criteria_type || 'READ_BOOKS',
+			targetValue: Number(payload?.targetValue ?? payload?.target_value) || 1,
+			ativo: payload?.active ?? payload?.ativo ?? true,
+		});
+		return normalizeAchievement(response.data);
+	} catch (error) {
+		throw error;
+	}
+}
+
+export async function updateAchievement(achievementId, payload = {}) {
+	try {
+		const response = await api.put(`/api/v1/achievements/${achievementId}`, {
+			nome: payload?.name || payload?.nome || '',
+			descricao: payload?.description || payload?.descricao || '',
+			criteriaType: payload?.criteriaType || payload?.criteria_type || 'READ_BOOKS',
+			targetValue: Number(payload?.targetValue ?? payload?.target_value) || 1,
+			ativo: payload?.active ?? payload?.ativo ?? true,
+		});
+		return normalizeAchievement(response.data);
+	} catch (error) {
+		throw error;
+	}
+}
+
+export async function deleteAchievement(achievementId) {
+	try {
+		await api.delete(`/api/v1/achievements/${achievementId}`);
+		return { success: true };
+	} catch (error) {
+		throw error;
+	}
+}
+
+function normalizeAchievementAggregate(item = {}) {
+	return {
+		achievementId: Number(item.achievementId ?? item.achievement_id) || null,
+		label: item.label || item.nome || item.name || '',
+		criteriaType: item.criteriaType || item.criteria_type || '',
+		usersMeetingCount: Number(item.usersMeetingCount ?? item.users_meeting_count) || 0,
+		totalUsers: Number(item.totalUsers ?? item.total_users) || 0,
+		percentage: Number(item.percentage ?? item.percentagem ?? 0) || 0,
+	};
+}
+
+export async function getAchievementsAggregate() {
+	try {
+		const response = await api.get('/api/v1/achievements/aggregate');
+		const items = Array.isArray(response.data)
+			? response.data
+			: Array.isArray(response.data?.content)
+				? response.data.content
+				: [];
+		return items.map(normalizeAchievementAggregate);
 	} catch (error) {
 		throw error;
 	}

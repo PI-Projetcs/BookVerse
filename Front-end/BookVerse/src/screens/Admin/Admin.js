@@ -49,6 +49,14 @@ const quickActions = [
     iconColor: '#fde2e7',
     iconBackground: '#6B1730',
   },
+  {
+    key: 'achievements',
+    label: 'Gerenciar Conquistas',
+    icon: 'trophy-outline',
+    route: 'ManageAchievements',
+    iconColor: '#fef3c7',
+    iconBackground: '#92400e',
+  },
 ];
 
 export default function Admin({ navigation }) {

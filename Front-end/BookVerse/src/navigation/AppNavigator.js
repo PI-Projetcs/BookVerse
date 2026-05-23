@@ -16,6 +16,7 @@ import ModerateComments from "../screens/Admin/ModerateComments";
 import AdminBooks from "../screens/Admin/AdminBooks";
 import Profile from "../screens/Admin/Profile";
 import RegisterBook from "../screens/Admin/RegisterBook";
+import ManageAchievements from "../screens/Admin/ManageAchievements";
 import { getInitialRouteFromSession } from "./sessionRoute";
 import { useAuth } from '../context/AuthContext';
 
@@ -31,6 +32,7 @@ function AdminNavigator() {
 			<AdminStack.Screen name="RegisterBook" component={RegisterBook} />
 			<AdminStack.Screen name="AdminBooks" component={AdminBooks} />
 			<AdminStack.Screen name="ManageUsers" component={ManageUsers} />
+			<AdminStack.Screen name="ManageAchievements" component={ManageAchievements} />
 			<AdminStack.Screen name="BookOfMonth" component={BookOfMonth} />
 			<AdminStack.Screen name="ModerateComments" component={ModerateComments} />
 			<AdminStack.Screen name="Profile" component={Profile} />

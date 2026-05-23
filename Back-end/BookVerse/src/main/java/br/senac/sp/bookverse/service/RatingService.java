@@ -30,15 +30,18 @@ public class RatingService {
 	private final RatingRepository ratingRepository;
 	private final BookRepository bookRepository;
 	private final CurrentUserService currentUserService;
+	private final AchievementService achievementService;
 
 	public RatingService(
 			RatingRepository ratingRepository,
 			BookRepository bookRepository,
-			CurrentUserService currentUserService
+			CurrentUserService currentUserService,
+			AchievementService achievementService
 	) {
 		this.ratingRepository = ratingRepository;
 		this.bookRepository = bookRepository;
 		this.currentUserService = currentUserService;
+		this.achievementService = achievementService;
 	}
 
 	@Transactional(readOnly = true)
@@ -169,6 +172,7 @@ public class RatingService {
 				.orElseThrow(() -> new ResourceNotFoundException("Book não encontrado.")));
 		Rating salva = ratingRepository.save(avaliacao);
 		atualizarMediaAvaliacaoLivro(dto.livroId());
+		achievementService.avaliarERegistrarConquistasDoUsuario(usuario.getId());
 		log.info("Avaliação criada. id={}, usuario={}", salva.getId(), usuario.getId());
 		return RatingMapper.toDTO(salva);
 	}
@@ -204,6 +208,7 @@ public class RatingService {
 		avaliacao.setStatus(resolveStatusForUser(usuario));
 		Rating salva = ratingRepository.save(avaliacao);
 		atualizarMediaAvaliacaoLivro(livroId);
+		achievementService.avaliarERegistrarConquistasDoUsuario(usuario.getId());
 		log.info("Avaliação atualizada por livro. livroId={}, usuarioId={}, ratingId={}", livroId, usuario.getId(), salva.getId());
 		return RatingMapper.toDTO(salva);
 	}
@@ -217,6 +222,7 @@ public class RatingService {
 
 		ratingRepository.delete(avaliacao);
 		atualizarMediaAvaliacaoLivro(livroId);
+		achievementService.avaliarERegistrarConquistasDoUsuario(usuario.getId());
 		log.info("Avaliação removida por livro. livroId={}, usuarioId={}, ratingId={}", livroId, usuario.getId(), avaliacao.getId());
 	}
 

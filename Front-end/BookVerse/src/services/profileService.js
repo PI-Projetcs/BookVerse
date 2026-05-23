@@ -22,6 +22,12 @@ function createMockState() {
     readBooks: [],
     ratings: [],
     achievements: [],
+    achievementsCatalog: [
+      { id: 101, nome: 'Leitor iniciante', descricao: 'Leia 1 livro', criteriaType: 'READ_BOOKS', targetValue: 1, ativo: true },
+      { id: 102, nome: 'Maratona de leitura', descricao: 'Leia 10 livros', criteriaType: 'READ_BOOKS', targetValue: 10, ativo: true },
+      { id: 103, nome: 'Crítico ativo', descricao: 'Faça 5 avaliações', criteriaType: 'RATINGS_CREATED', targetValue: 5, ativo: true },
+      { id: 104, nome: 'Guardião da estante', descricao: 'Salve 3 livros favoritos', criteriaType: 'FAVORITES_ADDED', targetValue: 3, ativo: true },
+    ],
     role: 'member',
   };
 }
@@ -75,6 +81,9 @@ function normalizeAchievement(achievement = {}) {
     id: achievement?.id ?? null,
     name: achievement?.nome || achievement?.name || 'Conquista',
     description: achievement?.descricao || achievement?.description || '',
+    criteriaType: achievement?.criteriaType || achievement?.criteria_type || null,
+    targetValue: toNumber(achievement?.targetValue ?? achievement?.target_value, 0),
+    active: achievement?.ativo ?? achievement?.active ?? true,
   };
 }
 
@@ -122,6 +131,14 @@ function normalizeProfile(payload = {}) {
       ? source.achievements.map(normalizeAchievement)
       : [];
 
+  const achievementsCatalog = Array.isArray(source?.achievementsCatalog)
+    ? source.achievementsCatalog.map(normalizeAchievement)
+    : Array.isArray(source?.catalogAchievements)
+      ? source.catalogAchievements.map(normalizeAchievement)
+      : Array.isArray(source?.allAchievements)
+        ? source.allAchievements.map(normalizeAchievement)
+        : [];
+
   const stats = source?.stats || {
     livrosLidos: readBooks.length,
     favoritos: favoriteBooks.length,
@@ -142,6 +159,7 @@ function normalizeProfile(payload = {}) {
     readBooks,
     ratings,
     achievements,
+    achievementsCatalog,
     destaque: favoriteBooks,
     categorias: Array.isArray(source?.categorias) ? source.categorias : [],
     atividade: Array.isArray(source?.atividade) ? source.atividade : readBooks.slice(0, 5),
@@ -264,6 +282,50 @@ export async function getUserAchievements() {
   } catch (error) {
     throw error;
   }
+}
+
+export async function getAchievementsCatalog() {
+  if (isTestMode) {
+    const profile = getMockProfile();
+    const earnedIds = new Set(profile.achievements.map((item) => item.id));
+    return mockState.achievementsCatalog.map((achievement) => {
+      const normalized = normalizeAchievement(achievement);
+      const currentValue = getAchievementProgressValue(profile, normalized);
+      return {
+        ...normalized,
+        currentValue,
+        completed: earnedIds.has(normalized.id) || currentValue >= normalized.targetValue,
+      };
+    });
+  }
+
+  try {
+    const response = await api.get('/api/v1/achievements');
+    return Array.isArray(response.data?.content)
+      ? response.data.content.map(normalizeAchievement)
+      : Array.isArray(response.data)
+        ? response.data.map(normalizeAchievement)
+        : [];
+  } catch (error) {
+    throw error;
+  }
+}
+
+function getAchievementProgressValue(profile = {}, achievement = {}) {
+  const criteriaType = String(achievement?.criteriaType || '').toUpperCase();
+  if (criteriaType === 'READ_BOOKS') {
+    return toNumber(profile?.stats?.livrosLidos ?? profile?.readBooks?.length, 0);
+  }
+
+  if (criteriaType === 'RATINGS_CREATED') {
+    return toNumber(profile?.stats?.resenhas ?? profile?.ratings?.length, 0);
+  }
+
+  if (criteriaType === 'FAVORITES_ADDED') {
+    return toNumber(profile?.stats?.favoritos ?? profile?.favoriteBooks?.length, 0);
+  }
+
+  return 0;
 }
 
 export async function updateUserProfile(profileData) {

@@ -18,6 +18,7 @@ import { styles as userStyles } from '../../styles/UserStyles';
 import { useAuth } from '../../context/AuthContext';
 import {
   deactivateOwnAccount,
+  getAchievementsCatalog,
   getDetailedUserProfile,
   removeFavoriteBook,
 } from '../../services/profileService';
@@ -33,6 +34,28 @@ function getProfileRoleLabel(role) {
 
 function formatNumber(value) {
   return String(Number.isFinite(Number(value)) ? Number(value) : 0).padStart(2, '0');
+}
+
+function toNumber(value, fallback = 0) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function getAchievementProgressValue(profile, achievement) {
+  const criteriaType = String(achievement?.criteriaType || '').toUpperCase();
+  if (criteriaType === 'READ_BOOKS') {
+    return toNumber(profile?.stats?.livrosLidos ?? profile?.readBooks?.length, 0);
+  }
+
+  if (criteriaType === 'RATINGS_CREATED') {
+    return toNumber(profile?.stats?.resenhas ?? profile?.ratings?.length, 0);
+  }
+
+  if (criteriaType === 'FAVORITES_ADDED') {
+    return toNumber(profile?.stats?.favoritos ?? profile?.favoriteBooks?.length, 0);
+  }
+
+  return 0;
 }
 
 function SectionCard({ title, subtitle, actionLabel, onAction, children }) {
@@ -142,18 +165,53 @@ function AchievementBadge({ item }) {
   );
 }
 
+function ProgressAchievementCard({ item, progressValue }) {
+  const targetValue = Math.max(1, Number(item?.targetValue) || 1);
+  const currentValue = Math.max(0, Number(progressValue) || 0);
+  const progressPercent = Math.min(100, Math.round((currentValue / targetValue) * 100));
+  const completed = progressPercent >= 100;
+
+  return (
+    <View style={screenStyles.progressCard}>
+      <View style={screenStyles.progressTopRow}>
+        <View style={{ flex: 1 }}>
+          <Text style={screenStyles.achievementName}>{item?.name || 'Conquista'}</Text>
+          <Text style={screenStyles.achievementDescription} numberOfLines={2}>{item?.description || ''}</Text>
+        </View>
+        <View style={[screenStyles.progressBadge, completed && screenStyles.progressBadgeDone]}>
+          <Text style={[screenStyles.progressBadgeText, completed && screenStyles.progressBadgeTextDone]}>
+            {completed ? 'Concluída' : `${progressPercent}%`}
+          </Text>
+        </View>
+      </View>
+      <View style={screenStyles.progressTrack}>
+        <View style={[screenStyles.progressFill, { width: `${progressPercent}%` }]} />
+      </View>
+      <Text style={screenStyles.progressCaption}>
+        {currentValue}/{targetValue} {String(item?.criteriaType || '').replace(/_/g, ' ').toLowerCase()}
+      </Text>
+    </View>
+  );
+}
+
 export default function UserScreen({ navigation }) {
   const { session, signOut } = useAuth();
   const [profile, setProfile] = useState(null);
+  const [achievementCatalog, setAchievementCatalog] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
+  const previousAchievementIdsRef = React.useRef([]);
 
   const loadProfile = async () => {
     try {
       setError(null);
-      const data = await getDetailedUserProfile();
+      const [data, catalog] = await Promise.all([
+        getDetailedUserProfile(),
+        getAchievementsCatalog(),
+      ]);
       setProfile(data);
+      setAchievementCatalog(Array.isArray(catalog) ? catalog : []);
     } catch (err) {
       setError('Falha ao carregar o perfil.');
     } finally {
@@ -165,6 +223,27 @@ export default function UserScreen({ navigation }) {
   useEffect(() => {
     loadProfile();
   }, []);
+
+  useEffect(() => {
+    const currentIds = Array.isArray(profile?.achievements)
+      ? profile.achievements.map((item) => item?.id).filter(Boolean)
+      : [];
+
+    if (previousAchievementIdsRef.current.length > 0) {
+      const newAchievements = Array.isArray(profile?.achievements)
+        ? profile.achievements.filter((item) => item?.id && !previousAchievementIdsRef.current.includes(item.id))
+        : [];
+
+      if (newAchievements.length > 0) {
+        Alert.alert(
+          'Nova conquista desbloqueada',
+          newAchievements.map((item) => item?.name || 'Conquista').join(', ')
+        );
+      }
+    }
+
+    previousAchievementIdsRef.current = currentIds;
+  }, [profile?.achievements]);
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -235,6 +314,16 @@ export default function UserScreen({ navigation }) {
   const readBooks = profile?.readBooks || [];
   const ratings = profile?.ratings || [];
   const achievements = profile?.achievements || [];
+  const earnedAchievementIds = new Set(achievements.map((item) => item?.id).filter(Boolean));
+  const progressAchievements = achievementCatalog
+    .filter((item) => item?.active !== false)
+    .map((item) => ({
+      ...item,
+      progressValue: getAchievementProgressValue(profile, item),
+      completed: earnedAchievementIds.has(item.id) || getAchievementProgressValue(profile, item) >= Number(item?.targetValue || 0),
+    }));
+  const unlockedAchievements = progressAchievements.filter((item) => item.completed);
+  const inProgressAchievements = progressAchievements.filter((item) => !item.completed);
   const stats = profile?.stats || {};
 
   return (
@@ -386,8 +475,30 @@ export default function UserScreen({ navigation }) {
               )}
             </SectionCard>
 
-            <SectionCard title="Conquistas" subtitle="Badges desbloqueados no BookVerse">
-              {achievements.length === 0 ? (
+            <SectionCard title="Conquistas em progresso" subtitle="Veja o que já foi atingido e o que falta para a próxima conquista">
+              {progressAchievements.length === 0 ? (
+                <EmptyState
+                  icon="ribbon-outline"
+                  title="Nenhuma conquista cadastrada"
+                  description="Os critérios criados pelo administrador aparecerão aqui."
+                />
+              ) : inProgressAchievements.length === 0 ? (
+                <EmptyState
+                  icon="trophy-outline"
+                  title="Todas as conquistas concluídas"
+                  description="Você já atingiu os critérios de todas as conquistas disponíveis."
+                />
+              ) : (
+                <View style={screenStyles.listStack}>
+                  {inProgressAchievements.slice(0, 4).map((item) => (
+                    <ProgressAchievementCard key={String(item.id)} item={item} progressValue={item.progressValue} />
+                  ))}
+                </View>
+              )}
+            </SectionCard>
+
+            <SectionCard title="Conquistas desbloqueadas" subtitle="Badges desbloqueados no BookVerse">
+              {unlockedAchievements.length === 0 ? (
                 <EmptyState
                   icon="ribbon-outline"
                   title="Nenhuma conquista"
@@ -395,7 +506,7 @@ export default function UserScreen({ navigation }) {
                 />
               ) : (
                 <View style={screenStyles.achievementsGrid}>
-                  {achievements.map((item) => (
+                  {unlockedAchievements.map((item) => (
                     <AchievementBadge key={String(item.id)} item={item} />
                   ))}
                 </View>
@@ -628,6 +739,54 @@ const screenStyles = StyleSheet.create({
     color: '#64748b',
     fontSize: 11,
     fontWeight: '700',
+  },
+  progressCard: {
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    borderRadius: 12,
+    padding: 12,
+    backgroundColor: '#ffffff',
+  },
+  progressTopRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: 10,
+  },
+  progressBadge: {
+    borderRadius: 999,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    backgroundColor: '#fef3c7',
+  },
+  progressBadgeDone: {
+    backgroundColor: '#dcfce7',
+  },
+  progressBadgeText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#92400e',
+  },
+  progressBadgeTextDone: {
+    color: '#166534',
+  },
+  progressTrack: {
+    height: 8,
+    borderRadius: 999,
+    backgroundColor: '#e2e8f0',
+    marginTop: 10,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    borderRadius: 999,
+    backgroundColor: '#0f766e',
+  },
+  progressCaption: {
+    marginTop: 8,
+    color: '#64748b',
+    fontSize: 11,
+    fontWeight: '600',
   },
   achievementsGrid: {
     flexDirection: 'row',

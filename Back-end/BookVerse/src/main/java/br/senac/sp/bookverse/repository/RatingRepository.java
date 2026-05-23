@@ -13,6 +13,7 @@ import org.springframework.data.repository.query.Param;
 
 public interface RatingRepository extends JpaRepository<Rating, Long> {
     List<Rating> findByUsuarioId(Long usuarioId);
+    long countByUsuarioId(Long usuarioId);
     Page<Rating> findByUsuarioId(Long usuarioId, Pageable pageable);
     List<Rating> findByLivroId(Long livroId);
     Page<Rating> findByLivroId(Long livroId, Pageable pageable);
