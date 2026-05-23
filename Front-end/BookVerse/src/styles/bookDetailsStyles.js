@@ -113,6 +113,34 @@ export const bookDetailsStyles = StyleSheet.create({
 		fontWeight: '600',
 		color: '#fef3c7',
 	},
+	favoriteActionButton: {
+		marginTop: 10,
+		alignSelf: 'flex-start',
+		minHeight: 38,
+		paddingHorizontal: 12,
+		borderRadius: 10,
+		borderWidth: 1,
+		borderColor: 'rgba(254, 243, 199, 0.35)',
+		backgroundColor: 'rgba(255, 255, 255, 0.08)',
+		flexDirection: 'row',
+		alignItems: 'center',
+		gap: 8,
+	},
+	favoriteActionButtonActive: {
+		backgroundColor: '#fef3c7',
+		borderColor: '#fbbf24',
+	},
+	favoriteActionButtonDisabled: {
+		opacity: 0.65,
+	},
+	favoriteActionText: {
+		fontSize: 13,
+		fontWeight: '800',
+		color: '#fef3c7',
+	},
+	favoriteActionTextActive: {
+		color: '#0f172a',
+	},
 	sectionCard: {
 		backgroundColor: '#ffffff',
 		borderRadius: 10,

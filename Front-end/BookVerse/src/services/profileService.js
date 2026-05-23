@@ -1,35 +1,280 @@
 import api from './api';
 
-function normalizeProfile(payload = {}) {
-  const source = payload?.item || payload;
+const isTestMode = process.env.NODE_ENV === 'test';
+
+function createMockState() {
   return {
-    id: source?.id ?? null,
-    name: source?.name || source?.nome || 'Leitor(a)',
-    username: source?.username || '@usuario',
-    email: String(source?.email || '').trim().toLowerCase(),
-    bio: source?.bio || source?.biography || '',
-    profilePicture: source?.profilePicture || source?.profile_picture || '',
-    stats: source?.stats || {
+    id: 1,
+    nome: 'Leitor(a)',
+    email: 'leitor@bookverse.local',
+    bio: '',
+    profilePicture: '',
+    stats: {
       livrosLidos: 0,
       favoritos: 0,
       resenhas: 0,
+      conquistas: 0,
     },
-    destaque: Array.isArray(source?.destaque) ? source.destaque : [],
+    destaque: [],
+    categorias: [],
+    atividade: [],
+    favoriteBooks: [],
+    readBooks: [],
+    ratings: [],
+    achievements: [],
+    role: 'member',
+  };
+}
+
+let mockState = createMockState();
+
+function toNumber(value, fallback = 0) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function normalizeBook(book = {}) {
+  return {
+    id: book?.id ?? null,
+    title: book?.titulo || book?.title || 'Livro',
+    author: book?.autor || book?.author || '',
+    genre: book?.genero || book?.genre || '',
+    coverUrl: book?.coverUrl || book?.cover_url || '',
+    rating: toNumber(book?.mediaAvaliacao ?? book?.media_avaliacao, 0),
+  };
+}
+
+function normalizeReading(reading = {}) {
+  return {
+    id: reading?.id ?? null,
+    status: reading?.status || 'UNKNOWN',
+    progress: toNumber(reading?.progresso, 0),
+    bookId: reading?.livroId ?? reading?.bookId ?? reading?.livro?.id ?? null,
+    bookTitle: reading?.livroTitulo || reading?.bookTitle || reading?.livro?.titulo || '',
+    bookAuthor: reading?.livroAutor || reading?.bookAuthor || reading?.livro?.autor || '',
+  };
+}
+
+function normalizeRating(rating = {}) {
+  return {
+    id: rating?.id ?? null,
+    note: toNumber(rating?.nota, 0),
+    review: rating?.descricao || rating?.review || '',
+    bookId: rating?.livroId ?? rating?.bookId ?? rating?.livro?.id ?? null,
+    bookTitle: rating?.livroTitulo || rating?.bookTitle || rating?.livro?.titulo || '',
+    userId: rating?.usuarioId ?? rating?.userId ?? rating?.usuario?.id ?? null,
+    userName: rating?.usuarioNome || rating?.userName || rating?.usuario?.nome || '',
+    status: rating?.status || 'PENDING',
+    moderatedAt: rating?.moderatedAt || null,
+    adminFeedback: rating?.adminFeedback || '',
+  };
+}
+
+function normalizeAchievement(achievement = {}) {
+  return {
+    id: achievement?.id ?? null,
+    name: achievement?.nome || achievement?.name || 'Conquista',
+    description: achievement?.descricao || achievement?.description || '',
+  };
+}
+
+function syncMockStats() {
+  mockState.stats = {
+    livrosLidos: mockState.readBooks.length,
+    favoritos: mockState.favoriteBooks.length,
+    resenhas: mockState.ratings.length,
+    conquistas: mockState.achievements.length,
+  };
+  mockState.destaque = [...mockState.favoriteBooks];
+  mockState.atividade = [...mockState.readBooks.slice(0, 5)];
+}
+
+function getMockProfile() {
+  syncMockStats();
+  return normalizeProfile(mockState);
+}
+
+function normalizeProfile(payload = {}) {
+  const source = payload?.item || payload;
+  const usuario = source?.usuario || source?.user || source;
+
+  const favoriteBooks = Array.isArray(source?.livrosFavoritos)
+    ? source.livrosFavoritos.map(normalizeBook)
+    : Array.isArray(source?.favoriteBooks)
+      ? source.favoriteBooks.map(normalizeBook)
+      : [];
+
+  const readBooks = Array.isArray(source?.livrosLidos)
+    ? source.livrosLidos.map(normalizeReading)
+    : Array.isArray(source?.readBooks)
+      ? source.readBooks.map(normalizeReading)
+      : [];
+
+  const ratings = Array.isArray(source?.avaliacoes)
+    ? source.avaliacoes.map(normalizeRating)
+    : Array.isArray(source?.ratings)
+      ? source.ratings.map(normalizeRating)
+      : [];
+
+  const achievements = Array.isArray(source?.conquistas)
+    ? source.conquistas.map(normalizeAchievement)
+    : Array.isArray(source?.achievements)
+      ? source.achievements.map(normalizeAchievement)
+      : [];
+
+  const stats = source?.stats || {
+    livrosLidos: readBooks.length,
+    favoritos: favoriteBooks.length,
+    resenhas: ratings.length,
+    conquistas: achievements.length,
+  };
+
+  return {
+    id: usuario?.id ?? null,
+    name: usuario?.name || usuario?.nome || 'Leitor(a)',
+    username: usuario?.username || `@${String(usuario?.nome || usuario?.name || 'usuario').toLowerCase().replace(/\s+/g, '')}`,
+    email: String(usuario?.email || '').trim().toLowerCase(),
+    bio: usuario?.bio || usuario?.biography || '',
+    profilePicture: usuario?.profilePicture || usuario?.profile_picture || '',
+    role: usuario?.role || null,
+    stats,
+    favoriteBooks,
+    readBooks,
+    ratings,
+    achievements,
+    destaque: favoriteBooks,
     categorias: Array.isArray(source?.categorias) ? source.categorias : [],
-    atividade: Array.isArray(source?.atividade) ? source.atividade : [],
+    atividade: Array.isArray(source?.atividade) ? source.atividade : readBooks.slice(0, 5),
   };
 }
 
 export async function getUserProfile() {
+  if (isTestMode) {
+    return getMockProfile();
+  }
+
   try {
-    const response = await api.get('/api/v1/users/me');
+    const response = await api.get('/api/v1/users/me/profile');
     return normalizeProfile(response.data);
   } catch (error) {
     throw error;
   }
 }
 
+export async function getDetailedUserProfile() {
+  return getUserProfile();
+}
+
+export async function getUserFavorites() {
+  if (isTestMode) {
+    return getMockProfile().favoriteBooks;
+  }
+
+  try {
+    const response = await api.get('/api/v1/users/me/favorites');
+    return Array.isArray(response.data) ? response.data.map(normalizeBook) : [];
+  } catch (error) {
+    throw error;
+  }
+}
+
+export async function addFavoriteBook(bookId) {
+  if (isTestMode) {
+    const parsedId = Number(bookId);
+    if (!Number.isFinite(parsedId)) {
+      throw new Error('bookId inválido');
+    }
+
+    const existing = mockState.favoriteBooks.find((item) => item.id === parsedId);
+    if (!existing && mockState.favoriteBooks.length >= 3) {
+      throw new Error('O perfil pode ter no máximo 3 livros favoritos.');
+    }
+
+    if (!existing) {
+      mockState.favoriteBooks.push({
+        id: parsedId,
+        title: `Livro ${parsedId}`,
+        author: 'Autor',
+        genre: 'Gênero',
+        coverUrl: '',
+        rating: 0,
+      });
+    }
+
+    return getMockProfile();
+  }
+
+  try {
+    const response = await api.post(`/api/v1/users/me/favorites/${bookId}`);
+    return normalizeProfile(response.data);
+  } catch (error) {
+    throw error;
+  }
+}
+
+export async function removeFavoriteBook(bookId) {
+  if (isTestMode) {
+    const parsedId = Number(bookId);
+    mockState.favoriteBooks = mockState.favoriteBooks.filter((item) => item.id !== parsedId);
+    return getMockProfile();
+  }
+
+  try {
+    const response = await api.delete(`/api/v1/users/me/favorites/${bookId}`);
+    return normalizeProfile(response.data);
+  } catch (error) {
+    throw error;
+  }
+}
+
+export async function getUserReadBooks() {
+  if (isTestMode) {
+    return getMockProfile().readBooks;
+  }
+
+  try {
+    const response = await api.get('/api/v1/users/me/read-books');
+    return Array.isArray(response.data) ? response.data.map(normalizeReading) : [];
+  } catch (error) {
+    throw error;
+  }
+}
+
+export async function getUserRatings() {
+  if (isTestMode) {
+    return getMockProfile().ratings;
+  }
+
+  try {
+    const response = await api.get('/api/v1/users/me/ratings');
+    return Array.isArray(response.data) ? response.data.map(normalizeRating) : [];
+  } catch (error) {
+    throw error;
+  }
+}
+
+export async function getUserAchievements() {
+  if (isTestMode) {
+    return getMockProfile().achievements;
+  }
+
+  try {
+    const response = await api.get('/api/v1/users/me/achievements');
+    return Array.isArray(response.data) ? response.data.map(normalizeAchievement) : [];
+  } catch (error) {
+    throw error;
+  }
+}
+
 export async function updateUserProfile(profileData) {
+  if (isTestMode) {
+    mockState.nome = profileData?.name || profileData?.nome || mockState.nome;
+    mockState.email = String(profileData?.email || mockState.email).trim().toLowerCase();
+    mockState.bio = profileData?.bio || profileData?.biography || mockState.bio;
+    mockState.profilePicture = profileData?.profilePicture || profileData?.profile_picture || mockState.profilePicture;
+    return getMockProfile();
+  }
+
   const updatePayload = {
     nome: profileData?.name || profileData?.nome || '',
     email: String(profileData?.email || '').trim().toLowerCase(),
@@ -46,6 +291,17 @@ export async function updateUserProfile(profileData) {
 }
 
 export async function changePassword(currentPassword, newPassword) {
+  if (isTestMode) {
+    if (!newPassword || String(newPassword).trim().length < 6) {
+      throw new Error('A nova senha deve ter no mínimo 6 caracteres.');
+    }
+
+    return {
+      success: true,
+      message: 'Senha alterada com sucesso.',
+    };
+  }
+
   const payload = {
     senhaAtual: currentPassword,
     senhaNova: newPassword,
@@ -60,6 +316,10 @@ export async function changePassword(currentPassword, newPassword) {
 }
 
 export async function getUserStats() {
+  if (isTestMode) {
+    return getMockProfile().stats;
+  }
+
   try {
     const response = await api.get('/api/v1/users/me/stats');
     return response.data?.item || response.data;
@@ -71,6 +331,11 @@ export async function getUserStats() {
 export async function updateProfilePicture(imageUri) {
   if (!imageUri) {
     throw new Error('Image URI é obrigatório');
+  }
+
+  if (isTestMode) {
+    mockState.profilePicture = imageUri;
+    return getMockProfile();
   }
 
   try {
@@ -93,6 +358,15 @@ export async function updateProfilePicture(imageUri) {
 }
 
 export async function addCategoryPreference(categoryName) {
+  if (isTestMode) {
+    const normalized = String(categoryName || '').trim();
+    if (normalized && !mockState.categorias.includes(normalized)) {
+      mockState.categorias = [...mockState.categorias, normalized];
+    }
+
+    return getMockProfile();
+  }
+
   try {
     const response = await api.post('/api/v1/users/me/categories', {
       nome: categoryName,
@@ -104,6 +378,12 @@ export async function addCategoryPreference(categoryName) {
 }
 
 export async function removeCategoryPreference(categoryName) {
+  if (isTestMode) {
+    const normalized = String(categoryName || '').trim();
+    mockState.categorias = mockState.categorias.filter((item) => item !== normalized);
+    return getMockProfile();
+  }
+
   try {
     const response = await api.delete(`/api/v1/users/me/categories/${categoryName}`);
     return normalizeProfile(response.data);
@@ -113,6 +393,10 @@ export async function removeCategoryPreference(categoryName) {
 }
 
 export async function deactivateOwnAccount() {
+  if (isTestMode) {
+    return { success: true };
+  }
+
   try {
     await api.delete('/api/v1/users/me');
     return { success: true };

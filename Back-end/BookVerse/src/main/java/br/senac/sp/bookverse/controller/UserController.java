@@ -1,5 +1,10 @@
 package br.senac.sp.bookverse.controller;
 
+import br.senac.sp.bookverse.dto.BookDTO;
+import br.senac.sp.bookverse.dto.PerfilUsuarioDTO;
+import br.senac.sp.bookverse.dto.AchievementDTO;
+import br.senac.sp.bookverse.dto.RatingDTO;
+import br.senac.sp.bookverse.dto.ReadingHistoryDTO;
 import br.senac.sp.bookverse.dto.UserUpdateDTO;
 import br.senac.sp.bookverse.dto.UserResponseDTO;
 import br.senac.sp.bookverse.dto.UserStatusUpdateDTO;
@@ -24,6 +29,61 @@ public class UserController {
     @GetMapping("/me")
     public ResponseEntity<UserResponseDTO> profile() {
         return ResponseEntity.ok(userService.perfilAutenticado());
+    }
+
+    @GetMapping("/me/profile")
+    public ResponseEntity<PerfilUsuarioDTO> detailedProfile() {
+        return ResponseEntity.ok(userService.perfilDetalhadoAutenticado());
+    }
+
+    @GetMapping("/{id:\\d+}/profile")
+    public ResponseEntity<PerfilUsuarioDTO> profileById(@PathVariable Long id) {
+        return ResponseEntity.ok(userService.perfilDetalhadoPorId(id));
+    }
+
+    @GetMapping("/me/favorites")
+    public ResponseEntity<java.util.List<BookDTO>> myFavorites() {
+        return ResponseEntity.ok(userService.listarFavoritosAutenticado());
+    }
+
+    @GetMapping("/me/read-books")
+    public ResponseEntity<java.util.List<ReadingHistoryDTO>> myReadBooks() {
+        return ResponseEntity.ok(userService.meusLivrosLidos());
+    }
+
+    @GetMapping("/me/ratings")
+    public ResponseEntity<java.util.List<RatingDTO>> myRatings() {
+        return ResponseEntity.ok(userService.minhasAvaliacoes());
+    }
+
+    @GetMapping("/me/achievements")
+    public ResponseEntity<java.util.List<AchievementDTO>> myAchievements() {
+        return ResponseEntity.ok(userService.minhasConquistas());
+    }
+
+    @GetMapping("/{id:\\d+}/read-books")
+    public ResponseEntity<java.util.List<ReadingHistoryDTO>> readBooksById(@PathVariable Long id) {
+        return ResponseEntity.ok(userService.livrosLidosPorId(id));
+    }
+
+    @GetMapping("/{id:\\d+}/ratings")
+    public ResponseEntity<java.util.List<RatingDTO>> ratingsById(@PathVariable Long id) {
+        return ResponseEntity.ok(userService.avaliacoesPorId(id));
+    }
+
+    @GetMapping("/{id:\\d+}/achievements")
+    public ResponseEntity<java.util.List<AchievementDTO>> achievementsById(@PathVariable Long id) {
+        return ResponseEntity.ok(userService.conquistasPorId(id));
+    }
+
+    @PostMapping("/me/favorites/{bookId:\\d+}")
+    public ResponseEntity<PerfilUsuarioDTO> addFavorite(@PathVariable Long bookId) {
+        return ResponseEntity.ok(userService.adicionarFavorito(bookId));
+    }
+
+    @DeleteMapping("/me/favorites/{bookId:\\d+}")
+    public ResponseEntity<PerfilUsuarioDTO> removeFavorite(@PathVariable Long bookId) {
+        return ResponseEntity.ok(userService.removerFavorito(bookId));
     }
 
     @DeleteMapping("/me")

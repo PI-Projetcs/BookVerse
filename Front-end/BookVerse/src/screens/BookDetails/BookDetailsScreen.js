@@ -7,6 +7,7 @@ import {
 	rateBook,
 	updateBookRating,
 } from '../../services/bookService';
+import { addFavoriteBook, getUserFavorites, removeFavoriteBook } from '../../services/profileService';
 import { bookDetailsStyles as styles } from '../../styles/bookDetailsStyles';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -59,6 +60,8 @@ export default function BookDetailsScreen({ navigation, route }) {
 	const [myRating, setMyRating] = useState(0);
 	const [myReview, setMyReview] = useState('');
 	const [isSavingRating, setIsSavingRating] = useState(false);
+	const [isFavorite, setIsFavorite] = useState(false);
+	const [isUpdatingFavorite, setIsUpdatingFavorite] = useState(false);
 
 	const myExistingRating = useMemo(() => {
 		if (!session?.id) {
@@ -101,14 +104,26 @@ export default function BookDetailsScreen({ navigation, route }) {
 			} catch (ratingsError) {
 				setRatings([]);
 			}
+
+			if (isAuthenticated) {
+				try {
+					const favoriteBooks = await getUserFavorites();
+					setIsFavorite(Array.isArray(favoriteBooks) && favoriteBooks.some((item) => Number(item?.id) === Number(bookId)));
+				} catch (favoriteError) {
+					setIsFavorite(false);
+				}
+			} else {
+				setIsFavorite(false);
+			}
 		} catch (error) {
 			setErrorMessage('Não foi possível carregar os detalhes do livro.');
 			setMemberComments([]);
 			setRatings([]);
+			setIsFavorite(false);
 		} finally {
 			setIsLoading(false);
 		}
-	}, [bookId]);
+	}, [bookId, isAuthenticated]);
 
 	useEffect(() => {
 		if (bookId) {
@@ -186,6 +201,30 @@ export default function BookDetailsScreen({ navigation, route }) {
 		]);
 	};
 
+	const handleToggleFavorite = async () => {
+		if (!isAuthenticated) {
+			Alert.alert('Atenção', 'Faça login para salvar este livro como favorito.');
+			return;
+		}
+
+		try {
+			setIsUpdatingFavorite(true);
+			if (isFavorite) {
+				await removeFavoriteBook(bookId);
+				setIsFavorite(false);
+				Alert.alert('Sucesso', 'Livro removido dos favoritos.');
+			} else {
+				await addFavoriteBook(bookId);
+				setIsFavorite(true);
+				Alert.alert('Sucesso', 'Livro adicionado aos favoritos.');
+			}
+		} catch (error) {
+			Alert.alert('Erro', 'Não foi possível atualizar seus favoritos agora.');
+		} finally {
+			setIsUpdatingFavorite(false);
+		}
+	};
+
 	return (
 		<SafeAreaView style={styles.safeArea}>
 			<StatusBar barStyle="light-content" />
@@ -261,6 +300,26 @@ export default function BookDetailsScreen({ navigation, route }) {
 										<Text style={styles.ratingCountText}> ({totalRatings} avaliações)</Text>
 									</Text>
 								</View>
+								<TouchableOpacity
+									style={[
+										styles.favoriteActionButton,
+										isFavorite && styles.favoriteActionButtonActive,
+										isUpdatingFavorite && styles.favoriteActionButtonDisabled,
+									]}
+									onPress={handleToggleFavorite}
+									disabled={isUpdatingFavorite}
+									accessibilityRole="button"
+									accessibilityLabel={isFavorite ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}
+								>
+									<Ionicons
+										name={isFavorite ? 'bookmark' : 'bookmark-outline'}
+										size={16}
+										color={isFavorite ? '#0f172a' : '#fef3c7'}
+									/>
+									<Text style={[styles.favoriteActionText, isFavorite && styles.favoriteActionTextActive]}>
+										{isFavorite ? 'Nos favoritos' : 'Favoritar'}
+									</Text>
+								</TouchableOpacity>
 							</View>
 						</LinearGradient>
 								);

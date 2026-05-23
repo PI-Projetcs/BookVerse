@@ -10,7 +10,7 @@ import java.util.List;
 
 @Getter
 @Setter
-@ToString(exclude = {"senha", "avaliacoes", "comentarios", "historicoLeitura", "conquistas"})
+@ToString(exclude = {"senha", "avaliacoes", "comentarios", "historicoLeitura", "conquistas", "perfilUsuario"})
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @Entity
 @Table(name = "users")
@@ -58,4 +58,7 @@ public class User {
             inverseJoinColumns = @JoinColumn(name = "achievement_id")
     )
     private List<Achievement> conquistas;
+
+    @OneToOne(mappedBy = "usuario", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private PerfilUsuario perfilUsuario;
 }
