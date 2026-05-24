@@ -18,6 +18,10 @@ public final class AchievementMapper {
                 achievement.getDescricao(),
                 achievement.getCriteriaType(),
                 achievement.getTargetValue(),
+            achievement.getCriteriaType2(),
+            achievement.getTargetValue2(),
+            achievement.getCriteriaType3(),
+            achievement.getTargetValue3(),
                 achievement.getAtivo()
         );
     }
@@ -32,6 +36,10 @@ public final class AchievementMapper {
         achievement.setDescricao(dto.descricao());
         achievement.setCriteriaType(dto.criteriaType());
         achievement.setTargetValue(dto.targetValue());
+        achievement.setCriteriaType2(dto.criteriaType2());
+        achievement.setTargetValue2(dto.targetValue2());
+        achievement.setCriteriaType3(dto.criteriaType3());
+        achievement.setTargetValue3(dto.targetValue3());
         achievement.setAtivo(dto.ativo() != null ? dto.ativo() : true);
         return achievement;
     }
@@ -44,6 +52,10 @@ public final class AchievementMapper {
         achievement.setDescricao(dto.descricao());
         achievement.setCriteriaType(dto.criteriaType());
         achievement.setTargetValue(dto.targetValue());
+        achievement.setCriteriaType2(dto.criteriaType2());
+        achievement.setTargetValue2(dto.targetValue2());
+        achievement.setCriteriaType3(dto.criteriaType3());
+        achievement.setTargetValue3(dto.targetValue3());
         achievement.setAtivo(dto.ativo() != null ? dto.ativo() : achievement.getAtivo());
     }
 }

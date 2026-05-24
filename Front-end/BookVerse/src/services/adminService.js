@@ -35,12 +35,23 @@ function normalizeModerationItem(item = {}, index = 0) {
 }
 
 function normalizeAchievement(item = {}, index = 0) {
+	const criteriaPairs = [
+		{ criteriaType: item.criteriaType || item.criteria_type, targetValue: Number(item.targetValue ?? item.target_value) || 1 },
+		{ criteriaType: item.criteriaType2 || item.criteria_type2, targetValue: Number(item.targetValue2 ?? item.target_value2) || 1 },
+		{ criteriaType: item.criteriaType3 || item.criteria_type3, targetValue: Number(item.targetValue3 ?? item.target_value3) || 1 },
+	].filter((pair) => Boolean(pair.criteriaType));
+
 	return {
 		id: Number(item.id ?? index + 1),
 		name: item.nome || item.name || 'Conquista',
 		description: item.descricao || item.description || '',
 		criteriaType: item.criteriaType || item.criteria_type || 'READ_BOOKS',
 		targetValue: Number(item.targetValue ?? item.target_value) || 1,
+		criteriaType2: item.criteriaType2 || item.criteria_type2 || null,
+		targetValue2: Number(item.targetValue2 ?? item.target_value2) || null,
+		criteriaType3: item.criteriaType3 || item.criteria_type3 || null,
+		targetValue3: Number(item.targetValue3 ?? item.target_value3) || null,
+		criteriaPairs,
 		active: item.ativo ?? item.active ?? true,
 	};
 }
@@ -233,12 +244,27 @@ export async function getAchievementProgress() {
 }
 
 export async function createAchievement(payload = {}) {
+	const criteriaPairs = Array.isArray(payload?.criteriaPairs) && payload.criteriaPairs.length > 0
+		? payload.criteriaPairs
+		: [
+			{
+				criteriaType: payload?.criteriaType || payload?.criteria_type || 'READ_BOOKS',
+				targetValue: Number(payload?.targetValue ?? payload?.target_value) || 1,
+			},
+		];
+
+	const [first, second, third] = criteriaPairs;
+
 	try {
 		const response = await api.post('/api/v1/achievements', {
 			nome: payload?.name || payload?.nome || '',
 			descricao: payload?.description || payload?.descricao || '',
-			criteriaType: payload?.criteriaType || payload?.criteria_type || 'READ_BOOKS',
-			targetValue: Number(payload?.targetValue ?? payload?.target_value) || 1,
+			criteriaType: first?.criteriaType || 'READ_BOOKS',
+			targetValue: Number(first?.targetValue) || 1,
+			criteriaType2: second?.criteriaType || null,
+			targetValue2: second ? Number(second?.targetValue) || 1 : null,
+			criteriaType3: third?.criteriaType || null,
+			targetValue3: third ? Number(third?.targetValue) || 1 : null,
 			ativo: payload?.active ?? payload?.ativo ?? true,
 		});
 		return normalizeAchievement(response.data);
@@ -248,12 +274,27 @@ export async function createAchievement(payload = {}) {
 }
 
 export async function updateAchievement(achievementId, payload = {}) {
+	const criteriaPairs = Array.isArray(payload?.criteriaPairs) && payload.criteriaPairs.length > 0
+		? payload.criteriaPairs
+		: [
+			{
+				criteriaType: payload?.criteriaType || payload?.criteria_type || 'READ_BOOKS',
+				targetValue: Number(payload?.targetValue ?? payload?.target_value) || 1,
+			},
+		];
+
+	const [first, second, third] = criteriaPairs;
+
 	try {
 		const response = await api.put(`/api/v1/achievements/${achievementId}`, {
 			nome: payload?.name || payload?.nome || '',
 			descricao: payload?.description || payload?.descricao || '',
-			criteriaType: payload?.criteriaType || payload?.criteria_type || 'READ_BOOKS',
-			targetValue: Number(payload?.targetValue ?? payload?.target_value) || 1,
+			criteriaType: first?.criteriaType || 'READ_BOOKS',
+			targetValue: Number(first?.targetValue) || 1,
+			criteriaType2: second?.criteriaType || null,
+			targetValue2: second ? Number(second?.targetValue) || 1 : null,
+			criteriaType3: third?.criteriaType || null,
+			targetValue3: third ? Number(third?.targetValue) || 1 : null,
 			ativo: payload?.active ?? payload?.ativo ?? true,
 		});
 		return normalizeAchievement(response.data);

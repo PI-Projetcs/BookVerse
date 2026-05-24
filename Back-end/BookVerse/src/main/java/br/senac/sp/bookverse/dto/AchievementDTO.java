@@ -11,6 +11,10 @@ public record AchievementDTO(
         @NotBlank(message = "Descrição da conquista é obrigatória") String descricao,
         @NotNull(message = "Tipo de critério é obrigatório") AchievementCriteriaType criteriaType,
         @NotNull(message = "Valor-alvo é obrigatório") @Positive(message = "Valor-alvo deve ser maior que zero") Integer targetValue,
+        AchievementCriteriaType criteriaType2,
+        @Positive(message = "Valor-alvo 2 deve ser maior que zero") Integer targetValue2,
+        AchievementCriteriaType criteriaType3,
+        @Positive(message = "Valor-alvo 3 deve ser maior que zero") Integer targetValue3,
         Boolean ativo
 ) {
 }

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -11,6 +11,7 @@ import {
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
 import Header from '../../components/Header';
 import FooterNav from '../../components/FooterNav';
 import { HEADER_GRADIENT_COLORS } from '../../styles/headerStyles';
@@ -203,7 +204,7 @@ export default function UserScreen({ navigation }) {
   const [error, setError] = useState(null);
   const previousAchievementIdsRef = React.useRef([]);
 
-  const loadProfile = async () => {
+  const loadProfile = useCallback(async () => {
     try {
       setError(null);
       const [data, catalog] = await Promise.all([
@@ -218,11 +219,14 @@ export default function UserScreen({ navigation }) {
       setLoading(false);
       setRefreshing(false);
     }
-  };
-
-  useEffect(() => {
-    loadProfile();
   }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadProfile();
+      return undefined;
+    }, [loadProfile])
+  );
 
   useEffect(() => {
     const currentIds = Array.isArray(profile?.achievements)
@@ -325,6 +329,11 @@ export default function UserScreen({ navigation }) {
   const unlockedAchievements = progressAchievements.filter((item) => item.completed);
   const inProgressAchievements = progressAchievements.filter((item) => !item.completed);
   const stats = profile?.stats || {};
+  const achievementsCount = Math.max(
+    toNumber(stats.conquistas, 0),
+    achievements.length,
+    unlockedAchievements.length
+  );
 
   return (
     <View style={userStyles.screen}>
@@ -372,7 +381,7 @@ export default function UserScreen({ navigation }) {
               <StatPill icon="book-outline" label="Lidos" value={stats.livrosLidos ?? readBooks.length} color="#0f766e" />
               <StatPill icon="bookmark-outline" label="Favoritos" value={stats.favoritos ?? favoriteBooks.length} color="#7D1F3E" />
               <StatPill icon="star-outline" label="Avaliações" value={stats.resenhas ?? ratings.length} color="#B8941F" />
-              <StatPill icon="ribbon-outline" label="Conquistas" value={stats.conquistas ?? achievements.length} color="#1e3a5f" />
+              <StatPill icon="ribbon-outline" label="Conquistas" value={achievementsCount} color="#1e3a5f" />
             </View>
 
             <SectionCard title="Conta" subtitle="Ações e atalhos do seu perfil">

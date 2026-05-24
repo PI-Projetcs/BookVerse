@@ -28,8 +28,12 @@ const DEFAULT_FORM = {
 	id: null,
 	name: '',
 	description: '',
-	criteriaType: 'READ_BOOKS',
-	targetValue: '1',
+	selectedCriteria: ['READ_BOOKS'],
+	criteriaTargets: {
+		READ_BOOKS: '1',
+		RATINGS_CREATED: '1',
+		FAVORITES_ADDED: '1',
+	},
 	active: true,
 };
 
@@ -57,6 +61,29 @@ function getCriteriaLabel(criteriaType) {
 	return CRITERIA_OPTIONS.find((option) => option.key === criteriaType)?.label || criteriaType;
 }
 
+function getCriteriaList(achievement = {}) {
+	if (Array.isArray(achievement.criteriaPairs) && achievement.criteriaPairs.length > 0) {
+		return achievement.criteriaPairs;
+	}
+
+	return [
+		{ criteriaType: achievement.criteriaType, targetValue: achievement.targetValue },
+		{ criteriaType: achievement.criteriaType2, targetValue: achievement.targetValue2 },
+		{ criteriaType: achievement.criteriaType3, targetValue: achievement.targetValue3 },
+	].filter((item) => Boolean(item?.criteriaType));
+}
+
+function getCriteriaSummary(achievement = {}) {
+	const items = getCriteriaList(achievement);
+	if (items.length === 0) {
+		return 'Sem critério';
+	}
+
+	return items
+		.map((item) => `${getCriteriaLabel(item.criteriaType)} (${item.targetValue || 1})`)
+		.join(' + ');
+}
+
 function toFormValue(achievement) {
 	if (!achievement) {
 		return { ...DEFAULT_FORM };
@@ -66,8 +93,16 @@ function toFormValue(achievement) {
 		id: achievement.id ?? null,
 		name: achievement.name || '',
 		description: achievement.description || '',
-		criteriaType: achievement.criteriaType || 'READ_BOOKS',
-		targetValue: String(achievement.targetValue ?? 1),
+		selectedCriteria: getCriteriaList(achievement).map((item) => item.criteriaType),
+		criteriaTargets: {
+			READ_BOOKS: String(achievement.targetValue ?? 1),
+			RATINGS_CREATED: String(achievement.targetValue2 ?? 1),
+			FAVORITES_ADDED: String(achievement.targetValue3 ?? 1),
+			...getCriteriaList(achievement).reduce((acc, item) => {
+				acc[item.criteriaType] = String(item.targetValue ?? 1);
+				return acc;
+			}, {}),
+		},
 		active: achievement.active !== false,
 	};
 }
@@ -126,12 +161,12 @@ export default function ManageAchievements({ navigation }) {
 	const filteredAchievements = useMemo(() => {
 		const query = searchText.trim().toLowerCase();
 		const visible = achievements.filter((achievement) => {
-			const matchesQuery = !query || [achievement.name, achievement.description, getCriteriaLabel(achievement.criteriaType), String(achievement.targetValue)]
+			const matchesQuery = !query || [achievement.name, achievement.description, getCriteriaSummary(achievement)]
 				.join(' ')
 				.toLowerCase()
 				.includes(query);
 			const matchesStatus = statusFilter === 'all' || (statusFilter === 'active' ? achievement.active !== false : achievement.active === false);
-			const matchesCriteria = criteriaFilter === 'all' || achievement.criteriaType === criteriaFilter;
+			const matchesCriteria = criteriaFilter === 'all' || getCriteriaList(achievement).some((item) => item.criteriaType === criteriaFilter);
 			return matchesQuery && matchesStatus && matchesCriteria;
 		});
 
@@ -145,7 +180,13 @@ export default function ManageAchievements({ navigation }) {
 	}, [achievements, criteriaFilter, searchText, sortOrder, statusFilter]);
 
 	const visibleCriteriaOptions = useMemo(() => {
-		const criteriaTypes = Array.from(new Set(achievements.map((achievement) => achievement.criteriaType).filter(Boolean)));
+		const criteriaTypes = Array.from(
+			new Set(
+				achievements
+					.flatMap((achievement) => getCriteriaList(achievement).map((item) => item.criteriaType))
+					.filter(Boolean)
+			)
+		);
 		return CRITERIA_OPTIONS.filter((option) => criteriaTypes.includes(option.key));
 	}, [achievements]);
 
@@ -186,11 +227,24 @@ export default function ManageAchievements({ navigation }) {
 			return;
 		}
 
+		const selectedCriteria = CRITERIA_OPTIONS
+			.map((option) => option.key)
+			.filter((key) => form.selectedCriteria.includes(key));
+
+		if (selectedCriteria.length === 0) {
+			Alert.alert('Critério obrigatório', 'Selecione ao menos um critério para a conquista.');
+			return;
+		}
+
+		const criteriaPairs = selectedCriteria.map((criteriaType) => ({
+			criteriaType,
+			targetValue: normalizeTargetValue(form.criteriaTargets[criteriaType]),
+		}));
+
 		const payload = {
 			name: form.name.trim(),
 			description: form.description.trim(),
-			criteriaType: form.criteriaType,
-			targetValue: normalizeTargetValue(form.targetValue),
+			criteriaPairs,
 			active: Boolean(form.active),
 		};
 
@@ -241,8 +295,13 @@ export default function ManageAchievements({ navigation }) {
 	const renderAchievement = (achievement) => {
 		const isSelected = form.id === achievement.id;
 		const progress = progressByAchievementId[achievement.id] || null;
+		const criteriaList = getCriteriaList(achievement);
+		const totalTarget = Math.max(
+			1,
+			criteriaList.reduce((sum, item) => sum + Math.max(1, Number(item.targetValue) || 1), 0)
+		);
 		const normalizedCurrent = progress ? Math.max(0, progress.currentValue) : 0;
-		const normalizedTarget = progress ? Math.max(1, progress.targetValue || achievement.targetValue || 1) : Math.max(1, Number(achievement.targetValue) || 1);
+		const normalizedTarget = progress ? Math.max(1, progress.targetValue || achievement.targetValue || 1) : totalTarget;
 		const progressPercent = Math.min(100, Math.round((normalizedCurrent / normalizedTarget) * 100));
 		const progressLabel = progress ? `${Math.min(normalizedCurrent, normalizedTarget)}/${normalizedTarget}` : `0/${normalizedTarget}`;
 		return (
@@ -260,12 +319,11 @@ export default function ManageAchievements({ navigation }) {
 				</View>
 
 				<View style={styles.chipRow}>
-					<View style={styles.chip}>
-						<Text style={styles.chipText}>{getCriteriaLabel(achievement.criteriaType)}</Text>
-					</View>
-					<View style={styles.chip}>
-						<Text style={styles.chipText}>{achievement.targetValue} unidades</Text>
-					</View>
+					{criteriaList.map((item) => (
+						<View key={`${achievement.id}-${item.criteriaType}`} style={styles.chip}>
+							<Text style={styles.chipText}>{`${getCriteriaLabel(item.criteriaType)}: ${item.targetValue || 1}`}</Text>
+						</View>
+					))}
 					<View style={styles.chip}>
 						<Text style={styles.chipText}>{progressLabel}</Text>
 					</View>
@@ -481,36 +539,60 @@ export default function ManageAchievements({ navigation }) {
 							<Text style={styles.fieldLabel}>Tipo de critério</Text>
 							<View style={styles.criteriaGrid}>
 								{CRITERIA_OPTIONS.map((option) => {
-									const isActive = form.criteriaType === option.key;
+									const isActive = form.selectedCriteria.includes(option.key);
 									return (
 										<TouchableOpacity
 											key={option.key}
 											style={[styles.criteriaChip, isActive ? styles.criteriaChipActive : null]}
-											onPress={() => setForm((prev) => ({ ...prev, criteriaType: option.key }))}
+											onPress={() => {
+												setForm((prev) => {
+													const alreadySelected = prev.selectedCriteria.includes(option.key);
+													if (alreadySelected && prev.selectedCriteria.length === 1) {
+														return prev;
+													}
+
+													const nextSelected = alreadySelected
+														? prev.selectedCriteria.filter((key) => key !== option.key)
+														: [...prev.selectedCriteria, option.key];
+
+													return {
+														...prev,
+														selectedCriteria: nextSelected,
+													};
+												});
+											}}
 											hitSlop={HIT_SLOP}
 											accessibilityRole="button"
 											accessibilityState={{ selected: isActive }}
 										>
 											<Text style={styles.criteriaChipTitle}>{option.label}</Text>
 											<Text style={styles.criteriaChipText}>{option.description}</Text>
+											{isActive ? (
+												<View style={{ marginTop: 8 }}>
+													<Text style={styles.fieldLabel}>Meta</Text>
+													<TextInput
+														value={form.criteriaTargets[option.key]}
+														onChangeText={(value) => setForm((prev) => ({
+															...prev,
+															criteriaTargets: {
+																...prev.criteriaTargets,
+																[option.key]: value,
+															},
+														}))}
+														placeholder="1"
+														placeholderTextColor="#94a3b8"
+														style={[styles.fieldInput, { minHeight: 36, paddingVertical: 8 }]}
+														keyboardType="numeric"
+													/>
+												</View>
+											) : null}
 										</TouchableOpacity>
 									);
 								})}
 							</View>
 						</View>
 
-						<View style={{ marginTop: 12 }}>
-							<Text style={styles.fieldLabel}>Valor-alvo</Text>
-							<TextInput
-								value={form.targetValue}
-								onChangeText={(value) => setForm((prev) => ({ ...prev, targetValue: value }))}
-								placeholder="1"
-								placeholderTextColor="#94a3b8"
-								style={styles.fieldInput}
-								keyboardType="numeric"
-							/>
-							<Text style={styles.fieldHint}>Use um número inteiro maior que zero.</Text>
-						</View>
+						<Text style={styles.fieldHint}>Selecione 1, 2 ou 3 critérios e defina a meta de cada um.</Text>
 
 						<View style={{ marginTop: 12 }}>
 							<View style={styles.toggleRow}>

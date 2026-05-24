@@ -2,6 +2,7 @@ package br.senac.sp.bookverse.service;
 
 import br.senac.sp.bookverse.dto.AchievementDTO;
 import br.senac.sp.bookverse.exception.ResourceNotFoundException;
+import br.senac.sp.bookverse.model.AchievementCriteriaType;
 import br.senac.sp.bookverse.model.Achievement;
 import br.senac.sp.bookverse.repository.AchievementRepository;
 import org.junit.jupiter.api.Test;
@@ -30,7 +31,18 @@ class AchievementServiceTest {
 
     @Test
     void criar_deveSalvarAchievement() {
-        AchievementDTO dto = new AchievementDTO(null, "Leitor", "Primeiro livro concluído");
+        AchievementDTO dto = new AchievementDTO(
+            null,
+            "Leitor",
+            "Primeiro livro concluído",
+            AchievementCriteriaType.READ_BOOKS,
+            1,
+            null,
+            null,
+            null,
+            null,
+            true
+        );
         Achievement salva = new Achievement();
         salva.setId(1L);
         salva.setNome(dto.nome());
@@ -52,7 +64,20 @@ class AchievementServiceTest {
         existente.setNome("Leitor");
         when(achievementRepository.findByNome("Leitor")).thenReturn(List.of(existente));
 
-        assertThrows(ResponseStatusException.class, () -> achievementService.criar(new AchievementDTO(null, "Leitor", "Outra")));
+        assertThrows(ResponseStatusException.class, () -> achievementService.criar(
+            new AchievementDTO(
+                null,
+                "Leitor",
+                "Outra",
+                AchievementCriteriaType.READ_BOOKS,
+                1,
+                null,
+                null,
+                null,
+                null,
+                true
+            )
+        ));
     }
 
     @Test

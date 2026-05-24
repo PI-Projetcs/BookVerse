@@ -101,16 +101,19 @@ public class HomeService {
         Optional<Book> livroDoMes = bookRepository.findByAtivoTrueAndDestaqueTrue().stream().findFirst();
         ReadingHistory historicoUsuario = null;
         if (livroDoMes.isPresent()) {
-            historicoUsuario = readingHistoryRepository.findByUsuarioAndLivro(usuario, livroDoMes.get())
-                .orElseGet(() -> historicos.stream()
-                    .filter(h -> h.getUsuario() != null
-                        && h.getUsuario().getId() != null
-                        && h.getUsuario().getId().equals(usuario.getId())
-                        && h.getLivro() != null
-                        && h.getLivro().getId() != null
-                        && h.getLivro().getId().equals(livroDoMes.get().getId()))
-                    .findFirst()
-                    .orElse(null));
+            historicoUsuario = historicos.stream()
+                .filter(h -> h.getUsuario() != null
+                    && h.getUsuario().getId() != null
+                    && h.getUsuario().getId().equals(usuario.getId())
+                    && h.getLivro() != null
+                    && h.getLivro().getId() != null
+                    && h.getLivro().getId().equals(livroDoMes.get().getId()))
+                .max(
+                    Comparator
+                        .comparing((ReadingHistory h) -> h.getProgresso() != null ? h.getProgresso() : 0)
+                        .thenComparing(h -> h.getId() != null ? h.getId() : 0L)
+                )
+                .orElse(null);
         }
 
         if (historicoUsuario == null) {
@@ -222,8 +225,15 @@ public class HomeService {
             .findFirst()
             .orElseThrow(() -> new IllegalStateException("Livro do mês não encontrado."));
 
-        ReadingHistory historico = readingHistoryRepository
-            .findByUsuarioAndLivro(usuario, livroDoMes)
+        ReadingHistory historico = readingHistoryRepository.findByUsuarioId(usuario.getId()).stream()
+            .filter(h -> h.getLivro() != null
+                && h.getLivro().getId() != null
+                && h.getLivro().getId().equals(livroDoMes.getId()))
+            .max(
+                Comparator
+                    .comparing((ReadingHistory h) -> h.getProgresso() != null ? h.getProgresso() : 0)
+                    .thenComparing(h -> h.getId() != null ? h.getId() : 0L)
+            )
             .orElseGet(ReadingHistory::new);
 
         historico.setUsuario(usuario);

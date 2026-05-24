@@ -24,8 +24,10 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.StreamSupport;
 
@@ -129,9 +131,7 @@ public class AchievementService {
 				continue;
 			}
 
-			long progresso = calcularProgresso(usuarioId, achievement);
-			Integer alvo = achievement.getTargetValue();
-			if (alvo != null && progresso >= alvo) {
+			if (isAchievementCompleted(usuarioId, achievement)) {
 				novasConquistas.add(achievement);
 				conquistasAtuais.add(achievement.getId());
 			}
@@ -174,11 +174,11 @@ public class AchievementService {
 		long targetValue = achievement.getTargetValue() != null ? achievement.getTargetValue() : 0L;
 		return new AchievementProgressDTO(
 				achievement.getId(),
-				actionTypeLabel(achievement.getCriteriaType()),
-				achievement.getCriteriaType() != null ? achievement.getCriteriaType().name() : null,
+				buildCriteriaLabel(achievement),
+				buildCriteriaTypeSummary(achievement),
 				progressoAtual,
 				targetValue,
-				progressoAtual >= (targetValue > 0 ? targetValue : Long.MAX_VALUE)
+				isAchievementCompleted(usuarioId, achievement)
 		);
 	}
 
@@ -205,10 +205,38 @@ public class AchievementService {
 		if (dto.targetValue() == null || dto.targetValue() <= 0) {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Valor-alvo deve ser maior que zero.");
 		}
+		if (dto.criteriaType2() != null && (dto.targetValue2() == null || dto.targetValue2() <= 0)) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Valor-alvo 2 deve ser maior que zero.");
+		}
+		if (dto.criteriaType3() != null && (dto.targetValue3() == null || dto.targetValue3() <= 0)) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Valor-alvo 3 deve ser maior que zero.");
+		}
+		if (dto.criteriaType2() == null && dto.targetValue2() != null) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Defina o critério 2 antes do valor-alvo 2.");
+		}
+		if (dto.criteriaType3() == null && dto.targetValue3() != null) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Defina o critério 3 antes do valor-alvo 3.");
+		}
+
+		Set<AchievementCriteriaType> usados = new LinkedHashSet<>();
+		usados.add(dto.criteriaType());
+		if (dto.criteriaType2() != null && !usados.add(dto.criteriaType2())) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Critério 2 duplicado.");
+		}
+		if (dto.criteriaType3() != null && !usados.add(dto.criteriaType3())) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Critério 3 duplicado.");
+		}
 	}
 
 	private long calcularProgresso(Long usuarioId, Achievement achievement) {
 		AchievementCriteriaType criteriaType = achievement.getCriteriaType();
+		if (criteriaType == null) {
+			return 0L;
+		}
+		return calcularProgressoPorTipo(usuarioId, criteriaType);
+	}
+
+	private long calcularProgressoPorTipo(Long usuarioId, AchievementCriteriaType criteriaType) {
 		if (criteriaType == null) {
 			return 0L;
 		}
@@ -218,6 +246,45 @@ public class AchievementService {
 			case RATINGS_CREATED -> ratingRepository.countByUsuarioId(usuarioId);
 			case FAVORITES_ADDED -> perfilUsuarioRepository.countFavoriteBooksByUsuarioId(usuarioId);
 		};
+	}
+
+	private boolean isAchievementCompleted(Long usuarioId, Achievement achievement) {
+		for (CriteriaRequirement requirement : getCriteriaRequirements(achievement)) {
+			if (calcularProgressoPorTipo(usuarioId, requirement.criteriaType()) < requirement.targetValue()) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	private List<CriteriaRequirement> getCriteriaRequirements(Achievement achievement) {
+		List<CriteriaRequirement> requirements = new ArrayList<>();
+		appendRequirement(requirements, achievement.getCriteriaType(), achievement.getTargetValue());
+		appendRequirement(requirements, achievement.getCriteriaType2(), achievement.getTargetValue2());
+		appendRequirement(requirements, achievement.getCriteriaType3(), achievement.getTargetValue3());
+		return requirements;
+	}
+
+	private void appendRequirement(List<CriteriaRequirement> requirements, AchievementCriteriaType criteriaType, Integer targetValue) {
+		if (criteriaType == null) {
+			return;
+		}
+		int normalizedTarget = targetValue != null && targetValue > 0 ? targetValue : 1;
+		requirements.add(new CriteriaRequirement(criteriaType, normalizedTarget));
+	}
+
+	private String buildCriteriaLabel(Achievement achievement) {
+		List<String> labels = getCriteriaRequirements(achievement).stream()
+				.map(requirement -> actionTypeLabel(requirement.criteriaType()) + " (" + requirement.targetValue() + ")")
+				.toList();
+		return labels.isEmpty() ? "Desconhecido" : String.join(" + ", labels);
+	}
+
+	private String buildCriteriaTypeSummary(Achievement achievement) {
+		List<String> values = getCriteriaRequirements(achievement).stream()
+				.map(requirement -> requirement.criteriaType().name())
+				.toList();
+		return values.isEmpty() ? null : String.join("+", values);
 	}
 
 	private String actionTypeLabel(AchievementCriteriaType criteriaType) {
@@ -249,21 +316,26 @@ public class AchievementService {
 		return achievementRepository.findAll().stream()
 			.filter(achievement -> achievement != null && achievement.getId() != null)
 			.map(achievement -> {
-				long target = achievement.getTargetValue() != null ? achievement.getTargetValue() : 0L;
 				long usersMeeting = users.stream()
-					.filter(u -> calcularProgresso(u.getId(), achievement) >= target)
+					.filter(u -> isAchievementCompleted(u.getId(), achievement))
 					.count();
 				double percentage = totalUsers > 0 ? (usersMeeting * 100.0 / totalUsers) : 0.0;
 				return new AchievementAggregateDTO(
 					achievement.getId(),
-					actionTypeLabel(achievement.getCriteriaType()),
-					achievement.getCriteriaType() != null ? achievement.getCriteriaType().name() : null,
+					buildCriteriaLabel(achievement),
+					buildCriteriaTypeSummary(achievement),
 					usersMeeting,
 					totalUsers,
 					percentage
 				);
 			})
 			.toList();
+	}
+
+	private record CriteriaRequirement(
+			AchievementCriteriaType criteriaType,
+			int targetValue
+	) {
 	}
 
 	public record AchievementAggregateDTO(

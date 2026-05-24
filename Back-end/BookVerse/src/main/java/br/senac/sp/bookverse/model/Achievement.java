@@ -23,6 +23,16 @@ public class Achievement {
     @Column(nullable = false)
     private Integer targetValue;
 
+    @Enumerated(EnumType.STRING)
+    private AchievementCriteriaType criteriaType2;
+
+    private Integer targetValue2;
+
+    @Enumerated(EnumType.STRING)
+    private AchievementCriteriaType criteriaType3;
+
+    private Integer targetValue3;
+
     @Column(nullable = false)
     private Boolean ativo = true;
 
