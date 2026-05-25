@@ -21,6 +21,7 @@ import br.senac.sp.bookverse.model.Role;
 import br.senac.sp.bookverse.model.Achievement;
 import br.senac.sp.bookverse.model.ReadingHistory;
 import br.senac.sp.bookverse.model.Rating;
+import br.senac.sp.bookverse.model.RatingStatus;
 import br.senac.sp.bookverse.model.User;
 import br.senac.sp.bookverse.security.CurrentUserService;
 import br.senac.sp.bookverse.repository.AchievementRepository;
@@ -219,8 +220,9 @@ public class UserService {
     public List<RatingDTO> minhasAvaliacoes() {
         User usuario = currentUserService.authenticatedUser();
         return ratingRepository.findByUsuarioId(usuario.getId()).stream()
-                .map(RatingMapper::toDTO)
-                .toList();
+            .filter(r -> r.getStatus() == null || RatingStatus.APPROVED.equals(r.getStatus()))
+            .map(RatingMapper::toDTO)
+            .toList();
     }
 
     @Transactional(readOnly = true)
@@ -234,8 +236,9 @@ public class UserService {
         }
 
         return ratingRepository.findByUsuarioId(alvo.getId()).stream()
-                .map(RatingMapper::toDTO)
-                .toList();
+            .filter(r -> r.getStatus() == null || RatingStatus.APPROVED.equals(r.getStatus()))
+            .map(RatingMapper::toDTO)
+            .toList();
     }
 
     @Transactional(readOnly = true)
@@ -426,19 +429,26 @@ public class UserService {
                 .toList();
 
         List<RatingDTO> avaliacoes = ratingRepository.findByUsuarioId(usuario.getId()).stream()
-                .map(RatingMapper::toDTO)
-                .toList();
+            .filter(r -> r.getStatus() == null || RatingStatus.APPROVED.equals(r.getStatus()))
+            .map(RatingMapper::toDTO)
+            .toList();
+
+        List<RatingDTO> feedbacks = ratingRepository.findByUsuarioId(usuario.getId()).stream()
+            .filter(r -> r.getAdminFeedback() != null && !r.getAdminFeedback().isBlank())
+            .map(RatingMapper::toDTO)
+            .toList();
 
         List<AchievementDTO> conquistas = usuario.getConquistas().stream()
                 .map(AchievementMapper::toDTO)
                 .toList();
 
         return new PerfilUsuarioDTO(
-                UserMapper.toResponse(usuario),
-                favoritos,
-                lidos,
-                avaliacoes,
-                conquistas
+            UserMapper.toResponse(usuario),
+            favoritos,
+            lidos,
+            avaliacoes,
+            feedbacks,
+            conquistas
         );
     }
 }

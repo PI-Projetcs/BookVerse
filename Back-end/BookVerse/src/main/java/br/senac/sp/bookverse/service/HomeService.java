@@ -181,7 +181,7 @@ public class HomeService {
         }
 
         List<Comment> comments = discussionRepository.findByLivroId(livroDoMes.id()).stream()
-                .flatMap(discussion -> commentRepository.findByDiscussaoId(discussion.getId()).stream())
+            .flatMap(discussion -> commentRepository.findByDiscussaoIdAndStatus(discussion.getId(), br.senac.sp.bookverse.model.CommentStatus.APPROVED).stream())
                 .sorted(Comparator.comparing(Comment::getData, Comparator.nullsLast(Comparator.naturalOrder())).reversed())
                 .limit(3)
                 .toList();

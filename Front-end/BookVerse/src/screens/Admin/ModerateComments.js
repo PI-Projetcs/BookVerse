@@ -184,7 +184,7 @@ export default function ModerateComments({ navigation }) {
                 <View key={item.id} style={styles.card}>
                   <View style={styles.cardHeader}>
                     <Text style={styles.title} numberOfLines={2}>
-                      {item.bookTitle} - {item.chapterTitle}
+                      {item.chapterTitle ? `${item.bookTitle} - ${item.chapterTitle}` : item.bookTitle}
                     </Text>
                     <View style={[styles.badge, badge.container]}>
                       <Text style={[styles.badgeText, badge.text]}>{badge.label}</Text>
@@ -192,6 +192,9 @@ export default function ModerateComments({ navigation }) {
                   </View>
                   <Text style={styles.metaTextRow}>Autor: {item.author}</Text>
                   <Text style={styles.metaTextRow}>Data: {item.date}</Text>
+                  {item.type === 'rating' && item.rating != null ? (
+                    <Text style={styles.metaTextRow}>Nota: {item.rating}</Text>
+                  ) : null}
                   <Text style={styles.commentText}>{item.text}</Text>
                   <View style={styles.reasonChip}>
                     <Text style={styles.reasonText}>Motivo: {item.reason}</Text>

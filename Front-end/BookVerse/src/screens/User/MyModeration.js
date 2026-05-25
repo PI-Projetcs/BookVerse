@@ -16,8 +16,29 @@ export default function MyModeration({ navigation }) {
     try {
       setLoading(true);
       setError(null);
-      const res = await api.get('/api/v1/comments/me/moderation');
-      setItems(Array.isArray(res.data) ? res.data : []);
+      const [commentsRes, profileRes] = await Promise.all([
+        api.get('/api/v1/comments/me/moderation'),
+        api.get('/api/v1/users/me/profile'),
+      ]);
+
+      const comments = (Array.isArray(commentsRes.data) ? commentsRes.data : []).map((item) => ({
+        ...item,
+        type: 'comment',
+      }));
+      const profileData = profileRes.data || {};
+      const feedbacks = (profileData?.item?.feedbacks || profileData?.feedbacks || [])
+        .map((r) => ({
+          id: `rating-${r.id}`,
+          type: 'rating',
+          bookTitle: r.livroTitulo || r.bookTitle || r.livro?.titulo || '',
+          discussionTitle: '',
+          status: r.status || r.status,
+          text: r.descricao || r.review || '',
+          adminFeedback: r.adminFeedback || '',
+          moderatedAt: r.moderatedAt || null,
+        }));
+
+      setItems([...comments, ...feedbacks]);
     } catch (err) {
       setError('Falha ao carregar suas moderações.');
     } finally {
@@ -47,8 +68,8 @@ export default function MyModeration({ navigation }) {
                 <Ionicons name="chatbubble-ellipses-outline" size={28} color="#94a3b8" />
                 <Text style={{ marginTop: 8, color: '#64748b' }}>Sem moderações recentes.</Text>
               </View>
-            ) : items.map((it) => (
-              <View key={String(it.id)} style={{ backgroundColor: '#fff', padding: 12, borderRadius: 12, borderWidth: 1, borderColor: '#e5e7eb' }}>
+            ) : items.map((it, index) => (
+              <View key={`${it.type || 'item'}-${String(it.id ?? index)}`} style={{ backgroundColor: '#fff', padding: 12, borderRadius: 12, borderWidth: 1, borderColor: '#e5e7eb' }}>
                 <Text style={{ fontWeight: '800' }}>{it.bookTitle} - {it.discussionTitle}</Text>
                 <Text style={{ color: '#64748b', marginTop: 6 }}>Status: {it.status}</Text>
                 <Text style={{ marginTop: 8 }}>{it.text}</Text>

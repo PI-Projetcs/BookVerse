@@ -31,6 +31,8 @@ function normalizeModerationItem(item = {}, index = 0) {
 		text: item.text || '',
 		reason: item.reason || 'Analise manual',
 		status,
+		type: item.type || 'comment',
+		rating: item.rating ?? null,
 	};
 }
 

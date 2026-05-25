@@ -52,40 +52,53 @@ public class AdminModerationController {
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> listModerationItems(@RequestParam(required = false) String status, @RequestParam(required = false) String query) {
-        // Build a combined list of comment moderation items. Ratings moderation can be added similarly.
-        var comments = commentRepository.findAll();
-        var filtered = comments.stream()
-                .filter(c -> {
-                    if (status == null || status.isBlank() || "all".equalsIgnoreCase(status)) return true;
-                    return c.getStatus() != null && c.getStatus().name().equalsIgnoreCase(status);
-                })
-                .filter(c -> {
-                    if (query == null || query.isBlank()) return true;
-                    String q = query.trim().toLowerCase();
-                    String author = c.getUsuario() != null ? String.valueOf(c.getUsuario().getNome()) : "";
-                    String chapter = c.getDiscussao() != null ? String.valueOf(c.getDiscussao().getTitulo()) : "";
-                    String book = (c.getDiscussao() != null && c.getDiscussao().getLivro() != null)
-                            ? String.valueOf(c.getDiscussao().getLivro().getTitulo())
-                            : "";
-                    String content = String.valueOf(c.getConteudo());
-                    String searchable = String.join(" ", author, chapter, book, content).toLowerCase();
-                    return searchable.contains(q);
-                })
-                .map(c -> {
-                    java.util.Map<String, Object> m = new java.util.HashMap<>();
-                    m.put("id", c.getId());
-                    m.put("bookTitle", c.getDiscussao() != null && c.getDiscussao().getLivro() != null ? c.getDiscussao().getLivro().getTitulo() : null);
-                    m.put("chapterTitle", c.getDiscussao() != null ? c.getDiscussao().getTitulo() : null);
-                    m.put("author", c.getUsuario() != null ? c.getUsuario().getNome() : null);
-                    m.put("date", c.getData());
-                    m.put("text", c.getConteudo());
-                    m.put("reason", c.getConteudo() != null && c.getConteudo().length() > 120 ? c.getConteudo().substring(0, 120) : c.getConteudo());
-                    m.put("status", c.getStatus() != null ? c.getStatus().name().toLowerCase() : "pending");
-                    return m;
-                })
-                .toList();
+        // Combine comments and ratings moderation items into a single list for the admin UI.
+        var commentItems = commentService.listarParaModeracao(status, query).stream().map(dto -> {
+            java.util.Map<String, Object> m = new java.util.HashMap<>();
+            m.put("type", "comment");
+            m.put("id", dto.id());
+            m.put("bookTitle", dto.discussaoId() != null && dto.discussaoTitulo() != null ? dto.discussaoTitulo() : null);
+            m.put("chapterTitle", dto.discussaoTitulo());
+            m.put("author", dto.usuarioNome());
+            m.put("date", dto.data());
+            m.put("text", dto.conteudo());
+            m.put("reason", dto.conteudo() != null && dto.conteudo().length() > 120 ? dto.conteudo().substring(0, 120) : dto.conteudo());
+            m.put("status", dto.status() != null ? dto.status().name().toLowerCase() : "pending");
+            m.put("adminFeedback", dto.adminFeedback());
+            return m;
+        }).toList();
 
-        return ResponseEntity.ok(filtered);
+        var ratingItems = ratingService.listarParaModeracao(status, query).stream().map(dto -> {
+            java.util.Map<String, Object> m = new java.util.HashMap<>();
+            m.put("type", "rating");
+            m.put("id", dto.id());
+            m.put("bookTitle", dto.livroTitulo());
+            m.put("chapterTitle", null);
+            m.put("author", dto.usuarioNome());
+            m.put("date", dto.moderatedAt());
+            m.put("text", dto.descricao());
+            m.put("rating", dto.nota());
+            m.put("reason", dto.descricao() != null && dto.descricao().length() > 120 ? dto.descricao().substring(0, 120) : dto.descricao());
+            m.put("status", dto.status() != null ? dto.status().name().toLowerCase() : "pending");
+            m.put("adminFeedback", dto.adminFeedback());
+            return m;
+        }).toList();
+
+        var combined = new java.util.ArrayList<java.util.Map<String, Object>>();
+        combined.addAll(commentItems);
+        combined.addAll(ratingItems);
+
+        // Optional: sort combined by date desc
+        combined.sort((a, b) -> {
+            java.time.LocalDateTime da = (java.time.LocalDateTime) a.get("date");
+            java.time.LocalDateTime db = (java.time.LocalDateTime) b.get("date");
+            if (da == null && db == null) return 0;
+            if (da == null) return 1;
+            if (db == null) return -1;
+            return db.compareTo(da);
+        });
+
+        return ResponseEntity.ok(combined);
     }
 
     @PostMapping("/{id}/status")

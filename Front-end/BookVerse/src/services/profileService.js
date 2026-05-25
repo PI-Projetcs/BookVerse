@@ -28,6 +28,7 @@ function createMockState() {
       { id: 103, nome: 'Crítico ativo', descricao: 'Faça 5 avaliações', criteriaType: 'RATINGS_CREATED', targetValue: 5, ativo: true },
       { id: 104, nome: 'Guardião da estante', descricao: 'Salve 3 livros favoritos', criteriaType: 'FAVORITES_ADDED', targetValue: 3, ativo: true },
     ],
+    feedbacks: [],
     role: 'member',
   };
 }
@@ -125,6 +126,10 @@ function normalizeProfile(payload = {}) {
       ? source.ratings.map(normalizeRating)
       : [];
 
+  const feedbacks = Array.isArray(source?.feedbacks)
+    ? source.feedbacks.map(normalizeRating)
+    : [];
+
   const achievements = Array.isArray(source?.conquistas)
     ? source.conquistas.map(normalizeAchievement)
     : Array.isArray(source?.achievements)
@@ -163,6 +168,7 @@ function normalizeProfile(payload = {}) {
     destaque: favoriteBooks,
     categorias: Array.isArray(source?.categorias) ? source.categorias : [],
     atividade: Array.isArray(source?.atividade) ? source.atividade : readBooks.slice(0, 5),
+    feedbacks,
   };
 }
 

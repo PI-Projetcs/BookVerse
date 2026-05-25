@@ -7,6 +7,7 @@ public record PerfilUsuarioDTO(
         List<BookDTO> livrosFavoritos,
         List<ReadingHistoryDTO> livrosLidos,
         List<RatingDTO> avaliacoes,
+        List<RatingDTO> feedbacks,
         List<AchievementDTO> conquistas
 ) {
 }
