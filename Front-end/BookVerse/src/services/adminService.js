@@ -181,6 +181,24 @@ export async function rejectComment(commentId, feedback) {
 	}
 }
 
+export async function approveRating(ratingId) {
+	try {
+		const response = await api.post(`/api/v1/admin/comments-moderation/ratings/${encodeURIComponent(String(ratingId))}/approve`);
+		return normalizeModerationItem(response.data || { id: ratingId, status: 'approved', type: 'rating' });
+	} catch (error) {
+		throw error;
+	}
+}
+
+export async function rejectRating(ratingId, feedback) {
+	try {
+		const response = await api.post(`/api/v1/admin/comments-moderation/ratings/${encodeURIComponent(String(ratingId))}/reject`, { feedback });
+		return normalizeModerationItem(response.data || { id: ratingId, status: 'rejected', type: 'rating' });
+	} catch (error) {
+		throw error;
+	}
+}
+
 // Mock store for dashboard
 const mockDashboardStore = {
 	totalUsers: 245,

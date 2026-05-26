@@ -34,7 +34,8 @@ function AdminNavigator() {
 			<AdminStack.Screen name="ManageUsers" component={ManageUsers} />
 			<AdminStack.Screen name="ManageAchievements" component={ManageAchievements} />
 			<AdminStack.Screen name="BookOfMonth" component={BookOfMonth} />
-			<AdminStack.Screen name="ModerateComments" component={ModerateComments} />
+			<AdminStack.Screen name="ModerateComments" component={ModerateComments} initialParams={{ moderationType: 'comment' }} />
+			<AdminStack.Screen name="ModerateRatings" component={ModerateComments} initialParams={{ moderationType: 'rating' }} />
 			<AdminStack.Screen name="Profile" component={Profile} />
 		</AdminStack.Navigator>
 	);

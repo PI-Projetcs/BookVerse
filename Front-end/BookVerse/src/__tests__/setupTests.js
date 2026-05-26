@@ -11,6 +11,12 @@ jest.mock('react-native', () => {
 		View: makeComponent('View'),
 		Text: makeComponent('Text'),
 		TouchableOpacity: makeComponent('TouchableOpacity'),
+		TextInput: makeComponent('TextInput'),
+		ScrollView: makeComponent('ScrollView'),
+		Image: makeComponent('Image'),
+		StatusBar: makeComponent('StatusBar'),
+		ActivityIndicator: makeComponent('ActivityIndicator'),
+		SafeAreaView: makeComponent('SafeAreaView'),
 		StyleSheet: { create: (styles) => styles },
 		Alert: { alert: jest.fn() },
 		Platform: { OS: 'web', select: (options) => options?.web ?? options?.default },
@@ -34,6 +40,10 @@ jest.mock('expo-linear-gradient', () => {
 });
 
 jest.mock('react-native-safe-area-context', () => ({
+	SafeAreaView: ({ children, ...props }) => {
+		const React = require('react');
+		return React.createElement('SafeAreaView', props, children);
+	},
 	useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
 }));
 
@@ -49,3 +59,5 @@ jest.mock('@expo/vector-icons', () => {
 		Feather: MockIcon,
 	};
 });
+
+globalThis.IS_REACT_ACT_ENVIRONMENT = true;

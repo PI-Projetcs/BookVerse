@@ -12,7 +12,13 @@ import { Ionicons } from '@expo/vector-icons';
 import FooterNav from '../../components/FooterNav';
 import Header from '../../components/Header';
 import { ADMIN_FOOTER_ITEMS } from '../../constants/adminFooterItems';
-import { getModerationItems, setModerationStatus, approveComment, rejectComment } from '../../services/adminService';
+import {
+  approveComment,
+  approveRating,
+  getModerationItems,
+  rejectComment,
+  rejectRating,
+} from '../../services/adminService';
 import { adminModerationStyles as styles } from '../../styles/adminModerationStyles';
 
 const STATUS_FILTERS = [
@@ -21,6 +27,34 @@ const STATUS_FILTERS = [
   { key: 'rejected', label: 'Rejeitados' },
   { key: 'all', label: 'Todos' },
 ];
+const MODERATION_TYPES = {
+  comment: {
+    title: 'Moderar comentários',
+    subtitle: 'Moderar comentários',
+    footerKey: 'moderarComentarios',
+    summaryLabel: 'comentários',
+    emptyText: 'Nenhum comentário nessa fila de moderação.',
+    searchPlaceholder: 'Buscar por autor, livro ou motivo',
+    searchAccessibility: 'Buscar comentários para moderação',
+    approveLabel: 'comentário',
+    approveAction: approveComment,
+    rejectAction: rejectComment,
+    requiresFeedback: true,
+  },
+  rating: {
+    title: 'Moderar avaliações',
+    subtitle: 'Moderar avaliações',
+    footerKey: 'moderarAvaliacoes',
+    summaryLabel: 'avaliações',
+    emptyText: 'Nenhuma avaliação nessa fila de moderação.',
+    searchPlaceholder: 'Buscar por autor, livro ou nota',
+    searchAccessibility: 'Buscar avaliações para moderação',
+    approveLabel: 'avaliação',
+    approveAction: approveRating,
+    rejectAction: rejectRating,
+    requiresFeedback: true,
+  },
+};
 const HIT_SLOP = { top: 10, bottom: 10, left: 10, right: 10 };
 
 function getItemBadgeStyle(status) {
@@ -47,7 +81,10 @@ function getItemBadgeStyle(status) {
   };
 }
 
-export default function ModerateComments({ navigation }) {
+export default function ModerateComments({ navigation, route }) {
+  const moderationType = route?.params?.moderationType === 'rating' ? 'rating' : 'comment';
+  const moderationConfig = MODERATION_TYPES[moderationType];
+  const activeKey = moderationConfig.footerKey;
   const [items, setItems] = useState([]);
   const [searchText, setSearchText] = useState('');
   const [statusFilter, setStatusFilter] = useState('pending');
@@ -59,7 +96,7 @@ export default function ModerateComments({ navigation }) {
       setIsLoading(true);
       setErrorMessage('');
       const result = await getModerationItems({ query: searchText, status: statusFilter });
-      setItems(result);
+      setItems(result.filter((item) => item.type === moderationType));
     } catch (error) {
       setErrorMessage('Não foi possível carregar a fila de moderação.');
     } finally {
@@ -70,14 +107,17 @@ export default function ModerateComments({ navigation }) {
   useEffect(() => {
     const timer = setTimeout(loadItems, 220);
     return () => clearTimeout(timer);
-  }, [searchText, statusFilter]);
+  }, [searchText, statusFilter, moderationType]);
 
-  const summaryText = useMemo(() => `${items.length} comentários na lista`, [items.length]);
+  const summaryText = useMemo(
+    () => `${items.length} ${moderationConfig.summaryLabel} na lista`,
+    [items.length, moderationConfig.summaryLabel]
+  );
 
   const handleSetStatus = async (item, status) => {
     if (status === 'approved') {
       try {
-        const updated = await approveComment(item.id);
+        const updated = await moderationConfig.approveAction(item.id);
         setItems((prev) => prev.map((entry) => (entry.id === updated.id ? updated : entry)));
       } catch (err) {
         // handle error
@@ -92,10 +132,7 @@ export default function ModerateComments({ navigation }) {
       return;
     }
 
-    // fallback to generic status
-    const updated = await setModerationStatus(item.id, status);
-    if (!updated) return;
-    setItems((prev) => prev.map((entry) => (entry.id === updated.id ? updated : entry)));
+    return;
   };
 
   const [showRejectModal, setShowRejectModal] = useState(false);
@@ -105,7 +142,7 @@ export default function ModerateComments({ navigation }) {
   const handleConfirmReject = async () => {
     if (!currentRejectItem) return;
     try {
-      const updated = await rejectComment(currentRejectItem.id, rejectFeedback.trim());
+      const updated = await moderationConfig.rejectAction(currentRejectItem.id, rejectFeedback.trim());
       setItems((prev) => prev.map((entry) => (entry.id === updated.id ? updated : entry)));
     } catch (err) {
       // handle error
@@ -121,7 +158,7 @@ export default function ModerateComments({ navigation }) {
       <StatusBar barStyle="light-content" />
       <Header
         title="BookV"
-        subtitle="Moderar comentários"
+        subtitle={moderationConfig.subtitle}
         onRightAction={() => navigation.navigate('Admin')}
         rightActionLabel="Painel"
         rightActionIcon="grid-outline"
@@ -134,10 +171,10 @@ export default function ModerateComments({ navigation }) {
             <TextInput
               value={searchText}
               onChangeText={setSearchText}
-              placeholder="Buscar por autor, livro ou motivo"
+              placeholder={moderationConfig.searchPlaceholder}
               placeholderTextColor="#94a3b8"
               style={styles.searchInput}
-              accessibilityLabel="Buscar comentários para moderação"
+              accessibilityLabel={moderationConfig.searchAccessibility}
             />
           </View>
 
@@ -151,7 +188,7 @@ export default function ModerateComments({ navigation }) {
                   onPress={() => setStatusFilter(filter.key)}
                   hitSlop={HIT_SLOP}
                   accessibilityRole="button"
-                  accessibilityLabel={`Filtrar comentários ${filter.label.toLowerCase()}`}
+                  accessibilityLabel={`Filtrar ${moderationConfig.summaryLabel} ${filter.label.toLowerCase()}`}
                   accessibilityState={{ selected: isActive }}
                 >
                   <Text style={[styles.chipText, isActive && styles.chipTextActive]}>{filter.label}</Text>
@@ -184,7 +221,7 @@ export default function ModerateComments({ navigation }) {
                 <View key={item.id} style={styles.card}>
                   <View style={styles.cardHeader}>
                     <Text style={styles.title} numberOfLines={2}>
-                      {item.chapterTitle ? `${item.bookTitle} - ${item.chapterTitle}` : item.bookTitle}
+                      {item.type === 'comment' && item.chapterTitle ? `${item.bookTitle} - ${item.chapterTitle}` : item.bookTitle}
                     </Text>
                     <View style={[styles.badge, badge.container]}>
                       <Text style={[styles.badgeText, badge.text]}>{badge.label}</Text>
@@ -206,7 +243,7 @@ export default function ModerateComments({ navigation }) {
                       onPress={() => handleSetStatus(item, 'approved')}
                       hitSlop={HIT_SLOP}
                       accessibilityRole="button"
-                      accessibilityLabel={`Aprovar comentário de ${item.author}`}
+                      accessibilityLabel={`Aprovar ${moderationConfig.approveLabel} de ${item.author}`}
                     >
                       <Ionicons name="checkmark-circle-outline" size={14} color="#0f766e" />
                       <Text style={[styles.actionText, { color: '#0f766e' }]}>Aprovar</Text>
@@ -217,7 +254,7 @@ export default function ModerateComments({ navigation }) {
                       onPress={() => handleSetStatus(item, 'rejected')}
                       hitSlop={HIT_SLOP}
                       accessibilityRole="button"
-                      accessibilityLabel={`Rejeitar comentário de ${item.author}`}
+                      accessibilityLabel={`Rejeitar ${moderationConfig.approveLabel} de ${item.author}`}
                     >
                       <Ionicons name="close-circle-outline" size={14} color="#9f1239" />
                       <Text style={[styles.actionText, { color: '#9f1239' }]}>Rejeitar</Text>
@@ -230,14 +267,14 @@ export default function ModerateComments({ navigation }) {
             {items.length === 0 ? (
               <View style={styles.feedbackWrap}>
                 <Ionicons name="chatbubble-ellipses-outline" size={28} color="#94a3b8" />
-                <Text style={styles.feedbackText}>Nenhum comentário nessa fila de moderação.</Text>
+                <Text style={styles.feedbackText}>{moderationConfig.emptyText}</Text>
               </View>
             ) : null}
           </ScrollView>
         ) : null}
       </View>
 
-      <FooterNav navigation={navigation} activeKey="moderar" items={ADMIN_FOOTER_ITEMS} />
+      <FooterNav navigation={navigation} activeKey={activeKey} items={ADMIN_FOOTER_ITEMS} />
 
       {/* Reject feedback modal */}
       {showRejectModal ? (
@@ -246,7 +283,9 @@ export default function ModerateComments({ navigation }) {
           alignItems: 'center', justifyContent: 'center', padding: 20,
         }}>
           <View style={{ width: '100%', maxWidth: 620, backgroundColor: '#fff', borderRadius: 12, padding: 16 }}>
-            <Text style={{ fontWeight: '800', fontSize: 16, marginBottom: 8 }}>Rejeitar comentário</Text>
+            <Text style={{ fontWeight: '800', fontSize: 16, marginBottom: 8 }}>
+              Rejeitar {moderationConfig.approveLabel}
+            </Text>
             <Text style={{ color: '#64748b', marginBottom: 8 }}>Informe um motivo ou orientação que será enviado ao autor (visível apenas para ele).</Text>
             <TextInput
               value={rejectFeedback}

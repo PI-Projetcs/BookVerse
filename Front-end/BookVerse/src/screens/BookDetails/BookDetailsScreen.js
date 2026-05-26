@@ -9,6 +9,13 @@ import {
 } from '../../services/bookService';
 import { addFavoriteBook, getUserFavorites, removeFavoriteBook } from '../../services/profileService';
 import { bookDetailsStyles as styles } from '../../styles/bookDetailsStyles';
+import {
+	formatRatingDate,
+	getRatingAuthor,
+	getRatingStatusLabel,
+	pickFeaturedRatings,
+	renderRatingDistribution,
+} from '../../utils/ratingUtils';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -29,6 +36,18 @@ import { useAuth } from '../../context/AuthContext';
 
 const FALLBACK_COVER = 'https://placehold.co/420x640/0f172a/f8fafc?text=Sem+Capa';
 const HIT_SLOP = { top: 10, bottom: 10, left: 10, right: 10 };
+
+function renderStars(value, size = 16, activeColor = '#f59e0b', inactiveColor = '#cbd5e1') {
+	const normalizedValue = Math.max(0, Math.min(5, Number(value) || 0));
+	return [1, 2, 3, 4, 5].map((star) => (
+		<Ionicons
+			key={`star-${star}`}
+			name={star <= normalizedValue ? 'star' : 'star-outline'}
+			size={size}
+			color={star <= normalizedValue ? activeColor : inactiveColor}
+		/>
+	));
+}
 
 function extractMemberComments(chapters = []) {
 	if (!Array.isArray(chapters)) {
@@ -86,6 +105,14 @@ export default function BookDetailsScreen({ navigation, route }) {
 	}, [approvedRatings, book?.rating]);
 
 	const totalRatings = approvedRatings.length;
+
+	const ratingSummary = useMemo(() => {
+ 	return renderRatingDistribution(approvedRatings);
+	}, [approvedRatings]);
+
+	const featuredRatings = useMemo(() => {
+		return pickFeaturedRatings(approvedRatings);
+	}, [approvedRatings]);
 
 	const loadDetails = useCallback(async () => {
 		try {
@@ -226,7 +253,7 @@ export default function BookDetailsScreen({ navigation, route }) {
 	};
 
 	return (
-		<SafeAreaView style={styles.safeArea}>
+		<SafeAreaView style={styles.safeArea} testID="book-details-screen">
 			<StatusBar barStyle="light-content" />
 
 			<LinearGradient
@@ -344,30 +371,136 @@ export default function BookDetailsScreen({ navigation, route }) {
 
 							<View style={styles.sectionCard}>
 								<View style={styles.sectionHeaderRow}>
+									<Ionicons name="stats-chart-outline" size={18} color="#006045" />
+									<Text style={styles.sectionTitle}>Avaliações da comunidade</Text>
+								</View>
+								<View style={styles.ratingSummaryGrid}>
+									<View style={styles.ratingSummaryScore}>
+										<Text style={styles.ratingAverageValue}>{ratingSummary.average.toFixed(1)}</Text>
+										<View style={styles.ratingAverageStars}>{renderStars(Math.round(ratingSummary.average), 18)}</View>
+										<Text style={styles.ratingSummaryText}>
+											Baseado em {ratingSummary.total} {ratingSummary.total === 1 ? 'avaliação' : 'avaliações'}
+										</Text>
+										<Text style={styles.ratingHighlightText}>
+											{ratingSummary.highlyRated} {ratingSummary.highlyRated === 1 ? 'avaliação' : 'avaliações'} com 4 estrelas ou mais.
+										</Text>
+									</View>
+									<View style={styles.ratingDistribution}>
+										{[5, 4, 3, 2, 1].map((star) => {
+											const count = ratingSummary.distribution[star] || 0;
+											const percentage = ratingSummary.total ? Math.max(8, (count / ratingSummary.total) * 100) : 0;
+
+											return (
+												<View key={star} style={styles.ratingDistributionRow}>
+													<Text style={styles.ratingDistributionLabel}>{star}</Text>
+													<View style={styles.ratingDistributionTrack}>
+														<View style={[styles.ratingDistributionFill, { width: `${percentage}%` }]} />
+													</View>
+													<Text style={styles.ratingDistributionCount}>{count}</Text>
+												</View>
+											);
+										})}
+									</View>
+								</View>
+							</View>
+
+							<View style={styles.sectionCard}>
+								<View style={styles.sectionHeaderRow}>
 									<Ionicons name="star-outline" size={18} color="#006045" />
-									<Text style={styles.sectionTitle}>Sua Avaliação</Text>
+									<Text style={styles.sectionTitle}>Destaques da comunidade</Text>
+								</View>
+								{featuredRatings.length ? (
+									<View style={styles.ratingCardsList}>
+										{featuredRatings.map((rating) => {
+											const isMyRating = Number(rating.userId) === Number(session?.id);
+											const reviewText = String(rating.review || '').trim();
+
+											return (
+												<View
+													key={rating.id || `${rating.userId}-${rating.date || rating.updatedAt || rating.createdAt || rating.rating}`}
+													style={[styles.ratingCard, isMyRating && styles.ratingCardCurrent]}
+												>
+													<View style={styles.ratingCardHeader}>
+														<View style={styles.ratingAuthorRow}>
+															<Ionicons name="person-circle-outline" size={18} color="#0f766e" />
+															<Text style={styles.ratingAuthor}>{getRatingAuthor(rating, session?.id)}</Text>
+															{isMyRating ? (
+																<View style={styles.ratingBadge}>
+																	<Text style={styles.ratingBadgeText}>Sua avaliação</Text>
+																</View>
+															) : null}
+														</View>
+														<View
+															style={[
+																styles.ratingStatusBadge,
+																rating.status === 'PENDING' && styles.ratingStatusBadgePending,
+																rating.status === 'REJECTED' && styles.ratingStatusBadgeRejected,
+															]}
+														>
+															<Text
+																style={[
+																	styles.ratingStatusText,
+																	rating.status === 'PENDING' && styles.ratingStatusTextPending,
+																	rating.status === 'REJECTED' && styles.ratingStatusTextRejected,
+																]}
+															>
+																{getRatingStatusLabel(rating.status)}
+															</Text>
+														</View>
+													</View>
+
+													<View style={styles.ratingMetaRow}>
+														<View style={styles.ratingStarsSmall}>{renderStars(rating.rating, 14)}</View>
+														<Text style={styles.ratingMetaText}>{formatRatingDate(rating.date || rating.updatedAt || rating.createdAt)}</Text>
+													</View>
+
+													{reviewText ? (
+														<Text style={styles.ratingReviewText}>{reviewText}</Text>
+													) : (
+														<Text style={styles.ratingEmptyReviewText}>Sem comentário escrito.</Text>
+													)}
+												</View>
+											);
+										})}
+									</View>
+								) : (
+									<Text style={styles.commentsEmptyText}>Ainda não existem avaliações publicadas para este livro.</Text>
+								)}
+							</View>
+
+							<View style={styles.sectionCard}>
+								<View style={styles.sectionHeaderRow}>
+									<Ionicons name="create-outline" size={18} color="#006045" />
+									<Text style={styles.sectionTitle}>{myExistingRating ? 'Atualize sua avaliação' : 'Sua avaliação'}</Text>
 								</View>
 								{!isAuthenticated ? (
 									<Text style={styles.commentsEmptyText}>Faça login para avaliar este livro.</Text>
 								) : (
 									<>
+										<Text style={styles.ratingHint}>
+											Toque nas estrelas para definir sua nota. O comentário ajuda outros leitores a decidir.
+										</Text>
 										<View style={styles.starsRow}>
 											{[1, 2, 3, 4, 5].map((star) => (
 												<TouchableOpacity
 													key={star}
 													onPress={() => setMyRating(star)}
 													hitSlop={HIT_SLOP}
+													testID={`rating-star-${star}`}
 													accessibilityRole="button"
 													accessibilityLabel={`Selecionar ${star} estrela${star > 1 ? 's' : ''}`}
 												>
 													<Ionicons
 														name={star <= myRating ? 'star' : 'star-outline'}
-														size={26}
+														size={30}
 														color={star <= myRating ? '#f59e0b' : '#94a3b8'}
 													/>
 												</TouchableOpacity>
 											))}
 										</View>
+										<Text style={styles.ratingSelectionText}>
+											{myRating ? `${myRating} de 5 estrelas selecionadas` : 'Selecione uma nota de 1 a 5 estrelas'}
+										</Text>
 										<TextInput
 											value={myReview}
 											onChangeText={setMyReview}
@@ -375,13 +508,20 @@ export default function BookDetailsScreen({ navigation, route }) {
 											placeholderTextColor="#94a3b8"
 											multiline
 											style={styles.reviewInput}
+													testID="rating-review-input"
 											accessibilityLabel="Comentário da sua avaliação"
 										/>
+										{myExistingRating?.status && myExistingRating.status !== 'APPROVED' ? (
+											<Text style={styles.ratingPendingText}>
+												Sua avaliação está {getRatingStatusLabel(myExistingRating.status).toLowerCase()} e pode demorar um pouco para aparecer para todos.
+											</Text>
+										) : null}
 										<View style={styles.ratingActionsRow}>
 											<TouchableOpacity
 												style={[styles.ratingActionButton, styles.ratingSaveButton, isSavingRating && styles.ratingButtonDisabled]}
 												onPress={handleSaveRating}
 												disabled={isSavingRating}
+														testID="rating-submit-button"
 												accessibilityRole="button"
 												accessibilityLabel={myExistingRating ? 'Atualizar avaliação' : 'Salvar avaliação'}
 											>
@@ -392,6 +532,7 @@ export default function BookDetailsScreen({ navigation, route }) {
 													style={[styles.ratingActionButton, styles.ratingDeleteButton, isSavingRating && styles.ratingButtonDisabled]}
 													onPress={handleDeleteRating}
 													disabled={isSavingRating}
+															testID="rating-delete-button"
 													accessibilityRole="button"
 													accessibilityLabel="Excluir avaliação"
 												>
@@ -406,7 +547,7 @@ export default function BookDetailsScreen({ navigation, route }) {
 							<View style={styles.sectionCard}>
 								<View style={styles.sectionHeaderRow}>
 									<Ionicons name="chatbubble-ellipses-outline" size={18} color="#006045" />
-									<Text style={styles.sectionTitle}>Comentários dos Membros</Text>
+									<Text style={styles.sectionTitle}>Comentários da leitura</Text>
 								</View>
 								{memberComments.length ? (
 									<View style={styles.commentsList}>

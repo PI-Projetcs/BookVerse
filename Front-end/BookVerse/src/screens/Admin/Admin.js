@@ -50,6 +50,14 @@ const quickActions = [
     iconBackground: '#6B1730',
   },
   {
+    key: 'ratings',
+    label: 'Moderar Avaliações',
+    icon: 'star-outline',
+    route: 'ModerateRatings',
+    iconColor: '#fef3c7',
+    iconBackground: '#a16207',
+  },
+  {
     key: 'achievements',
     label: 'Gerenciar Conquistas',
     icon: 'trophy-outline',

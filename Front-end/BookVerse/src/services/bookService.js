@@ -438,6 +438,8 @@ const mockRatingsStore = {};
 function normalizeRating(rating = {}) {
 	const rawStatus = String(rating?.status || '').toUpperCase();
 	const status = ['PENDING', 'APPROVED', 'REJECTED'].includes(rawStatus) ? rawStatus : null;
+	const author = rating?.usuarioNome || rating?.author || rating?.userName || rating?.username || 'Leitor(a)';
+	const date = rating?.moderatedAt || rating?.createdAt || rating?.updatedAt || rating?.date || null;
 
 	return {
 		id: rating?.id || null,
@@ -445,6 +447,8 @@ function normalizeRating(rating = {}) {
 		userId: Number(rating?.userId ?? rating?.user_id ?? rating?.usuarioId) || null,
 		rating: Number(rating?.rating ?? rating?.avaliacao ?? rating?.nota) || 0,
 		review: rating?.review || rating?.resenha || rating?.descricao || '',
+		author,
+		date,
 		status,
 		createdAt: rating?.createdAt || rating?.created_at || new Date().toISOString(),
 		updatedAt: rating?.updatedAt || rating?.updated_at || new Date().toISOString(),

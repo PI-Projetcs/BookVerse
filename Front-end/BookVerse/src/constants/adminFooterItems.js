@@ -4,5 +4,6 @@ export const ADMIN_FOOTER_ITEMS = [
 	{ key: 'livros', label: 'Livros', icon: 'library-outline', activeIcon: 'library', route: 'AdminBooks' },
 	{ key: 'membros', label: 'Membros', icon: 'people-outline', activeIcon: 'people', route: 'ManageUsers' },
 	{ key: 'conquistas', label: 'Conquistas', icon: 'trophy-outline', activeIcon: 'trophy', route: 'ManageAchievements' },
-	{ key: 'moderar', label: 'Moderar', icon: 'chatbubble-ellipses-outline', activeIcon: 'chatbubble-ellipses', route: 'ModerateComments' },
+	{ key: 'moderarComentarios', label: 'Comentários', icon: 'chatbubble-ellipses-outline', activeIcon: 'chatbubble-ellipses', route: 'ModerateComments' },
+	{ key: 'moderarAvaliacoes', label: 'Avaliações', icon: 'star-outline', activeIcon: 'star', route: 'ModerateRatings' },
 ];

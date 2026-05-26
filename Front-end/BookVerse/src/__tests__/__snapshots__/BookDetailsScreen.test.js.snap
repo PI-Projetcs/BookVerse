@@ -1,0 +1,1800 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`BookDetailsScreen matches the loaded interface snapshot 1`] = `
+<SafeAreaView
+  style={
+    {
+      "backgroundColor": "#0b1f2a",
+      "flex": 1,
+    }
+  }
+  testID="book-details-screen"
+>
+  <StatusBar
+    barStyle="light-content"
+  />
+  <LinearGradient
+    colors={
+      [
+        "#6B0F2E",
+        "#0a0f1a",
+        "#003D2B",
+      ]
+    }
+    end={
+      {
+        "x": 1,
+        "y": 0,
+      }
+    }
+    start={
+      {
+        "x": 0,
+        "y": 0,
+      }
+    }
+    style={
+      [
+        {
+          "borderBottomColor": "rgba(202, 138, 4, 0.75)",
+          "borderBottomWidth": 3,
+        },
+        {
+          "paddingTop": 8,
+        },
+      ]
+    }
+  >
+    <View
+      style={
+        {
+          "alignItems": "center",
+          "backgroundColor": "rgba(0, 0, 0, 0.1)",
+          "flexDirection": "row",
+          "gap": 10,
+          "paddingHorizontal": 14,
+          "paddingVertical": 12,
+        }
+      }
+    >
+      <TouchableOpacity
+        accessibilityLabel="Voltar para a tela anterior"
+        accessibilityRole="button"
+        hitSlop={
+          {
+            "bottom": 10,
+            "left": 10,
+            "right": 10,
+            "top": 10,
+          }
+        }
+        onPress={[Function]}
+        style={
+          {
+            "alignItems": "center",
+            "backgroundColor": "rgba(0, 0, 0, 0.22)",
+            "borderColor": "rgba(250, 204, 21, 0.65)",
+            "borderRadius": 8,
+            "borderWidth": 1,
+            "height": 34,
+            "justifyContent": "center",
+            "width": 34,
+          }
+        }
+      >
+        <Text>
+          arrow-back
+        </Text>
+      </TouchableOpacity>
+      <Text
+        style={
+          {
+            "color": "#fefce8",
+            "fontSize": 16,
+            "fontWeight": "800",
+          }
+        }
+      >
+        Detalhes do Livro
+      </Text>
+    </View>
+  </LinearGradient>
+  <View
+    style={
+      {
+        "backgroundColor": "#f3f4f6",
+        "flex": 1,
+      }
+    }
+  >
+    <ScrollView
+      contentContainerStyle={
+        {
+          "backgroundColor": "#f3f4f6",
+          "paddingBottom": 24,
+        }
+      }
+    >
+      <LinearGradient
+        colors={
+          [
+            "#003f2f",
+            "#0f172b",
+            "#0f172b",
+          ]
+        }
+        end={
+          {
+            "x": 0,
+            "y": 1,
+          }
+        }
+        locations={
+          [
+            0.41,
+            0.83,
+            0.93,
+          ]
+        }
+        start={
+          {
+            "x": 0,
+            "y": 0,
+          }
+        }
+        style={
+          {
+            "alignItems": "center",
+            "borderRadius": 0,
+            "flexDirection": "row",
+            "gap": 12,
+            "marginBottom": 14,
+            "paddingBottom": 18,
+            "paddingHorizontal": 14,
+            "paddingTop": 14,
+          }
+        }
+      >
+        <Image
+          resizeMode="cover"
+          source={
+            {
+              "uri": "https://example.com/cover.jpg",
+            }
+          }
+          style={
+            {
+              "backgroundColor": "#334155",
+              "borderColor": "#c89a04",
+              "borderRadius": 10,
+              "borderWidth": 1,
+              "height": 162,
+              "width": 108,
+            }
+          }
+        />
+        <View
+          style={
+            {
+              "flex": 1,
+              "gap": 6,
+              "justifyContent": "center",
+            }
+          }
+        >
+          <Text
+            style={
+              {
+                "color": "#fefce8",
+                "fontSize": 21,
+                "fontWeight": "800",
+              }
+            }
+          >
+            O Nome do Livro
+          </Text>
+          <Text
+            style={
+              {
+                "color": "#fef3c7",
+                "fontSize": 14,
+              }
+            }
+          >
+            Autor Exemplo
+          </Text>
+          <View
+            style={
+              [
+                {
+                  "alignSelf": "flex-start",
+                  "backgroundColor": "#fde68a",
+                  "borderRadius": 5,
+                  "borderWidth": 1,
+                  "paddingHorizontal": 7,
+                  "paddingVertical": 3,
+                },
+                {
+                  "backgroundColor": "#E0E7FF",
+                  "borderColor": "#A3B3FF",
+                },
+              ]
+            }
+          >
+            <Text
+              style={
+                [
+                  {
+                    "color": "#78350f",
+                    "fontSize": 11,
+                    "fontWeight": "700",
+                  },
+                  {
+                    "color": "#312C85",
+                  },
+                ]
+              }
+            >
+              Fantasia
+            </Text>
+          </View>
+          <View
+            style={
+              {
+                "alignItems": "center",
+                "flexDirection": "row",
+                "gap": 4,
+              }
+            }
+          >
+            <Text>
+              calendar-outline
+            </Text>
+            <Text
+              style={
+                {
+                  "color": "#FEF3C6",
+                  "fontSize": 12,
+                }
+              }
+            >
+              2024
+            </Text>
+          </View>
+          <View
+            style={
+              {
+                "alignItems": "center",
+                "flexDirection": "row",
+                "gap": 4,
+              }
+            }
+          >
+            <View
+              style={
+                {
+                  "height": 16,
+                  "position": "relative",
+                  "width": 16,
+                }
+              }
+            >
+              <Text>
+                star
+              </Text>
+              <Text>
+                star-outline
+              </Text>
+            </View>
+            <Text
+              style={
+                {
+                  "color": "#fef3c7",
+                  "fontSize": 15,
+                  "fontWeight": "800",
+                }
+              }
+            >
+              4.5
+              <Text
+                style={
+                  {
+                    "color": "#fef3c7",
+                    "fontSize": 12,
+                    "fontWeight": "600",
+                  }
+                }
+              >
+                 (
+                2
+                 avaliações)
+              </Text>
+            </Text>
+          </View>
+          <TouchableOpacity
+            accessibilityLabel="Adicionar aos favoritos"
+            accessibilityRole="button"
+            disabled={false}
+            onPress={[Function]}
+            style={
+              [
+                {
+                  "alignItems": "center",
+                  "alignSelf": "flex-start",
+                  "backgroundColor": "rgba(255, 255, 255, 0.08)",
+                  "borderColor": "rgba(254, 243, 199, 0.35)",
+                  "borderRadius": 10,
+                  "borderWidth": 1,
+                  "flexDirection": "row",
+                  "gap": 8,
+                  "marginTop": 10,
+                  "minHeight": 38,
+                  "paddingHorizontal": 12,
+                },
+                false,
+                false,
+              ]
+            }
+          >
+            <Text>
+              bookmark-outline
+            </Text>
+            <Text
+              style={
+                [
+                  {
+                    "color": "#fef3c7",
+                    "fontSize": 13,
+                    "fontWeight": "800",
+                  },
+                  false,
+                ]
+              }
+            >
+              Favoritar
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </LinearGradient>
+      <View
+        style={
+          {
+            "paddingHorizontal": 12,
+            "paddingTop": 10,
+          }
+        }
+      >
+        <View
+          style={
+            [
+              {
+                "backgroundColor": "#ffffff",
+                "borderColor": "#e5e7eb",
+                "borderRadius": 10,
+                "borderWidth": 1,
+                "marginBottom": 10,
+                "padding": 12,
+              },
+              {
+                "elevation": 3,
+                "marginTop": -28,
+                "zIndex": 2,
+              },
+            ]
+          }
+        >
+          <View
+            style={
+              {
+                "alignItems": "center",
+                "flexDirection": "row",
+                "gap": 8,
+                "marginBottom": 8,
+              }
+            }
+          >
+            <Text>
+              book-outline
+            </Text>
+            <Text
+              style={
+                {
+                  "color": "#0f172a",
+                  "fontSize": 16,
+                  "fontWeight": "800",
+                  "marginBottom": 8,
+                }
+              }
+            >
+              Sinopse
+            </Text>
+          </View>
+          <Text
+            style={
+              {
+                "color": "#334155",
+                "fontSize": 14,
+                "lineHeight": 20,
+              }
+            }
+          >
+            Uma sinopse envolvente.
+          </Text>
+        </View>
+        <View
+          style={
+            {
+              "backgroundColor": "#ffffff",
+              "borderColor": "#e5e7eb",
+              "borderRadius": 10,
+              "borderWidth": 1,
+              "marginBottom": 10,
+              "padding": 12,
+            }
+          }
+        >
+          <View
+            style={
+              {
+                "alignItems": "center",
+                "flexDirection": "row",
+                "gap": 8,
+                "marginBottom": 8,
+              }
+            }
+          >
+            <Text>
+              person-outline
+            </Text>
+            <Text
+              style={
+                {
+                  "color": "#0f172a",
+                  "fontSize": 16,
+                  "fontWeight": "800",
+                  "marginBottom": 8,
+                }
+              }
+            >
+              Sobre o Autor
+            </Text>
+          </View>
+          <Text
+            style={
+              {
+                "color": "#334155",
+                "fontSize": 14,
+                "lineHeight": 20,
+              }
+            }
+          >
+            Biografia do autor.
+          </Text>
+        </View>
+        <View
+          style={
+            {
+              "backgroundColor": "#ffffff",
+              "borderColor": "#e5e7eb",
+              "borderRadius": 10,
+              "borderWidth": 1,
+              "marginBottom": 10,
+              "padding": 12,
+            }
+          }
+        >
+          <View
+            style={
+              {
+                "alignItems": "center",
+                "flexDirection": "row",
+                "gap": 8,
+                "marginBottom": 8,
+              }
+            }
+          >
+            <Text>
+              stats-chart-outline
+            </Text>
+            <Text
+              style={
+                {
+                  "color": "#0f172a",
+                  "fontSize": 16,
+                  "fontWeight": "800",
+                  "marginBottom": 8,
+                }
+              }
+            >
+              Avaliações da comunidade
+            </Text>
+          </View>
+          <View
+            style={
+              {
+                "alignItems": "flex-start",
+                "flexDirection": "row",
+                "flexWrap": "wrap",
+                "gap": 14,
+              }
+            }
+          >
+            <View
+              style={
+                {
+                  "flex": 1,
+                  "minWidth": 136,
+                  "paddingRight": 4,
+                }
+              }
+            >
+              <Text
+                style={
+                  {
+                    "color": "#0f172a",
+                    "fontSize": 36,
+                    "fontWeight": "900",
+                    "lineHeight": 38,
+                  }
+                }
+              >
+                4.5
+              </Text>
+              <View
+                style={
+                  {
+                    "alignItems": "center",
+                    "flexDirection": "row",
+                    "gap": 3,
+                    "marginBottom": 6,
+                    "marginTop": 4,
+                  }
+                }
+              >
+                <Text>
+                  star
+                </Text>
+                <Text>
+                  star
+                </Text>
+                <Text>
+                  star
+                </Text>
+                <Text>
+                  star
+                </Text>
+                <Text>
+                  star
+                </Text>
+              </View>
+              <Text
+                style={
+                  {
+                    "color": "#475569",
+                    "fontSize": 12,
+                    "fontWeight": "700",
+                    "marginBottom": 4,
+                  }
+                }
+              >
+                Baseado em 
+                2
+                 
+                avaliações
+              </Text>
+              <Text
+                style={
+                  {
+                    "color": "#64748b",
+                    "fontSize": 12,
+                    "lineHeight": 17,
+                  }
+                }
+              >
+                2
+                 
+                avaliações
+                 com 4 estrelas ou mais.
+              </Text>
+            </View>
+            <View
+              style={
+                {
+                  "flex": 1.2,
+                  "gap": 6,
+                }
+              }
+            >
+              <View
+                style={
+                  {
+                    "alignItems": "center",
+                    "flexDirection": "row",
+                    "gap": 8,
+                  }
+                }
+              >
+                <Text
+                  style={
+                    {
+                      "color": "#0f172a",
+                      "fontSize": 12,
+                      "fontWeight": "800",
+                      "width": 12,
+                    }
+                  }
+                >
+                  5
+                </Text>
+                <View
+                  style={
+                    {
+                      "backgroundColor": "#e2e8f0",
+                      "borderRadius": 999,
+                      "flex": 1,
+                      "height": 8,
+                      "overflow": "hidden",
+                    }
+                  }
+                >
+                  <View
+                    style={
+                      [
+                        {
+                          "backgroundColor": "#0f766e",
+                          "borderRadius": 999,
+                          "height": "100%",
+                        },
+                        {
+                          "width": "50%",
+                        },
+                      ]
+                    }
+                  />
+                </View>
+                <Text
+                  style={
+                    {
+                      "color": "#475569",
+                      "fontSize": 11,
+                      "fontWeight": "800",
+                      "textAlign": "right",
+                      "width": 18,
+                    }
+                  }
+                >
+                  1
+                </Text>
+              </View>
+              <View
+                style={
+                  {
+                    "alignItems": "center",
+                    "flexDirection": "row",
+                    "gap": 8,
+                  }
+                }
+              >
+                <Text
+                  style={
+                    {
+                      "color": "#0f172a",
+                      "fontSize": 12,
+                      "fontWeight": "800",
+                      "width": 12,
+                    }
+                  }
+                >
+                  4
+                </Text>
+                <View
+                  style={
+                    {
+                      "backgroundColor": "#e2e8f0",
+                      "borderRadius": 999,
+                      "flex": 1,
+                      "height": 8,
+                      "overflow": "hidden",
+                    }
+                  }
+                >
+                  <View
+                    style={
+                      [
+                        {
+                          "backgroundColor": "#0f766e",
+                          "borderRadius": 999,
+                          "height": "100%",
+                        },
+                        {
+                          "width": "50%",
+                        },
+                      ]
+                    }
+                  />
+                </View>
+                <Text
+                  style={
+                    {
+                      "color": "#475569",
+                      "fontSize": 11,
+                      "fontWeight": "800",
+                      "textAlign": "right",
+                      "width": 18,
+                    }
+                  }
+                >
+                  1
+                </Text>
+              </View>
+              <View
+                style={
+                  {
+                    "alignItems": "center",
+                    "flexDirection": "row",
+                    "gap": 8,
+                  }
+                }
+              >
+                <Text
+                  style={
+                    {
+                      "color": "#0f172a",
+                      "fontSize": 12,
+                      "fontWeight": "800",
+                      "width": 12,
+                    }
+                  }
+                >
+                  3
+                </Text>
+                <View
+                  style={
+                    {
+                      "backgroundColor": "#e2e8f0",
+                      "borderRadius": 999,
+                      "flex": 1,
+                      "height": 8,
+                      "overflow": "hidden",
+                    }
+                  }
+                >
+                  <View
+                    style={
+                      [
+                        {
+                          "backgroundColor": "#0f766e",
+                          "borderRadius": 999,
+                          "height": "100%",
+                        },
+                        {
+                          "width": "8%",
+                        },
+                      ]
+                    }
+                  />
+                </View>
+                <Text
+                  style={
+                    {
+                      "color": "#475569",
+                      "fontSize": 11,
+                      "fontWeight": "800",
+                      "textAlign": "right",
+                      "width": 18,
+                    }
+                  }
+                >
+                  0
+                </Text>
+              </View>
+              <View
+                style={
+                  {
+                    "alignItems": "center",
+                    "flexDirection": "row",
+                    "gap": 8,
+                  }
+                }
+              >
+                <Text
+                  style={
+                    {
+                      "color": "#0f172a",
+                      "fontSize": 12,
+                      "fontWeight": "800",
+                      "width": 12,
+                    }
+                  }
+                >
+                  2
+                </Text>
+                <View
+                  style={
+                    {
+                      "backgroundColor": "#e2e8f0",
+                      "borderRadius": 999,
+                      "flex": 1,
+                      "height": 8,
+                      "overflow": "hidden",
+                    }
+                  }
+                >
+                  <View
+                    style={
+                      [
+                        {
+                          "backgroundColor": "#0f766e",
+                          "borderRadius": 999,
+                          "height": "100%",
+                        },
+                        {
+                          "width": "8%",
+                        },
+                      ]
+                    }
+                  />
+                </View>
+                <Text
+                  style={
+                    {
+                      "color": "#475569",
+                      "fontSize": 11,
+                      "fontWeight": "800",
+                      "textAlign": "right",
+                      "width": 18,
+                    }
+                  }
+                >
+                  0
+                </Text>
+              </View>
+              <View
+                style={
+                  {
+                    "alignItems": "center",
+                    "flexDirection": "row",
+                    "gap": 8,
+                  }
+                }
+              >
+                <Text
+                  style={
+                    {
+                      "color": "#0f172a",
+                      "fontSize": 12,
+                      "fontWeight": "800",
+                      "width": 12,
+                    }
+                  }
+                >
+                  1
+                </Text>
+                <View
+                  style={
+                    {
+                      "backgroundColor": "#e2e8f0",
+                      "borderRadius": 999,
+                      "flex": 1,
+                      "height": 8,
+                      "overflow": "hidden",
+                    }
+                  }
+                >
+                  <View
+                    style={
+                      [
+                        {
+                          "backgroundColor": "#0f766e",
+                          "borderRadius": 999,
+                          "height": "100%",
+                        },
+                        {
+                          "width": "8%",
+                        },
+                      ]
+                    }
+                  />
+                </View>
+                <Text
+                  style={
+                    {
+                      "color": "#475569",
+                      "fontSize": 11,
+                      "fontWeight": "800",
+                      "textAlign": "right",
+                      "width": 18,
+                    }
+                  }
+                >
+                  0
+                </Text>
+              </View>
+            </View>
+          </View>
+        </View>
+        <View
+          style={
+            {
+              "backgroundColor": "#ffffff",
+              "borderColor": "#e5e7eb",
+              "borderRadius": 10,
+              "borderWidth": 1,
+              "marginBottom": 10,
+              "padding": 12,
+            }
+          }
+        >
+          <View
+            style={
+              {
+                "alignItems": "center",
+                "flexDirection": "row",
+                "gap": 8,
+                "marginBottom": 8,
+              }
+            }
+          >
+            <Text>
+              star-outline
+            </Text>
+            <Text
+              style={
+                {
+                  "color": "#0f172a",
+                  "fontSize": 16,
+                  "fontWeight": "800",
+                  "marginBottom": 8,
+                }
+              }
+            >
+              Destaques da comunidade
+            </Text>
+          </View>
+          <View
+            style={
+              {
+                "gap": 10,
+              }
+            }
+          >
+            <View
+              style={
+                [
+                  {
+                    "backgroundColor": "#f8fafc",
+                    "borderColor": "#dbe3ea",
+                    "borderRadius": 14,
+                    "borderWidth": 1,
+                    "padding": 12,
+                  },
+                  {
+                    "backgroundColor": "#ecfeff",
+                    "borderColor": "#7dd3fc",
+                  },
+                ]
+              }
+            >
+              <View
+                style={
+                  {
+                    "alignItems": "flex-start",
+                    "flexDirection": "row",
+                    "gap": 10,
+                    "justifyContent": "space-between",
+                    "marginBottom": 8,
+                  }
+                }
+              >
+                <View
+                  style={
+                    {
+                      "alignItems": "center",
+                      "flex": 1,
+                      "flexDirection": "row",
+                      "flexWrap": "wrap",
+                      "gap": 6,
+                    }
+                  }
+                >
+                  <Text>
+                    person-circle-outline
+                  </Text>
+                  <Text
+                    style={
+                      {
+                        "color": "#0f172a",
+                        "fontSize": 13,
+                        "fontWeight": "800",
+                      }
+                    }
+                  >
+                    Você
+                  </Text>
+                  <View
+                    style={
+                      {
+                        "backgroundColor": "#dbeafe",
+                        "borderRadius": 999,
+                        "paddingHorizontal": 8,
+                        "paddingVertical": 3,
+                      }
+                    }
+                  >
+                    <Text
+                      style={
+                        {
+                          "color": "#1d4ed8",
+                          "fontSize": 10,
+                          "fontWeight": "800",
+                        }
+                      }
+                    >
+                      Sua avaliação
+                    </Text>
+                  </View>
+                </View>
+                <View
+                  style={
+                    [
+                      {
+                        "backgroundColor": "#dcfce7",
+                        "borderRadius": 999,
+                        "paddingHorizontal": 8,
+                        "paddingVertical": 3,
+                      },
+                      false,
+                      false,
+                    ]
+                  }
+                >
+                  <Text
+                    style={
+                      [
+                        {
+                          "color": "#166534",
+                          "fontSize": 10,
+                          "fontWeight": "800",
+                        },
+                        false,
+                        false,
+                      ]
+                    }
+                  >
+                    Publicada
+                  </Text>
+                </View>
+              </View>
+              <View
+                style={
+                  {
+                    "alignItems": "center",
+                    "flexDirection": "row",
+                    "gap": 10,
+                    "justifyContent": "space-between",
+                    "marginBottom": 8,
+                  }
+                }
+              >
+                <View
+                  style={
+                    {
+                      "alignItems": "center",
+                      "flexDirection": "row",
+                      "gap": 2,
+                    }
+                  }
+                >
+                  <Text>
+                    star
+                  </Text>
+                  <Text>
+                    star
+                  </Text>
+                  <Text>
+                    star
+                  </Text>
+                  <Text>
+                    star
+                  </Text>
+                  <Text>
+                    star
+                  </Text>
+                </View>
+                <Text
+                  style={
+                    {
+                      "color": "#64748b",
+                      "fontSize": 11,
+                    }
+                  }
+                >
+                  20 de mai. de 2026
+                </Text>
+              </View>
+              <Text
+                style={
+                  {
+                    "color": "#334155",
+                    "fontSize": 13,
+                    "lineHeight": 19,
+                  }
+                }
+              >
+                Leitura excelente
+              </Text>
+            </View>
+            <View
+              style={
+                [
+                  {
+                    "backgroundColor": "#f8fafc",
+                    "borderColor": "#dbe3ea",
+                    "borderRadius": 14,
+                    "borderWidth": 1,
+                    "padding": 12,
+                  },
+                  false,
+                ]
+              }
+            >
+              <View
+                style={
+                  {
+                    "alignItems": "flex-start",
+                    "flexDirection": "row",
+                    "gap": 10,
+                    "justifyContent": "space-between",
+                    "marginBottom": 8,
+                  }
+                }
+              >
+                <View
+                  style={
+                    {
+                      "alignItems": "center",
+                      "flex": 1,
+                      "flexDirection": "row",
+                      "flexWrap": "wrap",
+                      "gap": 6,
+                    }
+                  }
+                >
+                  <Text>
+                    person-circle-outline
+                  </Text>
+                  <Text
+                    style={
+                      {
+                        "color": "#0f172a",
+                        "fontSize": 13,
+                        "fontWeight": "800",
+                      }
+                    }
+                  >
+                    Ana
+                  </Text>
+                </View>
+                <View
+                  style={
+                    [
+                      {
+                        "backgroundColor": "#dcfce7",
+                        "borderRadius": 999,
+                        "paddingHorizontal": 8,
+                        "paddingVertical": 3,
+                      },
+                      false,
+                      false,
+                    ]
+                  }
+                >
+                  <Text
+                    style={
+                      [
+                        {
+                          "color": "#166534",
+                          "fontSize": 10,
+                          "fontWeight": "800",
+                        },
+                        false,
+                        false,
+                      ]
+                    }
+                  >
+                    Publicada
+                  </Text>
+                </View>
+              </View>
+              <View
+                style={
+                  {
+                    "alignItems": "center",
+                    "flexDirection": "row",
+                    "gap": 10,
+                    "justifyContent": "space-between",
+                    "marginBottom": 8,
+                  }
+                }
+              >
+                <View
+                  style={
+                    {
+                      "alignItems": "center",
+                      "flexDirection": "row",
+                      "gap": 2,
+                    }
+                  }
+                >
+                  <Text>
+                    star
+                  </Text>
+                  <Text>
+                    star
+                  </Text>
+                  <Text>
+                    star
+                  </Text>
+                  <Text>
+                    star
+                  </Text>
+                  <Text>
+                    star-outline
+                  </Text>
+                </View>
+                <Text
+                  style={
+                    {
+                      "color": "#64748b",
+                      "fontSize": 11,
+                    }
+                  }
+                >
+                  21 de mai. de 2026
+                </Text>
+              </View>
+              <Text
+                style={
+                  {
+                    "color": "#334155",
+                    "fontSize": 13,
+                    "lineHeight": 19,
+                  }
+                }
+              >
+                Gostei bastante
+              </Text>
+            </View>
+          </View>
+        </View>
+        <View
+          style={
+            {
+              "backgroundColor": "#ffffff",
+              "borderColor": "#e5e7eb",
+              "borderRadius": 10,
+              "borderWidth": 1,
+              "marginBottom": 10,
+              "padding": 12,
+            }
+          }
+        >
+          <View
+            style={
+              {
+                "alignItems": "center",
+                "flexDirection": "row",
+                "gap": 8,
+                "marginBottom": 8,
+              }
+            }
+          >
+            <Text>
+              create-outline
+            </Text>
+            <Text
+              style={
+                {
+                  "color": "#0f172a",
+                  "fontSize": 16,
+                  "fontWeight": "800",
+                  "marginBottom": 8,
+                }
+              }
+            >
+              Atualize sua avaliação
+            </Text>
+          </View>
+          <Text
+            style={
+              {
+                "color": "#475569",
+                "fontSize": 12,
+                "lineHeight": 18,
+                "marginBottom": 10,
+              }
+            }
+          >
+            Toque nas estrelas para definir sua nota. O comentário ajuda outros leitores a decidir.
+          </Text>
+          <View
+            style={
+              {
+                "alignItems": "center",
+                "flexDirection": "row",
+                "gap": 6,
+                "marginBottom": 10,
+              }
+            }
+          >
+            <TouchableOpacity
+              accessibilityLabel="Selecionar 1 estrela"
+              accessibilityRole="button"
+              hitSlop={
+                {
+                  "bottom": 10,
+                  "left": 10,
+                  "right": 10,
+                  "top": 10,
+                }
+              }
+              onPress={[Function]}
+              testID="rating-star-1"
+            >
+              <Text>
+                star
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              accessibilityLabel="Selecionar 2 estrelas"
+              accessibilityRole="button"
+              hitSlop={
+                {
+                  "bottom": 10,
+                  "left": 10,
+                  "right": 10,
+                  "top": 10,
+                }
+              }
+              onPress={[Function]}
+              testID="rating-star-2"
+            >
+              <Text>
+                star
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              accessibilityLabel="Selecionar 3 estrelas"
+              accessibilityRole="button"
+              hitSlop={
+                {
+                  "bottom": 10,
+                  "left": 10,
+                  "right": 10,
+                  "top": 10,
+                }
+              }
+              onPress={[Function]}
+              testID="rating-star-3"
+            >
+              <Text>
+                star
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              accessibilityLabel="Selecionar 4 estrelas"
+              accessibilityRole="button"
+              hitSlop={
+                {
+                  "bottom": 10,
+                  "left": 10,
+                  "right": 10,
+                  "top": 10,
+                }
+              }
+              onPress={[Function]}
+              testID="rating-star-4"
+            >
+              <Text>
+                star
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              accessibilityLabel="Selecionar 5 estrelas"
+              accessibilityRole="button"
+              hitSlop={
+                {
+                  "bottom": 10,
+                  "left": 10,
+                  "right": 10,
+                  "top": 10,
+                }
+              }
+              onPress={[Function]}
+              testID="rating-star-5"
+            >
+              <Text>
+                star
+              </Text>
+            </TouchableOpacity>
+          </View>
+          <Text
+            style={
+              {
+                "color": "#0f172a",
+                "fontSize": 12,
+                "fontWeight": "700",
+                "marginBottom": 10,
+              }
+            }
+          >
+            5 de 5 estrelas selecionadas
+          </Text>
+          <TextInput
+            accessibilityLabel="Comentário da sua avaliação"
+            multiline={true}
+            onChangeText={[Function]}
+            placeholder="Escreva um comentário opcional sobre o livro"
+            placeholderTextColor="#94a3b8"
+            style={
+              {
+                "backgroundColor": "#f8fafc",
+                "borderColor": "#d1d5db",
+                "borderRadius": 10,
+                "borderWidth": 1,
+                "color": "#0f172a",
+                "fontSize": 13,
+                "lineHeight": 18,
+                "minHeight": 86,
+                "paddingHorizontal": 10,
+                "paddingVertical": 8,
+                "textAlignVertical": "top",
+              }
+            }
+            testID="rating-review-input"
+            value="Leitura excelente"
+          />
+          <View
+            style={
+              {
+                "flexDirection": "row",
+                "gap": 8,
+                "marginTop": 10,
+              }
+            }
+          >
+            <TouchableOpacity
+              accessibilityLabel="Atualizar avaliação"
+              accessibilityRole="button"
+              disabled={false}
+              onPress={[Function]}
+              style={
+                [
+                  {
+                    "alignItems": "center",
+                    "borderRadius": 10,
+                    "flex": 1,
+                    "justifyContent": "center",
+                    "minHeight": 38,
+                  },
+                  {
+                    "backgroundColor": "#065f46",
+                  },
+                  false,
+                ]
+              }
+              testID="rating-submit-button"
+            >
+              <Text
+                style={
+                  {
+                    "color": "#ecfeff",
+                    "fontSize": 13,
+                    "fontWeight": "800",
+                  }
+                }
+              >
+                Atualizar
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              accessibilityLabel="Excluir avaliação"
+              accessibilityRole="button"
+              disabled={false}
+              onPress={[Function]}
+              style={
+                [
+                  {
+                    "alignItems": "center",
+                    "borderRadius": 10,
+                    "flex": 1,
+                    "justifyContent": "center",
+                    "minHeight": 38,
+                  },
+                  {
+                    "backgroundColor": "#fdf2f8",
+                    "borderColor": "#fecdd3",
+                    "borderWidth": 1,
+                  },
+                  false,
+                ]
+              }
+              testID="rating-delete-button"
+            >
+              <Text
+                style={
+                  {
+                    "color": "#9f1239",
+                    "fontSize": 13,
+                    "fontWeight": "800",
+                  }
+                }
+              >
+                Excluir
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+        <View
+          style={
+            {
+              "backgroundColor": "#ffffff",
+              "borderColor": "#e5e7eb",
+              "borderRadius": 10,
+              "borderWidth": 1,
+              "marginBottom": 10,
+              "padding": 12,
+            }
+          }
+        >
+          <View
+            style={
+              {
+                "alignItems": "center",
+                "flexDirection": "row",
+                "gap": 8,
+                "marginBottom": 8,
+              }
+            }
+          >
+            <Text>
+              chatbubble-ellipses-outline
+            </Text>
+            <Text
+              style={
+                {
+                  "color": "#0f172a",
+                  "fontSize": 16,
+                  "fontWeight": "800",
+                  "marginBottom": 8,
+                }
+              }
+            >
+              Comentários da leitura
+            </Text>
+          </View>
+          <View
+            style={
+              {
+                "gap": 10,
+              }
+            }
+          >
+            <View
+              style={
+                {
+                  "borderTopColor": "#f1f5f9",
+                  "borderTopWidth": 1,
+                  "paddingTop": 8,
+                }
+              }
+            >
+              <View
+                style={
+                  {
+                    "alignItems": "center",
+                    "flexDirection": "row",
+                    "justifyContent": "space-between",
+                    "marginBottom": 4,
+                  }
+                }
+              >
+                <View
+                  style={
+                    {
+                      "alignItems": "center",
+                      "flex": 1,
+                      "flexDirection": "row",
+                      "gap": 6,
+                    }
+                  }
+                >
+                  <Text>
+                    chatbubble-outline
+                  </Text>
+                  <Text
+                    style={
+                      {
+                        "color": "#0f172a",
+                        "fontSize": 13,
+                        "fontWeight": "700",
+                      }
+                    }
+                  >
+                    Rui
+                  </Text>
+                </View>
+                <View
+                  style={
+                    {
+                      "alignItems": "center",
+                      "flexDirection": "row",
+                      "gap": 4,
+                    }
+                  }
+                >
+                  <View
+                    style={
+                      {
+                        "height": 12,
+                        "position": "relative",
+                        "width": 12,
+                      }
+                    }
+                  >
+                    <Text>
+                      star
+                    </Text>
+                    <Text>
+                      star-outline
+                    </Text>
+                  </View>
+                  <Text
+                    style={
+                      {
+                        "color": "#92400e",
+                        "fontSize": 12,
+                        "fontWeight": "700",
+                      }
+                    }
+                  >
+                    6
+                  </Text>
+                </View>
+              </View>
+              <Text
+                style={
+                  {
+                    "color": "#64748b",
+                    "fontSize": 11,
+                    "marginBottom": 4,
+                  }
+                }
+              >
+                Capítulo 1
+              </Text>
+              <Text
+                style={
+                  {
+                    "color": "#334155",
+                    "fontSize": 13,
+                    "lineHeight": 18,
+                  }
+                }
+              >
+                Concordo
+              </Text>
+            </View>
+            <View
+              style={
+                {
+                  "borderTopColor": "#f1f5f9",
+                  "borderTopWidth": 1,
+                  "paddingTop": 8,
+                }
+              }
+            >
+              <View
+                style={
+                  {
+                    "alignItems": "center",
+                    "flexDirection": "row",
+                    "justifyContent": "space-between",
+                    "marginBottom": 4,
+                  }
+                }
+              >
+                <View
+                  style={
+                    {
+                      "alignItems": "center",
+                      "flex": 1,
+                      "flexDirection": "row",
+                      "gap": 6,
+                    }
+                  }
+                >
+                  <Text>
+                    chatbubble-outline
+                  </Text>
+                  <Text
+                    style={
+                      {
+                        "color": "#0f172a",
+                        "fontSize": 13,
+                        "fontWeight": "700",
+                      }
+                    }
+                  >
+                    Lia
+                  </Text>
+                </View>
+                <View
+                  style={
+                    {
+                      "alignItems": "center",
+                      "flexDirection": "row",
+                      "gap": 4,
+                    }
+                  }
+                >
+                  <View
+                    style={
+                      {
+                        "height": 12,
+                        "position": "relative",
+                        "width": 12,
+                      }
+                    }
+                  >
+                    <Text>
+                      star
+                    </Text>
+                    <Text>
+                      star-outline
+                    </Text>
+                  </View>
+                  <Text
+                    style={
+                      {
+                        "color": "#92400e",
+                        "fontSize": 12,
+                        "fontWeight": "700",
+                      }
+                    }
+                  >
+                    3
+                  </Text>
+                </View>
+              </View>
+              <Text
+                style={
+                  {
+                    "color": "#64748b",
+                    "fontSize": 11,
+                    "marginBottom": 4,
+                  }
+                }
+              >
+                Capítulo 1
+              </Text>
+              <Text
+                style={
+                  {
+                    "color": "#334155",
+                    "fontSize": 13,
+                    "lineHeight": 18,
+                  }
+                }
+              >
+                Muito bom
+              </Text>
+            </View>
+          </View>
+        </View>
+      </View>
+    </ScrollView>
+    <FooterNav />
+  </View>
+</SafeAreaView>
+`;
