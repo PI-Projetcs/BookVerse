@@ -57,6 +57,14 @@ const MODERATION_TYPES = {
 };
 const HIT_SLOP = { top: 10, bottom: 10, left: 10, right: 10 };
 
+/*
+ * Tela de Moderação (Admin)
+ * - Lista itens para moderação (comentários e avaliações), permite aprovar
+ *   ou rejeitar com feedback, e integra com os métodos de `adminService`.
+ * - Fornece filtros por status e busca, e apresenta ações seguras com
+ *   confirmações e feedback ao usuário.
+ */
+
 function getItemBadgeStyle(status) {
   if (status === 'approved') {
     return {

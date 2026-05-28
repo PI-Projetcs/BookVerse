@@ -1,5 +1,17 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+/*
+ Serviço: sessionStorage
+ Propósito: Pequeno adaptador para persistência da sessão do usuário
+ usando `AsyncStorage`. Centraliza a chave de armazenamento e fornece
+ operações atômicas (get/set/clear) retornando booleanos simples
+ para indicar sucesso nas escritas.
+
+ Observações:
+ - Serializa o objeto de sessão em JSON.
+ - Trate erros de escrita/leitura no nível da UI quando necessário.
+*/
+
 const SESSION_KEY = '@bookverse/session';
 
 export async function getStoredSession() {

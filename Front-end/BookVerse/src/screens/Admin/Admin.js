@@ -8,6 +8,13 @@ import { useAuth } from '../../context/AuthContext';
 
 const HIT_SLOP = { top: 10, bottom: 10, left: 10, right: 10 };
 
+/*
+ * Tela do painel Admin
+ * - Atalhos para navegação administrativa: gerenciar livros, membros,
+ *   moderar comentários e configurar o Livro do Mês.
+ * - Fornece ações rápidas para navegar às seções de administração.
+ */
+
 const quickActions = [
   {
     key: 'register-books',

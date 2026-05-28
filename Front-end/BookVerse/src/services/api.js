@@ -2,6 +2,17 @@ import axios from 'axios';
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 
+/*
+ * Serviço de API central
+ * - Cria uma instância axios com `BASE_URL` resolvida automaticamente
+ *   a partir de `EXPO_PUBLIC_API_URL`, variáveis do Expo (hostUri) e
+ *   fallbacks por plataforma (localhost / 10.0.2.2).
+ * - Gerencia tokenização: `applyApiSession`, refresh automático via
+ *   interceptor e tratamento de 401 com `setUnauthorizedHandler`.
+ * - Exporta `api` (instância axios) e funções utilitárias para manipular
+ *   sessão e registro de handlers.
+ */
+
 function extractHost(value) {
 	const raw = String(value || '').trim();
 	if (!raw) {
@@ -68,6 +79,30 @@ function resolveBaseUrl() {
 }
 
 export const BASE_URL = resolveBaseUrl();
+
+// Helper de debug usado em desenvolvimento para inspecionar a resolução da URL
+export function debugApiInfo() {
+	const hostUri =
+		Constants.expoConfig?.hostUri || Constants.manifest2?.extra?.expoClient?.hostUri || Constants.manifest?.debuggerHost || '';
+	return {
+		platform: Platform.OS,
+		envBaseUrl: String(process.env.EXPO_PUBLIC_API_URL || '').trim(),
+		expoHost: getExpoHost(),
+		hostUri,
+		resolvedBaseUrl: BASE_URL,
+	};
+}
+
+// Log útil em desenvolvimento para diagnosticar timeouts de conexão
+try {
+	const isDev = typeof __DEV__ !== 'undefined' ? __DEV__ : (process.env.NODE_ENV !== 'production');
+	if (isDev) {
+		// eslint-disable-next-line no-console
+		console.debug('[api] debugApiInfo:', debugApiInfo());
+	}
+} catch (e) {
+	// ignore
+}
 
 let authToken = null;
 let refreshToken = null;

@@ -1,4 +1,24 @@
 import api from './api';
+
+/*
+ Serviço: adminService
+ Propósito: Encapsula endpoints administrativos expostos pelo backend
+ (gerenciamento de usuários, moderação de comentários, painel
+ administrativo, conquistas). Normaliza respostas e oferece filtros
+ utilitários para facilitar a exibição na UI administrativa.
+
+ Principais funções exportadas:
+ - getAdminMembers(params)
+ - updateAdminMemberStatus(memberId, nextStatus)
+ - promoteAdminMember(memberId)
+ - getModerationItems(params)
+ - setModerationStatus(itemId, nextStatus)
+ - approveComment / rejectComment / approveRating / rejectRating
+
+ Observações:
+ - Funções lançam erros originais para que a camada de chamada trate
+	 mensagens e fluxos de confirmação.
+*/
 // Serviço admin utiliza APIs do backend via Axios
 
 function normalizeMember(member = {}, index = 0) {

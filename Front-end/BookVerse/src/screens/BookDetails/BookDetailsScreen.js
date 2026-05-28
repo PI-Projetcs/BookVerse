@@ -34,9 +34,17 @@ import {
 import { GENRE_CHIP_STYLES, normalizeGenreKey } from '../../constants/genreThemes';
 import { useAuth } from '../../context/AuthContext';
 
+/*
+ * Tela de detalhes do livro
+ * - Mostra informações do livro, sinopse, biografia do autor, avaliações
+ *   e comentários destacados.
+ * - Permite favoritar, avaliar e gerenciar resenhas; carrega dados de
+ *   discussões, avaliações e preferências do usuário quando autenticado.
+ */
 const FALLBACK_COVER = 'https://placehold.co/420x640/0f172a/f8fafc?text=Sem+Capa';
 const HIT_SLOP = { top: 10, bottom: 10, left: 10, right: 10 };
 
+// Renderiza ícones de estrela para valores de avaliação (0-5)
 function renderStars(value, size = 16, activeColor = '#f59e0b', inactiveColor = '#cbd5e1') {
 	const normalizedValue = Math.max(0, Math.min(5, Number(value) || 0));
 	return [1, 2, 3, 4, 5].map((star) => (

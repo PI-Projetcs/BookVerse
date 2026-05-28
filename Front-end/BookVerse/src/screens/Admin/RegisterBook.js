@@ -53,6 +53,12 @@ const EMPTY_FORM = {
 const COVER_PLACEHOLDER = 'https://placehold.co/180x240/e5e7eb/475569?text=BookV';
 const HIT_SLOP = { top: 10, bottom: 10, left: 10, right: 10 };
 
+/*
+ * Tela de registro/edição de livros (Admin)
+ * - Formulário completo para criar ou atualizar livros, capítulos e metadados.
+ * - Valida campos obrigatórios e normaliza capítulos antes de enviar ao backend.
+ */
+
 function createChapter(chapter = {}, index = 0) {
   return {
     id: chapter?.id || `chapter-${Date.now()}-${index}`,

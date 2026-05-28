@@ -7,6 +7,11 @@ import { HEADER_GRADIENT_COLORS } from '../../styles/headerStyles';
 import api from '../../services/api';
 import { styles as userStyles } from '../../styles/UserStyles';
 
+/*
+ * Tela "Minhas Moderações"
+ * - Exibe comentários/avaliações pendentes que o usuário precisa moderar.
+ * - Carrega tanto as entradas de comentários quanto feedbacks do perfil em paralelo.
+ */
 export default function MyModeration({ navigation }) {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);

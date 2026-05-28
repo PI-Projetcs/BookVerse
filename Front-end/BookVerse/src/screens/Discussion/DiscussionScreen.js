@@ -19,6 +19,12 @@ import { getBookById, getDiscussions, createChapterComment, createDiscussionForC
 
 const HIT_SLOP = { top: 10, bottom: 10, left: 10, right: 10 };
 
+/*
+ * Tela de Discussões
+ * - Agrupa capítulos e discussões do livro, mostrando threads de comentários.
+ * - Permite filtrar por recentes/populares, expandir tópicos, adicionar comentários
+ *   (com criação automática de discussão quando necessário) e atualizar a lista.
+ */
 export default function DiscussionScreen({ navigation, route }) {
   const insets = useSafeAreaInsets();
   const bookId = Number(route?.params?.bookId) || 1;
@@ -32,6 +38,7 @@ export default function DiscussionScreen({ navigation, route }) {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
+  // Retorna estilo e rótulo legível a partir do status interno do comentário
   const getCommentStatusMeta = (status) => {
     const normalized = String(status || '').toUpperCase();
     if (normalized === 'APPROVED') {
@@ -46,6 +53,8 @@ export default function DiscussionScreen({ navigation, route }) {
     return null;
   };
 
+  // Carrega dados do livro e discussões em paralelo, monta threads
+  // mesclando capítulos existentes com discussões retornadas pelo backend.
   useEffect(() => {
     let isMounted = true;
 
@@ -125,6 +134,7 @@ export default function DiscussionScreen({ navigation, route }) {
     };
   }, [bookId, initialChapterId]);
 
+  // Ordena comentários em cada thread segundo o filtro selecionado
   const filteredChapters = useMemo(() => {
     return threads.map((thread) => {
       const sortedComments = [...(thread.comments || [])];
@@ -174,6 +184,9 @@ export default function DiscussionScreen({ navigation, route }) {
     }
   };
 
+  // Adiciona um comentário a uma thread; cria a discussão automaticamente
+  // se ainda não existir. Mostra feedback ao usuário e faz um append
+  // otimista do comentário pendente (status PENDING).
   const handleAddComment = async (thread) => {
     const text = (newComments[thread.id] || '').trim();
     if (!text) {

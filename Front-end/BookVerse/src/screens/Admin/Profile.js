@@ -2,6 +2,12 @@ import { StyleSheet, Text, View } from "react-native";
 import FooterNav from '../../components/FooterNav';
 import { ADMIN_FOOTER_ITEMS } from '../../constants/adminFooterItems';
 
+/*
+ * Tela de perfil do administrador
+ * - Visão rápida das informações do usuário administrador e atalhos do painel.
+ * - Esta tela é simples e usada como ponto de navegação dentro do painel Admin.
+ */
+
 export default function Profile({ navigation }) {
   return (
     <View style={styles.screen}>

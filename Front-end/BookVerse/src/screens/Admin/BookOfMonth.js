@@ -21,6 +21,12 @@ import { adminBookOfMonthStyles as styles } from '../../styles/adminBookOfMonthS
 const COVER_PLACEHOLDER = 'https://placehold.co/180x240/e5e7eb/475569?text=BookV';
 const HIT_SLOP = { top: 10, bottom: 10, left: 10, right: 10 };
 
+/*
+ * Tela de seleção do Livro do Mês (Admin)
+ * - Apresenta candidatos do catálogo e permite definir qual será exibido
+ *   como destaque na tela inicial dos usuários.
+ */
+
 export default function BookOfMonth({ navigation }) {
 	const [books, setBooks] = useState([]);
 	const [searchText, setSearchText] = useState('');

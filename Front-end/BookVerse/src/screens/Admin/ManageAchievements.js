@@ -57,6 +57,12 @@ const CRITERIA_OPTIONS = [
 
 const HIT_SLOP = { top: 10, bottom: 10, left: 10, right: 10 };
 
+/*
+ * Tela de gerenciamento de conquistas
+ * - Permite criar, editar e excluir conquistas, além de visualizar progresso
+ *   e estatísticas agregadas por conquista.
+ */
+
 function getCriteriaLabel(criteriaType) {
 	return CRITERIA_OPTIONS.find((option) => option.key === criteriaType)?.label || criteriaType;
 }

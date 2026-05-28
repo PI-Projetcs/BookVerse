@@ -21,6 +21,12 @@ import { adminBooksStyles as styles } from '../../styles/adminBooksStyles';
 const COVER_PLACEHOLDER = 'https://placehold.co/180x240/e5e7eb/475569?text=BookV';
 const HIT_SLOP = { top: 10, bottom: 10, left: 10, right: 10 };
 
+/*
+ * Tela de gerenciamento de livros (AdminBooks)
+ * - Lista livros cadastrados, permite buscar, filtrar por gênero e ações de
+ *   editar/excluir/ativar via chamadas ao backend (getAdminBooks, deleteAdminBook).
+ */
+
 export default function AdminBooks({ navigation }) {
 	const [books, setBooks] = useState([]);
 	const [searchText, setSearchText] = useState('');

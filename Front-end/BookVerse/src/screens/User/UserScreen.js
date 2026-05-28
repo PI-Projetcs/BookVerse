@@ -26,6 +26,15 @@ import {
 
 const HIT_SLOP = { top: 10, bottom: 10, left: 10, right: 10 };
 
+/*
+ * Tela de perfil do usuário
+ * - Mostra estatísticas, conquistas, livros favoritos e atividades do usuário.
+ * - Reage a mudanças de foco da rota para recarregar o perfil e notifica quando
+ *   novas conquistas são desbloqueadas.
+ */
+
+// Retorna uma label legível para o papel do usuário
+// - Normaliza valores internos ('admin', 'member') para rótulos exibíveis.
 function getProfileRoleLabel(role) {
   const normalized = String(role || '').trim().toLowerCase();
   if (normalized === 'admin') return 'Administrador';
@@ -33,15 +42,19 @@ function getProfileRoleLabel(role) {
   return role || 'Leitor(a)';
 }
 
+// Formata números pequenos com padding (ex.: 1 -> '01')
 function formatNumber(value) {
   return String(Number.isFinite(Number(value)) ? Number(value) : 0).padStart(2, '0');
 }
 
+// Converte valores para número com fallback seguro
 function toNumber(value, fallback = 0) {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
+// Calcula o valor atual do progresso de uma conquista com base no perfil
+// - Suporta critérios padrões: READ_BOOKS, RATINGS_CREATED, FAVORITES_ADDED
 function getAchievementProgressValue(profile, achievement) {
   const criteriaType = String(achievement?.criteriaType || '').toUpperCase();
   if (criteriaType === 'READ_BOOKS') {
@@ -59,6 +72,7 @@ function getAchievementProgressValue(profile, achievement) {
   return 0;
 }
 
+// Componente local: cartão de seção com cabeçalho e ação opcional
 function SectionCard({ title, subtitle, actionLabel, onAction, children }) {
   return (
     <View style={screenStyles.sectionCard}>
@@ -78,6 +92,7 @@ function SectionCard({ title, subtitle, actionLabel, onAction, children }) {
   );
 }
 
+// Componente local: um 'pill' estatístico com ícone e valor
 function StatPill({ icon, label, value, color = '#7D1F3E' }) {
   return (
     <View style={userStyles.statCard}>
@@ -90,6 +105,7 @@ function StatPill({ icon, label, value, color = '#7D1F3E' }) {
   );
 }
 
+// Componente local: estado vazio reutilizável para listas
 function EmptyState({ icon, title, description }) {
   return (
     <View style={screenStyles.emptyState}>
@@ -100,6 +116,7 @@ function EmptyState({ icon, title, description }) {
   );
 }
 
+// Cartão de favorito exibido na lista de favoritos do usuário
 function FavoriteCard({ book, onPress, onRemove }) {
   return (
     <TouchableOpacity style={screenStyles.favoriteCard} onPress={onPress} activeOpacity={0.9}>
@@ -122,6 +139,7 @@ function FavoriteCard({ book, onPress, onRemove }) {
   );
 }
 
+// Linha de leitura (histórico/andamento) exibida na lista
 function ReadingRow({ item }) {
   const percent = Math.max(0, Math.min(100, Number(item?.progress) || 0));
   return (
@@ -138,6 +156,7 @@ function ReadingRow({ item }) {
   );
 }
 
+// Linha de avaliação com nota e trecho da resenha
 function RatingRow({ item, onPressBook }) {
   return (
     <TouchableOpacity style={screenStyles.ratingCard} onPress={onPressBook} activeOpacity={0.9}>
@@ -156,6 +175,7 @@ function RatingRow({ item, onPressBook }) {
   );
 }
 
+// Badge de conquista resumida
 function AchievementBadge({ item }) {
   return (
     <View style={screenStyles.achievementBadge}>
@@ -166,6 +186,7 @@ function AchievementBadge({ item }) {
   );
 }
 
+// Cartão de progresso de conquista com barra e percentual
 function ProgressAchievementCard({ item, progressValue }) {
   const targetValue = Math.max(1, Number(item?.targetValue) || 1);
   const currentValue = Math.max(0, Number(progressValue) || 0);
@@ -195,6 +216,10 @@ function ProgressAchievementCard({ item, progressValue }) {
   );
 }
 
+// Tela de perfil do usuário
+// - Carrega perfil detalhado e catálogo de conquistas, mostra favoritos,
+//   leituras em andamento e estatísticas.
+// - Recarrega ao focar a rota e notifica quando novas conquistas são desbloqueadas.
 export default function UserScreen({ navigation }) {
   const { session, signOut } = useAuth();
   const [profile, setProfile] = useState(null);

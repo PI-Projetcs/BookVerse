@@ -1,5 +1,22 @@
 import api from './api';
 
+/*
+ Serviço: authService
+ Propósito: Encapsula chamadas de autenticação (login, registro,
+ refresh) e normaliza o payload de sessão retornado pelo backend para
+ o formato consumido pelo frontend. Fornece mapeadores de payload de
+ entrada (login/registro) e adaptadores para a sessão do usuário.
+
+ Principais funções exportadas:
+ - loginUser(credentials)
+ - registerUser(payload)
+ - getUserProfile()
+
+ Observações:
+ - Normaliza nomes de campos entre português/inglês (e.g., `senha`/`password`).
+ - Lança erros originais para que a camada de UI trate mensagens.
+*/
+
 function normalizeRole(roleValue) {
 	const normalized = String(roleValue || '')
 		.trim()

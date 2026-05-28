@@ -1,5 +1,22 @@
 import api from './api';
 
+/*
+ Serviço: profileService
+ Propósito: Fornece chamadas e adaptadores relacionados ao perfil
+ do usuário (favoritos, leituras, avaliações, conquistas). Suporta
+ modo de teste (mock) para desenvolvimento sem backend.
+
+ Principais funções exportadas:
+ - getUserProfile()
+ - getUserFavorites()
+ - addFavoriteBook(bookId)
+ - removeFavoriteBook(bookId)
+
+ Observações:
+ - Quando `NODE_ENV === 'test'` o serviço retorna dados mockados.
+ - Normaliza várias variantes de campos vindos do backend.
+*/
+
 const isTestMode = process.env.NODE_ENV === 'test';
 
 function createMockState() {

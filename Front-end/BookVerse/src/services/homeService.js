@@ -1,6 +1,25 @@
 import api from './api';
 import { getDiscussions } from './bookService';
 
+/*
+ Serviço: homeService
+ Propósito: Agrega lógica de domínio para a tela Home, incluindo
+ transformação e normalização dos dados retornados pelo backend
+ (Livro do mês, progresso do usuário, capítulos e destaques), além
+ de wrappers para atualização de progresso e status de capítulos.
+
+ Principais funções exportadas:
+ - getHomeViewModel(): obtém e normaliza todos os dados necessários
+	 para a Home.
+ - updateHomeProgress(progressData)
+ - updateChapterStatus(bookId, chapterId, status)
+ - toggleHomeHighlightLike(highlightId, liked)
+
+ Observações:
+ - Fornece lógica resiliente (ex.: fallback para discussões).
+ - Mantém compatibilidade com diferentes formatos de payload.
+*/
+
 let chapterStatusEndpointSupported = undefined; // undefined = desconhecido, false = não suportado, true = suportado
 
 function normalizeBookOfMonth(book = {}) {

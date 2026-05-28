@@ -20,6 +20,12 @@ import { loginStyles as styles } from '../../styles/loginStyles';
 
 const HIT_SLOP = { top: 10, bottom: 10, left: 10, right: 10 };
 
+/*
+ * Tela de Login/Cadastro
+ * - Valida entradas locais, chama `loginUser`/`registerUser` e injeta sessão via `useAuth`.
+ * - Usa `extractApiErrorMessage` para mapear erros do backend para mensagens amigáveis.
+ */
+
 function extractApiErrorMessage(error, fallbackMessage) {
 	const data = error?.response?.data;
 	const status = Number(error?.response?.status || 0);
@@ -50,6 +56,10 @@ function extractApiErrorMessage(error, fallbackMessage) {
 
 	return fallbackMessage;
 }
+
+// Validação e extração de mensagens de erro do backend
+// - Normaliza diferentes formatos de resposta (mensagem simples, objeto, lista de erros)
+// - Traduz códigos HTTP específicos (ex.: 403) para mensagens mais claras ao usuário
 
 export default function LoginScreen({ navigation, route }) {
 	const { signIn } = useAuth();
@@ -121,6 +131,12 @@ export default function LoginScreen({ navigation, route }) {
 		}
 	};
 
+	// Handler de login
+	// - Valida campos localmente (formato de email e caracteres permitidos na senha)
+	// - Chama `loginUser` do serviço de autenticação e injeta sessão via `useAuth.signIn`
+	// - Mostra mensagens de erro amigáveis extraídas por `extractApiErrorMessage`
+
+
 	const handleRegister = async () => {
 		setRegisterError(null);
 
@@ -166,6 +182,11 @@ export default function LoginScreen({ navigation, route }) {
 			setRegisterError(msg);
 		}
 	};
+
+	// Handler de registro
+	// - Valida presença de campos, confirma senha e regras mínimas (ex.: tamanho)
+	// - Realiza chamada a `registerUser` e reusa `signIn` para iniciar sessão automaticamente
+	// - Converte erros do backend usando `extractApiErrorMessage`
 
 	const isLogin = activeTab === 'login';
 

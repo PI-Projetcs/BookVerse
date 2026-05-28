@@ -28,6 +28,11 @@ const STATUS_FILTERS = [
 ];
 const HIT_SLOP = { top: 10, bottom: 10, left: 10, right: 10 };
 
+/*
+ * Tela de gerenciamento de usuários (Admin)
+ * - Lista membros, permite busca, filtragem por status e ações de promoção/bloqueio.
+ */
+
 function getStatusBadgeStyle(status) {
   if (status === 'blocked') {
     return {

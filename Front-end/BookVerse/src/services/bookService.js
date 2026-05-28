@@ -1,5 +1,23 @@
 import api from './api';
 
+/*
+ Serviço: bookService
+ Propósito: Fornece funções utilitárias e wrappers para chamadas de API
+ relacionadas a livros, capítulos e discussões. Inclui mapeamentos entre
+ a convenção de campos do frontend (em inglês) e a do backend (em
+ português), normalização de payloads e funções de conveniência para
+ buscar/formatar coleções de livros e comentários.
+
+ Principais funções exportadas:
+ - getCatalogBooks(params): busca catálogo e normaliza resultados.
+ - fetchBackendComments(discussionId): obtém comentários aprovados.
+ - normalizeBook / normalizeList: normalizadores reutilizáveis.
+
+ Observações:
+ - Mantém compatibilidade com respostas em diferentes formatos
+	 (array direto, content.items, data.items).
+ - Não altera comportamento de rede; é um adaptador/normalizador.
+*/
 
 function mapCatalogSortToBackend(sortBy = 'title') {
 	if (sortBy === 'rating') {
