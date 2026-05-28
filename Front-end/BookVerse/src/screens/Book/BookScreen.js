@@ -27,6 +27,14 @@ const SORT_OPTIONS = [
 ];
 const HIT_SLOP = { top: 10, bottom: 10, left: 10, right: 10 };
 
+/*
+ * Tela Catálogo (BookScreen)
+ * - Permite pesquisar e ordenar livros usando `getCatalogBooks`.
+ * - Exibe resultados em grade com `BookCard` e trata erros comuns de autorização.
+ */
+
+// Opções de ordenação apresentadas ao usuário
+
 export default function BookScreen({ navigation }) {
 	const insets = useSafeAreaInsets();
 
@@ -36,6 +44,9 @@ export default function BookScreen({ navigation }) {
 	const [isLoading, setIsLoading] = useState(true);
 	const [errorMessage, setErrorMessage] = useState('');
 
+	// Busca livros no backend com debounce (350ms). Trata erros HTTP
+	// comuns (401 = sessão expirada, 403 = sem permissão) exibindo mensagens
+	// amigáveis ao usuário.
 	useEffect(() => {
 		let isMounted = true;
 		const timer = setTimeout(async () => {
@@ -72,6 +83,8 @@ export default function BookScreen({ navigation }) {
 
 	const totalBooksText = useMemo(() => `${books.length} livros`, [books.length]);
 
+	// Navega para a tela de detalhes do livro selecionado. Se a navegação
+	// não estiver disponível, exibe um alerta como fallback.
 	const handleSelectBook = (book) => {
 		if (navigation && typeof navigation.navigate === 'function') {
 			navigation.navigate('BookDetails', { id: book?.id });

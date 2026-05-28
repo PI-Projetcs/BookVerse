@@ -120,13 +120,13 @@ export default function ModerateComments({ navigation, route }) {
         const updated = await moderationConfig.approveAction(item.id);
         setItems((prev) => prev.map((entry) => (entry.id === updated.id ? updated : entry)));
       } catch (err) {
-        // handle error
+        // tratar erro
       }
       return;
     }
 
     if (status === 'rejected') {
-      // open modal to collect feedback
+      // abrir modal para coletar feedback
       setCurrentRejectItem(item);
       setShowRejectModal(true);
       return;
@@ -145,7 +145,7 @@ export default function ModerateComments({ navigation, route }) {
       const updated = await moderationConfig.rejectAction(currentRejectItem.id, rejectFeedback.trim());
       setItems((prev) => prev.map((entry) => (entry.id === updated.id ? updated : entry)));
     } catch (err) {
-      // handle error
+      // tratar erro
     } finally {
       setShowRejectModal(false);
       setCurrentRejectItem(null);

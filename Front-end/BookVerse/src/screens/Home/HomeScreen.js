@@ -10,9 +10,17 @@ import { homeStyles as styles, HOME_CHAPTER_ACTIVE_GRADIENT, HOME_CHAPTER_DONE_G
 
 const HIT_SLOP = { top: 10, bottom: 10, left: 10, right: 10 };
 
+/*
+ * Tela Home
+ * - Exibe o Livro do Mês, progresso pessoal, lista de capítulos e destaques da comunidade.
+ * - Carrega dados via `getHomeViewModel` e permite ações como curtir destaque,
+ *   atualizar progresso e marcar status de capítulos (com updates otimistas).
+ */
+
+// Função utilitária: limita um número ao intervalo [0, 1]
 function clamp01(value) {
-	if (!Number.isFinite(value)) return 0;
-	return Math.min(1, Math.max(0, value));
+    if (!Number.isFinite(value)) return 0;
+    return Math.min(1, Math.max(0, value));
 }
 
 export default function HomeScreen({ navigation }) {
@@ -20,7 +28,7 @@ export default function HomeScreen({ navigation }) {
 
 	const { width: windowWidth, height: windowHeight } = useWindowDimensions();
 
-	// responsiveness: small phones, regular, large
+	// responsividade: celulares pequenos, regulares, grandes
 	const isSmall = windowWidth < 360;
 	const isLarge = windowWidth > 420;
 
@@ -70,6 +78,8 @@ export default function HomeScreen({ navigation }) {
 	const percentLabel = `${Math.round(percent * 100)}%`;
 	const weeklyPercent = clamp01(progress.weeklyGoal ? progress.weeklyDone / progress.weeklyGoal : 0);
 
+	// Carrega os dados da home (bookOfMonth, progresso, capítulos, destaques)
+	// e monta o estado local a partir do view model fornecido pelo backend.
 	const loadHomeData = useCallback(async () => {
 		const viewModel = await getHomeViewModel();
 		if (!viewModel) {
@@ -124,6 +134,8 @@ export default function HomeScreen({ navigation }) {
 		}
 	};
 
+	// Alterna o 'like' de um destaque localmente (atualização otimista)
+	// e tenta persistir a ação no backend.
 	const handleToggleLike = async (highlightId) => {
 		let nextLiked = false;
 
@@ -154,10 +166,11 @@ export default function HomeScreen({ navigation }) {
 				)
 			);
 		} catch (error) {
-			// Keep optimistic update when request fails.
+			// Mantém atualização otimista se a requisição falhar.
 		}
 	};
 
+	// Abre o modal para edição do progresso de leitura do usuário.
 	const openProgressModal = () => {
 		setDraftProgress({
 			currentPage: String(progress.currentPage ?? ''),
@@ -168,6 +181,8 @@ export default function HomeScreen({ navigation }) {
 		setIsProgressModalOpen(true);
 	};
 
+	// Valida e persiste o progresso (atualização local otimista,
+	// tenta salvar no backend e mantém o estado local em caso de falha).
 	const saveProgressModal = async () => {
 		const next = {
 			currentPage: Number(draftProgress.currentPage),
@@ -202,16 +217,18 @@ export default function HomeScreen({ navigation }) {
 				setProgress(persisted);
 			}
 		} catch (error) {
-			// Keep local update when request fails.
+			// Mantém atualização local se a requisição falhar.
 		}
 	};
 
-	// Chapter status modal
+	// Modal de status do capítulo
 	const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
 	const [selectedChapter, setSelectedChapter] = useState(null);
 	const statusPillPressRef = useRef(false);
 	const statusPillResetTimeoutRef = useRef(null);
 
+	// Atualiza o status de um capítulo na UI (otimista) e envia a alteração
+	// ao backend. Em caso de erro a UI mantém a atualização otimista.
 	const handleChangeChapterStatus = async (chapterId, nextStatus) => {
 		const normalizedStatus = String(nextStatus || '').trim();
 		const nextState =
@@ -235,10 +252,10 @@ export default function HomeScreen({ navigation }) {
 		try {
 			await updateChapterStatus(bookOfMonth.id, chapterId, nextStatus);
 		} catch (err) {
-			// ignore — optimistic update kept
+				// ignorar — atualização otimista mantida
 		}
 
-		// show feedback
+			// mostrar feedback
 		showToast(
 			normalizedStatus
 				? `Capítulo ${chapterId} marcado como ${normalizedStatus}`
@@ -246,11 +263,12 @@ export default function HomeScreen({ navigation }) {
 		);
 	};
 
-	// Toast feedback
+	// Feedback via toast
 	const [toastMessage, setToastMessage] = useState('');
 	const [toastVisible, setToastVisible] = useState(false);
 	const toastTimeoutRef = useRef(null);
 
+	// Mostra uma mensagem curta (toast) para feedback do usuário.
 	const showToast = (message, duration = 2500) => {
 		if (toastTimeoutRef.current) {
 			clearTimeout(toastTimeoutRef.current);

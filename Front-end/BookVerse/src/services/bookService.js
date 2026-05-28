@@ -33,7 +33,7 @@ function toBackendBookPayload(bookData = {}) {
 		paginas: bookData?.paginas ?? bookData?.pages ?? null,
 		ativo: Boolean(bookData?.ativo ?? bookData?.active ?? bookData?.available ?? true),
 		destaque: Boolean(bookData?.destaque ?? bookData?.highlight ?? false),
-		// Include chapters payload to allow backend to persist chapter list
+		// Incluir payload de capítulos para permitir que o backend persista a lista de capítulos
 		chapters: Array.isArray(bookData?.chapters)
 			? bookData.chapters.map((ch, idx) => ({ id: ch?.id ?? idx + 1, title: ch?.title || ch }))
 			: undefined,
@@ -432,7 +432,7 @@ export async function toggleReportComment(bookId, chapterId, commentId, reported
 	}
 }
 
-// Mock store for ratings
+// Armazenamento simulado para avaliações
 const mockRatingsStore = {};
 
 function normalizeRating(rating = {}) {

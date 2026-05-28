@@ -1,5 +1,5 @@
 import api from './api';
-// Admin service uses backend APIs via Axios
+// Serviço admin utiliza APIs do backend via Axios
 
 function normalizeMember(member = {}, index = 0) {
 	const backendRole = (member.role || '').toUpperCase();
@@ -199,7 +199,7 @@ export async function rejectRating(ratingId, feedback) {
 	}
 }
 
-// Mock store for dashboard
+// Armazenamento simulado para o dashboard
 const mockDashboardStore = {
 	totalUsers: 245,
 	totalBooks: 1250,

@@ -22,7 +22,7 @@ export const styles = StyleSheet.create({
     paddingBottom: 16,
   },
 
-  // ─── Card base (reused by varios sections) ────────────────────────────────
+  // ─── Base de cartão (reutilizada em várias seções) ─────────────────────────
   card: {
     backgroundColor: '#ffffff',
     borderRadius: 14,
@@ -37,7 +37,7 @@ export const styles = StyleSheet.create({
     elevation: 2,
   },
 
-  // ─── Profile card ─────────────────────────────────────────────────────────
+  // ─── Cartão de perfil ────────────────────────────────────────────────────
   profileCard: {
     backgroundColor: '#ffffff',
     borderRadius: 14,
@@ -81,7 +81,7 @@ export const styles = StyleSheet.create({
     lineHeight: 17,
   },
 
-  // ─── Search ───────────────────────────────────────────────────────────────
+  // ─── Busca ───────────────────────────────────────────────────────────────
   searchContainer: {
     height: 44,
     backgroundColor: '#ffffff',
@@ -104,7 +104,7 @@ export const styles = StyleSheet.create({
     color: '#111827',
   },
 
-  // ─── Stats row ────────────────────────────────────────────────────────────
+  // ─── Linha de estatísticas ───────────────────────────────────────────────
   statsContainer: {
     flexDirection: 'row',
     gap: 10,
@@ -207,7 +207,7 @@ export const styles = StyleSheet.create({
     color: 'rgba(254,243,199,0.8)',
   },
 
-  // ─── Section ──────────────────────────────────────────────────────────────
+  // ─── Seção ───────────────────────────────────────────────────────────────
   section: {
     marginBottom: 14,
   },
@@ -228,7 +228,7 @@ export const styles = StyleSheet.create({
     fontWeight: '700',
   },
 
-  // ─── Categories ───────────────────────────────────────────────────────────
+  // ─── Categorias ──────────────────────────────────────────────────────────
   categoriesGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -247,7 +247,7 @@ export const styles = StyleSheet.create({
     fontSize: 13,
   },
 
-  // ─── Featured books grid ─────────────────────────────────────────────────
+  // ─── Grade de livros em destaque ─────────────────────────────────────────
   featuredGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -310,7 +310,7 @@ export const styles = StyleSheet.create({
     fontWeight: '700',
   },
 
-  // ─── Reading activity card ─────────────────────────────────────────────────
+  // ─── Cartão de atividade de leitura ──────────────────────────────────────
   activityCard: {
     backgroundColor: '#ffffff',
     borderRadius: 14,

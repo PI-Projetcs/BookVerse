@@ -1,7 +1,7 @@
 import api from './api';
 import { getDiscussions } from './bookService';
 
-let chapterStatusEndpointSupported = undefined; // undefined = unknown, false = not supported, true = supported
+let chapterStatusEndpointSupported = undefined; // undefined = desconhecido, false = não suportado, true = suportado
 
 function normalizeBookOfMonth(book = {}) {
 	return {
@@ -117,7 +117,7 @@ export async function getHomeViewModel() {
 				const discussions = await getDiscussions(homeData.bookOfMonth.id);
 				homeData.bookOfMonth.members = countUniqueCommenters(discussions);
 			} catch (discussionError) {
-				// Keep the home card usable even if comment lookup fails.
+				// Mantém o cartão inicial utilizável mesmo se a busca de comentários falhar.
 				homeData.bookOfMonth.members = Number(homeData.bookOfMonth.members) || 0;
 			}
 		}
@@ -126,7 +126,7 @@ export async function getHomeViewModel() {
 			homeData.progress.totalPages = Number(homeData.bookOfMonth.pages) || 0;
 		}
 
-		// keep chapter status as provided by backend so user-specific progress is visible
+		// manter o status do capítulo conforme fornecido pelo backend para que o progresso do usuário seja visível
 
 		return homeData;
 	} catch (error) {
@@ -158,7 +158,7 @@ export async function updateChapterStatus(bookId, chapterId, status) {
 		if (!result) return null;
 		return normalizeChapter(result, 0);
 	} catch (error) {
-		// Non-fatal: caller will handle optimistic update
+		// Não fatal: o chamador irá tratar a atualização otimista
 		return null;
 	}
 }
