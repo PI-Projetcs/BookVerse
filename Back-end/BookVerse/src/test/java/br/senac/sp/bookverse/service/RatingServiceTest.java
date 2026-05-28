@@ -38,6 +38,9 @@ class RatingServiceTest {
     @Mock
     private CurrentUserService currentUserService;
 
+    @Mock
+    private br.senac.sp.bookverse.service.AchievementService achievementService;
+
     @InjectMocks
     private RatingService ratingService;
 
@@ -87,6 +90,83 @@ class RatingServiceTest {
         when(bookRepository.findById(99L)).thenReturn(Optional.empty());
 
         assertThrows(ResourceNotFoundException.class, () -> ratingService.criar(new RatingDTO(null, 5, "x", 99L, null, null, null, null, null, null)));
+    }
+
+    @Test
+    void criar_deveRecalcularMedia_quandoAvaliacaoValida() {
+        User usuario = usuario(1L, Role.USER);
+        Book livro = livro(2L);
+        livro.setId(2L);
+        when(currentUserService.authenticatedUser()).thenReturn(usuario);
+        when(bookRepository.findById(2L)).thenReturn(Optional.of(livro));
+
+        Rating salva = new Rating();
+        salva.setId(9L);
+        salva.setNota(5);
+        salva.setUsuario(usuario);
+        salva.setLivro(livro);
+        when(ratingRepository.save(org.mockito.ArgumentMatchers.any(Rating.class))).thenReturn(salva);
+
+        // Simula que após salvar existem duas avaliações: 4 e 5
+        Rating r1 = new Rating(); r1.setNota(4);
+        Rating r2 = new Rating(); r2.setNota(5);
+        when(ratingRepository.findByLivroId(2L)).thenReturn(java.util.List.of(r1, r2));
+        when(bookRepository.findById(2L)).thenReturn(Optional.of(livro));
+
+        ratingService.criar(new RatingDTO(null, 5, "Ótimo", 2L, null, null, null, null, null, null));
+
+        // verifica que a média foi recalculada e o livro salvo
+        org.mockito.Mockito.verify(ratingRepository).findByLivroId(2L);
+        org.mockito.Mockito.verify(bookRepository).save(org.mockito.ArgumentMatchers.any(Book.class));
+    }
+
+    @Test
+    void criarOuAtualizarMinhaAvaliacao_deveAtualizar_mesmaAvaliacao_semCriarDuplicada() {
+        User usuario = usuario(1L, Role.USER);
+        Book livro = livro(2L);
+        livro.setId(2L);
+        when(currentUserService.authenticatedUser()).thenReturn(usuario);
+
+        Rating existente = new Rating();
+        existente.setId(7L);
+        existente.setUsuario(usuario);
+        existente.setLivro(livro);
+        existente.setNota(3);
+
+        when(bookRepository.findById(2L)).thenReturn(Optional.of(livro));
+        when(ratingRepository.findByLivroIdAndUsuarioId(2L, usuario.getId())).thenReturn(Optional.of(existente));
+        when(ratingRepository.save(org.mockito.ArgumentMatchers.any(Rating.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        var dto = ratingService.criarOuAtualizarMinhaAvaliacao(2L, 4, "melhorou");
+        // mantém o id do objeto existente (upsert)
+        org.junit.jupiter.api.Assertions.assertEquals(7L, dto.id());
+    }
+
+    @Test
+    void atualizarMinhaAvaliacao_deveRecalcularMedia_aoEditarAvaliacaoExistente() {
+        User usuario = usuario(1L, Role.USER);
+        Book livro = livro(2L);
+        livro.setId(2L);
+        when(currentUserService.authenticatedUser()).thenReturn(usuario);
+
+        Rating existente = new Rating();
+        existente.setId(8L);
+        existente.setUsuario(usuario);
+        existente.setLivro(livro);
+        existente.setNota(2);
+
+        when(bookRepository.findById(2L)).thenReturn(Optional.of(livro));
+        when(ratingRepository.findByLivroIdAndUsuarioId(2L, usuario.getId())).thenReturn(Optional.of(existente));
+        when(ratingRepository.save(org.mockito.ArgumentMatchers.any(Rating.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        // após atualização as notas ficam 4 (atualizada)
+        Rating updated = new Rating(); updated.setNota(4);
+        when(ratingRepository.findByLivroId(2L)).thenReturn(java.util.List.of(updated));
+
+        var dto = ratingService.atualizarMinhaAvaliacao(2L, 4, "ótimo");
+
+        org.mockito.Mockito.verify(ratingRepository).findByLivroId(2L);
+        org.mockito.Mockito.verify(bookRepository).save(org.mockito.ArgumentMatchers.any(Book.class));
     }
 
     private static User usuario(Long id, Role role) {

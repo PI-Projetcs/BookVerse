@@ -196,6 +196,58 @@ class BookServiceTest {
         assertTrue(resultado.stream().allMatch(b -> b.mediaAvaliacao() >= 4.0));
     }
 
+    @Test
+    void listarTodos_paginacao_deveRetornarPaginaCorreta() {
+        Book b1 = livro(new BookDTO(1L, "A", "Autor A", "Ficção", 2024, "S", "", "Bio A", true, 4.5));
+        Book b2 = livro(new BookDTO(2L, "B", "Autor B", "Ficção", 2023, "S", "", "Bio B", true, 4.0));
+        Book b3 = livro(new BookDTO(3L, "C", "Autor C", "Ficção", 2022, "S", "", "Bio C", true, 3.5));
+
+        Page<Book> page = new PageImpl<>(List.of(b2, b3));
+        when(bookRepository.findVisibleBooks(PageRequest.of(1, 2, org.springframework.data.domain.Sort.by("id")))).thenReturn(page);
+
+        Page<BookDTO> resultado = bookService.listarTodos(PageRequest.of(1, 2, org.springframework.data.domain.Sort.by("id")));
+
+        assertEquals(2, resultado.getContent().size());
+        assertEquals("B", resultado.getContent().get(0).titulo());
+    }
+
+    @Test
+    void filtrarCombinadoEComPaginacao_deveRetornarPaginaComFiltrosAplicados() {
+        Book match1 = livro(new BookDTO(1L, "X", "Autor A", "Ficção", 2024, "S", "", "Bio X", true, 4.2));
+        Book match2 = livro(new BookDTO(2L, "Y", "Autor A", "Ficção", 2024, "S", "", "Bio Y", true, 4.6));
+        match1.setId(1L);
+        match2.setId(2L);
+
+        // Simula uma página que conteria os resultados filtrados (página 1, size 1 retornando match2)
+        Page<Book> pageFiltered = new PageImpl<>(List.of(match2));
+
+        when(bookRepository.findVisibleBooks(PageRequest.of(1, 1, org.springframework.data.domain.Sort.by("id"))))
+                .thenReturn(pageFiltered);
+
+        Page<BookDTO> resultado = bookService.listarComFiltroPaginado("Autor A", "Ficção", 2024, PageRequest.of(1, 1, org.springframework.data.domain.Sort.by("id")));
+
+        assertEquals(1, resultado.getContent().size());
+        assertTrue(resultado.getContent().stream().allMatch(b -> "Autor A".equals(b.autor()) && "Ficção".equals(b.genero()) && b.ano() == 2024));
+    }
+
+    @Test
+    void listarTodos_ordenacao_deveRespeitarSortPorTituloEPorAvaliacao() {
+        Book b1 = livro(new BookDTO(1L, "Alpha", "Autor A", "Ficção", 2024, "S", "", "Bio A", true, 4.5));
+        Book b2 = livro(new BookDTO(2L, "Beta", "Autor B", "Ficção", 2023, "S", "", "Bio B", true, 4.8));
+
+        Page<Book> pageByTitle = new PageImpl<>(List.of(b1, b2));
+        when(bookRepository.findVisibleBooks(PageRequest.of(0, 20, org.springframework.data.domain.Sort.by("titulo")))).thenReturn(pageByTitle);
+
+        Page<BookDTO> resTitle = bookService.listarTodos(PageRequest.of(0, 20, org.springframework.data.domain.Sort.by("titulo")));
+        assertEquals("Alpha", resTitle.getContent().get(0).titulo());
+
+        Page<Book> pageByRatingDesc = new PageImpl<>(List.of(b2, b1));
+        when(bookRepository.findVisibleBooks(PageRequest.of(0, 20, org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Order.desc("mediaAvaliacao"))))).thenReturn(pageByRatingDesc);
+
+        Page<BookDTO> resRating = bookService.listarTodos(PageRequest.of(0, 20, org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Order.desc("mediaAvaliacao"))));
+        assertEquals(4.8, resRating.getContent().get(0).mediaAvaliacao());
+    }
+
     private static Book livro(BookDTO dto) {
         Book livro = new Book();
         livro.setTitulo(dto.titulo());

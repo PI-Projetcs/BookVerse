@@ -55,6 +55,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/users/**", "/api/v1/users/**").authenticated()
                 .requestMatchers(HttpMethod.PUT, "/users/**", "/api/v1/users/**").authenticated()
                 .requestMatchers(HttpMethod.POST, "/admin/dashboard", "/api/v1/admin/dashboard").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.GET, "/admin/dashboard", "/api/v1/admin/dashboard").hasRole("ADMIN")
                 .requestMatchers("/admin/moderation/**", "/api/v1/admin/moderation/**").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.POST, "/books/*/set-book-of-month", "/api/v1/books/*/set-book-of-month").hasRole("ADMIN")
                         .anyRequest().authenticated()

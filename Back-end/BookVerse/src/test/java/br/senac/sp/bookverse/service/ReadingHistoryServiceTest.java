@@ -41,6 +41,9 @@ class ReadingHistoryServiceTest {
     @Mock
     private CurrentUserService currentUserService;
 
+    @Mock
+    private AchievementService achievementService;
+
     @InjectMocks
     private ReadingHistoryService historicoLeituraService;
 
@@ -58,6 +61,7 @@ class ReadingHistoryServiceTest {
         salvo.setUsuario(usuario);
         salvo.setLivro(livro);
         when(readingHistoryRepository.save(org.mockito.ArgumentMatchers.any(ReadingHistory.class))).thenReturn(salvo);
+        when(achievementService.avaliarERegistrarConquistasDoUsuario(1L)).thenReturn(null);
 
         ReadingHistoryDTO resultado = historicoLeituraService.criar(new ReadingHistoryDTO(null, ReadingStatus.READING, 30, 2L, null, null, null));
 

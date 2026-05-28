@@ -147,6 +147,39 @@ class UserServiceTest {
     }
 
     @Test
+    void registrar_deveCriarNovoUsuario_quandoEmailNaoExiste() {
+        when(userRepository.findByEmail("novo@bookverse.com")).thenReturn(Optional.empty());
+        when(passwordEncoder.encode("senha123")).thenReturn("encoded");
+
+        User salvo = usuario(5L, "Novo Usuario", "novo@bookverse.com", Role.USER);
+        when(userRepository.save(org.mockito.ArgumentMatchers.any(User.class))).thenReturn(salvo);
+
+        var resultado = usuarioService.registrar(new br.senac.sp.bookverse.dto.RegistrationRequest(
+                "Novo Usuario",
+                "novo@bookverse.com",
+                "senha123"
+        ));
+
+        assertEquals("novo@bookverse.com", resultado.email());
+        assertEquals("Novo Usuario", resultado.nome());
+        verify(userRepository).save(org.mockito.ArgumentMatchers.any(User.class));
+    }
+
+    @Test
+    void registrar_deveRetornarBadRequest_quandoEmailJaCadastradoAtivo() {
+        User existente = usuario(3L, "Existente", "existente@bookverse.com", Role.USER);
+        existente.setAtivo(true);
+
+        when(userRepository.findByEmail("existente@bookverse.com")).thenReturn(Optional.of(existente));
+
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class, () -> usuarioService.registrar(
+                new br.senac.sp.bookverse.dto.RegistrationRequest("X", "existente@bookverse.com", "pwd")
+        ));
+
+        assertEquals(400, ex.getStatusCode().value());
+    }
+
+    @Test
     void atualizar_devePermitirAdminAlterarRole() {
         User admin = usuario(10L, "Admin", "admin@bookverse.com", Role.ADMIN);
         User alvo = usuario(2L, "Alvo", "alvo@bookverse.com", Role.USER);

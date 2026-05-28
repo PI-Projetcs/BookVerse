@@ -89,6 +89,49 @@ class AuthenticationControllerTest {
         verify(userService, org.mockito.Mockito.times(2)).registrar(any(RegistrationRequest.class));
     }
 
+    @Test
+    void register_deveRejeitar_emailInvalido() throws Exception {
+        AuthenticationService authService = mock(AuthenticationService.class);
+        UserService userService = mock(UserService.class);
+        MockMvc mockMvc = criarMockMvc(authService, userService);
+
+        String body = """
+                {
+                  "nome": "Maria",
+                  "email": "email-invalido",
+                  "senha": "123456"
+                }
+                """;
+
+        mockMvc.perform(post("/api/v1/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void register_deveRetornarBadRequest_quandoEmailDuplicado() throws Exception {
+        AuthenticationService authService = mock(AuthenticationService.class);
+        UserService userService = mock(UserService.class);
+        MockMvc mockMvc = criarMockMvc(authService, userService);
+
+        org.mockito.Mockito.when(userService.registrar(any(RegistrationRequest.class)))
+                .thenThrow(new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST, "Email já cadastrado."));
+
+        String body = """
+                {
+                  "nome": "João",
+                  "email": "joao@bookverse.com",
+                  "senha": "123456"
+                }
+                """;
+
+        mockMvc.perform(post("/api/v1/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isBadRequest());
+    }
+
     private MockMvc criarMockMvc(AuthenticationService authService, UserService userService) {
         LocalValidatorFactoryBean validator = new LocalValidatorFactoryBean();
         validator.afterPropertiesSet();

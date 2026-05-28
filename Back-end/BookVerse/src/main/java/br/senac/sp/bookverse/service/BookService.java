@@ -8,6 +8,7 @@ import br.senac.sp.bookverse.repository.BookRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -151,6 +152,19 @@ public class BookService {
         return bookRepository.findVisibleBooksByMediaAvaliacaoGreaterThanEqual(minima).stream()
                 .map(BookMapper::toDTO)
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public Page<BookDTO> listarComFiltroPaginado(String autor, String genero, Integer ano, Pageable pageable) {
+        Page<Book> pagina = bookRepository.findVisibleBooks(pageable);
+        var filtered = pagina.getContent().stream()
+                .filter(b -> (autor == null || autor.isBlank() || autor.equals(b.getAutor())))
+                .filter(b -> (genero == null || genero.isBlank() || genero.equals(b.getGenero())))
+                .filter(b -> (ano == null || ano.equals(b.getAno())))
+                .map(BookMapper::toDTO)
+                .toList();
+
+        return new PageImpl<>(filtered, pageable, filtered.size());
     }
 
     private Book buscarEntidadeAtivaPorId(Long id) {
