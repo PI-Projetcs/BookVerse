@@ -1,27 +1,21 @@
 import api from './api';
 import { getDiscussions } from './bookService';
 
-/*
- Serviço: homeService
- Propósito: Agrega lógica de domínio para a tela Home, incluindo
- transformação e normalização dos dados retornados pelo backend
- (Livro do mês, progresso do usuário, capítulos e destaques), além
- de wrappers para atualização de progresso e status de capítulos.
+// Serviço da tela Home.
+// Tecnologias utilizadas: Axios via api, normalizadores e funções puras.
+// Objetivo: concentrar o view model da home, progresso, capítulos e destaques.
+// Observações: a camada adapta respostas diferentes sem poluir a UI com regras de backend.
 
- Principais funções exportadas:
- - getHomeViewModel(): obtém e normaliza todos os dados necessários
-	 para a Home.
- - updateHomeProgress(progressData)
- - updateChapterStatus(bookId, chapterId, status)
- - toggleHomeHighlightLike(highlightId, liked)
-
- Observações:
- - Fornece lógica resiliente (ex.: fallback para discussões).
- - Mantém compatibilidade com diferentes formatos de payload.
-*/
-
+// Indica se o endpoint de status de capítulo já foi validado.
+// Tecnologias utilizadas: estado de módulo.
+// Objetivo: evitar repetir tentativas quando a API não suportar a rota.
+// Observações: undefined significa ainda desconhecido.
 let chapterStatusEndpointSupported = undefined; // undefined = desconhecido, false = não suportado, true = suportado
 
+// Normaliza os dados do Livro do Mês.
+// Tecnologias utilizadas: Number e fallback de textos/imagem.
+// Objetivo: exibir o destaque principal da home com campos consistentes.
+// Observações: aceita nomes em português e inglês vindos do backend.
 function normalizeBookOfMonth(book = {}) {
 	return {
 		id: Number(book.id) || 1,
@@ -37,6 +31,10 @@ function normalizeBookOfMonth(book = {}) {
 	};
 }
 
+// Normaliza o progresso de leitura do usuário.
+// Tecnologias utilizadas: Number e Math.max.
+// Objetivo: garantir valores válidos para barras e métricas de progresso.
+// Observações: negativos e valores ausentes viram zero.
 function normalizeProgress(progress = {}) {
 	return {
 		currentPage: Math.max(0, Number(progress.currentPage) || 0),
@@ -46,6 +44,10 @@ function normalizeProgress(progress = {}) {
 	};
 }
 
+// Normaliza capítulos para o estado visual da home.
+// Tecnologias utilizadas: String, Number e regras de estado derivado.
+// Objetivo: transformar status textual em estados visuais da lista.
+// Observações: prioriza locked, depois concluído e por fim em leitura.
 function normalizeChapter(chapter = {}, index = 0) {
 	const normalizedStatus = String(chapter.status || '').trim();
 	const rawState = String(chapter.state || '').trim().toLowerCase();
@@ -67,6 +69,10 @@ function normalizeChapter(chapter = {}, index = 0) {
 	};
 }
 
+// Normaliza destaques da comunidade.
+// Tecnologias utilizadas: Boolean e coerção numérica.
+// Objetivo: preparar cards de destaque com contagem de likes e estado curtido.
+// Observações: gera fallback de id quando a API não retorna um identificador estável.
 function normalizeHighlight(highlight = {}, index = 0) {
 	return {
 		id: highlight.id || `h${index + 1}`,
@@ -77,6 +83,10 @@ function normalizeHighlight(highlight = {}, index = 0) {
 	};
 }
 
+// Consolida o payload principal da home.
+// Tecnologias utilizadas: leitura defensiva de objeto e mapeamento de listas.
+// Objetivo: montar livro do mês, progresso, capítulos e destaques em um único objeto.
+// Observações: suporta resposta embrulhada em item para manter compatibilidade.
 function normalizeHomeData(data = {}) {
 	const source = data?.item || data;
 	return {
@@ -92,8 +102,10 @@ function normalizeHomeData(data = {}) {
 }
 
 
-function countUniqueCommenters(discussions = []) {
-	const uniqueCommenters = new Set();
+// Conta autores únicos que comentaram nas discussões.
+// Tecnologias utilizadas: Set e percorrimento de arrays.
+// Objetivo: estimar o número de membros engajados no livro do mês.
+// Observações: normaliza o texto para evitar duplicidades por caixa alta/baixa.
 
 	discussions.forEach((discussion) => {
 		(discussion?.comments || []).forEach((comment) => {
@@ -107,8 +119,10 @@ function countUniqueCommenters(discussions = []) {
 	return uniqueCommenters.size;
 }
 
-
-
+// Constrói um payload de Livro do Mês a partir de um livro selecionado.
+// Tecnologias utilizadas: Date e reaproveitamento do normalizador do destaque.
+// Objetivo: preparar os dados de exibição do livro em destaque.
+// Observações: o monthLabel e o dateLabel são calculados no cliente.
 function toBookOfMonthPayload(bookData = {}) {
 	const now = new Date();
 	const monthLabel = now.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
@@ -126,6 +140,10 @@ function toBookOfMonthPayload(bookData = {}) {
 	});
 }
 
+// Busca e normaliza todo o view model da home.
+// Tecnologias utilizadas: api.get, getDiscussions e normalização local.
+// Objetivo: alimentar a tela com livro do mês, progresso, capítulos e destaques.
+// Observações: se a busca de discussões falhar, o cartão principal continua funcional.
 export async function getHomeViewModel() {
 	try {
 		const response = await api.get('/api/v1/home');
@@ -154,6 +172,10 @@ export async function getHomeViewModel() {
 }
 
 export async function updateHomeProgress(progressData) {
+	// Atualiza o progresso de leitura do usuário.
+	// Tecnologias utilizadas: api.put e normalizeProgress.
+	// Objetivo: persistir páginas lidas e meta semanal sem sair da home.
+	// Observações: o retorno normalizado mantém a UI sincronizada com o backend.
 	const normalizedProgress = normalizeProgress(progressData);
 
 	try {
@@ -166,6 +188,10 @@ export async function updateHomeProgress(progressData) {
 }
 
 export async function updateChapterStatus(bookId, chapterId, status) {
+	// Atualiza o status visual e persistido de um capítulo.
+	// Tecnologias utilizadas: api.put e normalizeChapter.
+	// Objetivo: marcar leitura, conclusão ou limpeza do status na UI.
+	// Observações: o fallback null permite atualização otimista sem quebrar a tela.
 	const normalized = {
 		id: Number(chapterId),
 		status: String(status),
@@ -183,6 +209,10 @@ export async function updateChapterStatus(bookId, chapterId, status) {
 }
 
 export async function toggleHomeHighlightLike(highlightId, liked) {
+	// Alterna a curtida de um destaque da comunidade.
+	// Tecnologias utilizadas: api.post e normalizeHighlight.
+	// Objetivo: refletir a ação de like no card do destaque.
+	// Observações: aceita liked boolean para evitar estados ambíguos.
 	try {
 		const response = await api.post(`/api/v1/home/highlights/${highlightId}/like`, {
 			liked: Boolean(liked),
@@ -200,6 +230,10 @@ export async function toggleHomeHighlightLike(highlightId, liked) {
 }
 
 export async function updateBookOfMonth(bookData) {
+	// Define o livro selecionado como Livro do Mês.
+	// Tecnologias utilizadas: api.post e normalizeBookOfMonth.
+	// Objetivo: atualizar a vitrine principal mostrada na home.
+	// Observações: usa fallback do payload local quando a API não devolve item completo.
 	const payload = toBookOfMonthPayload(bookData);
 
 	try {

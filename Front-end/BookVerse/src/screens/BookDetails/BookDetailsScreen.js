@@ -34,17 +34,22 @@ import {
 import { GENRE_CHIP_STYLES, normalizeGenreKey } from '../../constants/genreThemes';
 import { useAuth } from '../../context/AuthContext';
 
-/*
- * Tela de detalhes do livro
- * - Mostra informações do livro, sinopse, biografia do autor, avaliações
- *   e comentários destacados.
- * - Permite favoritar, avaliar e gerenciar resenhas; carrega dados de
- *   discussões, avaliações e preferências do usuário quando autenticado.
- */
+// Tela de detalhes do livro.
+// Tecnologias utilizadas: React Native, SafeAreaView, serviços de livro e perfil.
+// Objetivo: concentrar sinopse, autor, avaliações, favoritos e comentários em um só lugar.
+// Observações: a tela combina dados públicos e dados do usuário autenticado com fallback seguro.
 const FALLBACK_COVER = 'https://placehold.co/420x640/0f172a/f8fafc?text=Sem+Capa';
+
+// Área de toque ampliada para botões pequenos da tela.
+// Tecnologias utilizadas: propriedade hitSlop do React Native.
+// Objetivo: melhorar a usabilidade de ações como voltar, favoritar e avaliar.
+// Observações: ajuda acessibilidade sem poluir a composição visual.
 const HIT_SLOP = { top: 10, bottom: 10, left: 10, right: 10 };
 
-// Renderiza ícones de estrela para valores de avaliação (0-5)
+// Renderiza ícones de estrela para compor notas e resumos visuais.
+// Tecnologias utilizadas: Ionicons e mapeamento de arrays.
+// Objetivo: representar a nota média e distribuições de forma rápida de ler.
+// Observações: o valor é normalizado para evitar estrelas fora da faixa.
 function renderStars(value, size = 16, activeColor = '#f59e0b', inactiveColor = '#cbd5e1') {
 	const normalizedValue = Math.max(0, Math.min(5, Number(value) || 0));
 	return [1, 2, 3, 4, 5].map((star) => (
@@ -57,6 +62,10 @@ function renderStars(value, size = 16, activeColor = '#f59e0b', inactiveColor = 
 	));
 }
 
+// Extrai comentários de capítulos e mantém apenas os mais relevantes.
+// Tecnologias utilizadas: flatMap, sort e slice.
+// Objetivo: destacar comentários da comunidade ligados à leitura do livro.
+// Observações: o recorte prioriza engajamento e reduz excesso de conteúdo na tela.
 function extractMemberComments(chapters = []) {
 	if (!Array.isArray(chapters)) {
 		return [];
@@ -75,6 +84,10 @@ function extractMemberComments(chapters = []) {
 		.slice(0, 4);
 }
 
+// Componente principal da tela de detalhes do livro.
+// Tecnologias utilizadas: useState, useEffect, useMemo, useCallback, serviços de backend.
+// Objetivo: carregar detalhes, avaliar, favoritar e exibir interações da comunidade.
+// Observações: separa estado do livro, estado do usuário e feedback visual por carregamento.
 export default function BookDetailsScreen({ navigation, route }) {
 	const insets = useSafeAreaInsets();
 	const { session, isAuthenticated } = useAuth();
@@ -90,6 +103,10 @@ export default function BookDetailsScreen({ navigation, route }) {
 	const [isFavorite, setIsFavorite] = useState(false);
 	const [isUpdatingFavorite, setIsUpdatingFavorite] = useState(false);
 
+	// Localiza a avaliação já existente do usuário logado neste livro.
+	// Tecnologias utilizadas: useMemo e Array.find.
+	// Objetivo: preencher nota e comentário quando o usuário volta à tela.
+	// Observações: a dependência em session.id evita lookup desnecessário.
 	const myExistingRating = useMemo(() => {
 		if (!session?.id) {
 			return null;
@@ -98,11 +115,19 @@ export default function BookDetailsScreen({ navigation, route }) {
 		return ratings.find((item) => Number(item.userId) === Number(session.id)) || null;
 	}, [ratings, session?.id]);
 
+	// Filtra apenas avaliações aprovadas para compor a média pública.
+	// Tecnologias utilizadas: useMemo e Array.filter.
+	// Objetivo: esconder itens ainda pendentes ou rejeitados do público.
+	// Observações: mantém a leitura do livro coerente com o que já foi publicado.
 	const approvedRatings = useMemo(
 		() => ratings.filter((item) => !item?.status || item.status === 'APPROVED'),
 		[ratings]
 	);
 
+	// Calcula a média pública exibida no topo do livro.
+	// Tecnologias utilizadas: useMemo e Array.reduce.
+	// Objetivo: mostrar a nota consolidada sem depender de novo cálculo no backend.
+	// Observações: quando não há avaliações aprovadas, usa o valor básico do livro.
 	const averageRating = useMemo(() => {
 		if (!approvedRatings.length) {
 			return Number(book?.rating || 0);
@@ -112,16 +137,32 @@ export default function BookDetailsScreen({ navigation, route }) {
 		return sum / approvedRatings.length;
 	}, [approvedRatings, book?.rating]);
 
+	// Total de avaliações aprovadas exibidas ao usuário.
+	// Tecnologias utilizadas: estado derivado simples.
+	// Objetivo: contextualizar a confiabilidade da nota média.
+	// Observações: número pequeno de avaliações pede leitura mais cuidadosa da média.
 	const totalRatings = approvedRatings.length;
 
+	// Gera a distribuição das avaliações para o gráfico de resumo.
+	// Tecnologias utilizadas: useMemo e utilitário de avaliação.
+	// Objetivo: apresentar a dispersão das notas de forma visual.
+	// Observações: a composição do objeto deve ser estável para manter a UI leve.
 	const ratingSummary = useMemo(() => {
- 	return renderRatingDistribution(approvedRatings);
+		return renderRatingDistribution(approvedRatings);
 	}, [approvedRatings]);
 
+	// Seleciona as avaliações em destaque para o card da comunidade.
+	// Tecnologias utilizadas: useMemo e utilitário de seleção.
+	// Objetivo: mostrar apenas alguns exemplos relevantes de feedback.
+	// Observações: reduz ruído ao evitar listar todas as avaliações de uma vez.
 	const featuredRatings = useMemo(() => {
 		return pickFeaturedRatings(approvedRatings);
 	}, [approvedRatings]);
 
+	// Carrega detalhes do livro, discussões, avaliações e favoritos do usuário.
+	// Tecnologias utilizadas: useCallback, Promise.all, serviços de livro e perfil.
+	// Objetivo: reunir os dados necessários para montar a tela em um só fluxo.
+	// Observações: o carregamento encadeado evita quebrar a tela quando um endpoint secundário falha.
 	const loadDetails = useCallback(async () => {
 		try {
 			setIsLoading(true);
@@ -160,6 +201,10 @@ export default function BookDetailsScreen({ navigation, route }) {
 		}
 	}, [bookId, isAuthenticated]);
 
+	// Inicia o carregamento ou mostra mensagem quando o livro não existe.
+	// Tecnologias utilizadas: useEffect.
+	// Objetivo: garantir que a tela sempre reaja ao parâmetro de rota.
+	// Observações: o estado de erro substitui a interface principal quando não há id válido.
 	useEffect(() => {
 		if (bookId) {
 			loadDetails();
@@ -169,6 +214,10 @@ export default function BookDetailsScreen({ navigation, route }) {
 		}
 	}, [bookId, loadDetails]);
 
+	// Sincroniza o formulário pessoal de avaliação com a avaliação já salva.
+	// Tecnologias utilizadas: useEffect.
+	// Objetivo: abrir a tela com a nota e o comentário previamente enviados.
+	// Observações: quando não existe avaliação, o formulário volta ao estado inicial.
 	useEffect(() => {
 		if (myExistingRating) {
 			setMyRating(Number(myExistingRating.rating || 0));
@@ -180,6 +229,10 @@ export default function BookDetailsScreen({ navigation, route }) {
 		setMyReview('');
 	}, [myExistingRating]);
 
+	// Salva uma nova avaliação ou atualiza a existente.
+	// Tecnologias utilizadas: Alert, rateBook, updateBookRating, async/await.
+	// Objetivo: permitir feedback do usuário com validação simples de faixa.
+	// Observações: o recarregamento após salvar mantém a UI alinhada ao backend.
 	const handleSaveRating = async () => {
 		if (!isAuthenticated) {
 			Alert.alert('Atenção', 'Faça login para avaliar este livro.');
@@ -208,6 +261,10 @@ export default function BookDetailsScreen({ navigation, route }) {
 		}
 	};
 
+	// Remove a avaliação do usuário após confirmação explícita.
+	// Tecnologias utilizadas: Alert e deleteBookRating.
+	// Objetivo: oferecer controle completo sobre a própria contribuição.
+	// Observações: o fluxo bloqueia exclusão acidental com modal de confirmação.
 	const handleDeleteRating = async () => {
 		if (!myExistingRating) {
 			return;
@@ -236,6 +293,10 @@ export default function BookDetailsScreen({ navigation, route }) {
 		]);
 	};
 
+	// Alterna o livro entre favoritos e não favoritos.
+	// Tecnologias utilizadas: Alert, addFavoriteBook e removeFavoriteBook.
+	// Objetivo: permitir salvar o livro para acesso rápido depois.
+	// Observações: a proteção contra usuário não autenticado evita requisições inválidas.
 	const handleToggleFavorite = async () => {
 		if (!isAuthenticated) {
 			Alert.alert('Atenção', 'Faça login para salvar este livro como favorito.');
@@ -262,6 +323,10 @@ export default function BookDetailsScreen({ navigation, route }) {
 
 	return (
 		<SafeAreaView style={styles.safeArea} testID="book-details-screen">
+			{/* Cabeçalho fixo com navegação de retorno e identidade da tela. */}
+			{/* Tecnologias utilizadas: LinearGradient, StatusBar, TouchableOpacity e ícones. */}
+			{/* Objetivo: criar um topo forte visualmente e manter saída rápida para a lista. */}
+			{/* Observações: o padding respeita a safe area para não colidir com a barra do sistema. */}
 			<StatusBar barStyle="light-content" />
 
 			<LinearGradient
@@ -284,6 +349,10 @@ export default function BookDetailsScreen({ navigation, route }) {
 				</View>
 			</LinearGradient>
 
+			{/* Estados de carregamento e erro antes de exibir o conteúdo principal. */}
+			{/* Tecnologias utilizadas: renderização condicional e ActivityIndicator. */}
+			{/* Objetivo: informar claramente quando os dados ainda estão chegando ou falharam. */}
+			{/* Observações: a tela evita mostrar conteúdo parcial sem contexto. */}
 			{isLoading ? (
 				<View style={styles.centeredContainer}>
 					<ActivityIndicator size="large" color="#0f766e" />
@@ -297,9 +366,17 @@ export default function BookDetailsScreen({ navigation, route }) {
 				</View>
 			) : null}
 
+			{/* Conteúdo completo do livro com sinopse, autor, avaliações e comentários. */}
+			{/* Tecnologias utilizadas: ScrollView, Image, Text, TouchableOpacity e cards. */}
+			{/* Objetivo: concentrar a experiência de leitura e interação em uma única página. */}
+			{/* Observações: o fluxo depende de book válido para evitar renderização quebrada. */}
 			{!isLoading && !errorMessage && book ? (
 				<View style={styles.bodyArea}>
 					<ScrollView contentContainerStyle={styles.content}>
+						{/* Card superior com capa, metadados e ações rápidas. */}
+						{/* Tecnologias utilizadas: LinearGradient, Image, Ionicons e badges. */}
+						{/* Objetivo: apresentar o livro e permitir favoritar sem rolar a tela. */}
+						{/* Observações: a capa usa fallback para não quebrar quando a URL não existe. */}
 						{(() => {
 							return (
 						<LinearGradient
@@ -361,6 +438,10 @@ export default function BookDetailsScreen({ navigation, route }) {
 							})()}
 
 						<View style={styles.contentInner}>
+								{/* Bloco de sinopse com texto principal do livro. */}
+								{/* Tecnologias utilizadas: View, Text e ícone de seção. */}
+								{/* Objetivo: oferecer contexto narrativo antes das avaliações. */}
+								{/* Observações: mantém fallback quando o conteúdo ainda não foi cadastrado. */}
 							<View style={[styles.sectionCard, styles.synopsisCardOverlap]}>
 								<View style={styles.sectionHeaderRow}>
 									<Ionicons name="book-outline" size={18} color="#006045" />
@@ -369,6 +450,10 @@ export default function BookDetailsScreen({ navigation, route }) {
 								<Text style={styles.sectionText}>{book.synopsis || 'Sem sinopse cadastrada.'}</Text>
 							</View>
 
+							{/* Bloco com biografia resumida do autor. */}
+							{/* Tecnologias utilizadas: View, Text e ícone de seção. */}
+							{/* Objetivo: complementar a ficha do livro com informação editorial. */}
+							{/* Observações: o fallback evita vazio visual para cadastro incompleto. */}
 							<View style={styles.sectionCard}>
 								<View style={styles.sectionHeaderRow}>
 									<Ionicons name="person-outline" size={18} color="#006045" />
@@ -377,6 +462,10 @@ export default function BookDetailsScreen({ navigation, route }) {
 								<Text style={styles.sectionText}>{book.authorBio || 'Sem biografia cadastrada.'}</Text>
 							</View>
 
+							{/* Resumo estatístico das avaliações da comunidade. */}
+							{/* Tecnologias utilizadas: useMemo, distribuição por estrelas e barras de progresso. */}
+							{/* Objetivo: mostrar a reputação do livro de forma rápida e comparável. */}
+							{/* Observações: a distribuição ajuda a interpretar melhor a média geral. */}
 							<View style={styles.sectionCard}>
 								<View style={styles.sectionHeaderRow}>
 									<Ionicons name="stats-chart-outline" size={18} color="#006045" />
@@ -412,6 +501,10 @@ export default function BookDetailsScreen({ navigation, route }) {
 								</View>
 							</View>
 
+							{/* Destaques da comunidade com avaliações selecionadas. */}
+							{/* Tecnologias utilizadas: featuredRatings, badges e formatação de data. */}
+							{/* Objetivo: exibir opiniões relevantes sem poluir a tela com excesso de cards. */}
+							{/* Observações: a marcação de "Sua avaliação" melhora orientação do usuário logado. */}
 							<View style={styles.sectionCard}>
 								<View style={styles.sectionHeaderRow}>
 									<Ionicons name="star-outline" size={18} color="#006045" />
@@ -476,6 +569,10 @@ export default function BookDetailsScreen({ navigation, route }) {
 								)}
 							</View>
 
+							{/* Formulário pessoal de avaliação com estrelas, comentário e ações. */}
+							{/* Tecnologias utilizadas: TextInput, TouchableOpacity, Ionicons e Alert. */}
+							{/* Objetivo: permitir avaliar, atualizar ou excluir a própria nota. */}
+							{/* Observações: o estado pendente informa que a moderação pode atrasar a publicação. */}
 							<View style={styles.sectionCard}>
 								<View style={styles.sectionHeaderRow}>
 									<Ionicons name="create-outline" size={18} color="#006045" />
@@ -552,6 +649,10 @@ export default function BookDetailsScreen({ navigation, route }) {
 								)}
 							</View>
 
+							{/* Lista reduzida de comentários da leitura. */}
+							{/* Tecnologias utilizadas: memberComments, ícones e cards simples. */}
+							{/* Objetivo: destacar trechos da comunidade ligados aos capítulos do livro. */}
+							{/* Observações: o limite de itens evita uma rolagem excessiva nessa seção. */}
 							<View style={styles.sectionCard}>
 								<View style={styles.sectionHeaderRow}>
 									<Ionicons name="chatbubble-ellipses-outline" size={18} color="#006045" />

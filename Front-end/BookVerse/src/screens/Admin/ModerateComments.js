@@ -57,14 +57,15 @@ const MODERATION_TYPES = {
 };
 const HIT_SLOP = { top: 10, bottom: 10, left: 10, right: 10 };
 
-/*
- * Tela de Moderação (Admin)
- * - Lista itens para moderação (comentários e avaliações), permite aprovar
- *   ou rejeitar com feedback, e integra com os métodos de `adminService`.
- * - Fornece filtros por status e busca, e apresenta ações seguras com
- *   confirmações e feedback ao usuário.
- */
+// Tela unificada de moderação de comentários e avaliações.
+// Tecnologias utilizadas: React Native, Ionicons, serviços de moderação e navegação.
+// Objetivo: aprovar ou rejeitar conteúdo com busca, filtro e feedback controlado.
+// Observações: o tipo de moderação é definido por rota para reaproveitar a mesma tela.
 
+// Constrói badge visual conforme o status de moderação do item.
+// Tecnologias utilizadas: função pura e estilos inline.
+// Objetivo: destacar rapidamente itens pendentes, aprovados ou rejeitados.
+// Observações: o rótulo ajuda a leitura mesmo quando a cor não é percebida.
 function getItemBadgeStyle(status) {
   if (status === 'approved') {
     return {
@@ -99,6 +100,10 @@ export default function ModerateComments({ navigation, route }) {
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
 
+  // Busca a fila de moderação e filtra apenas o tipo ativo na rota.
+  // Tecnologias utilizadas: getModerationItems e filtragem em array.
+  // Objetivo: carregar apenas comentários ou apenas avaliações conforme o contexto.
+  // Observações: a busca é reaplicada quando o filtro ou a rota muda.
   const loadItems = async () => {
     try {
       setIsLoading(true);
@@ -113,15 +118,27 @@ export default function ModerateComments({ navigation, route }) {
   };
 
   useEffect(() => {
+    // Pequeno debounce para evitar múltiplas requisições ao digitar ou trocar filtros.
+    // Tecnologias utilizadas: setTimeout e cleanup.
+    // Objetivo: manter a experiência fluida sem sobrecarregar o backend.
+    // Observações: a lista continua responsiva mesmo com alterações rápidas.
     const timer = setTimeout(loadItems, 220);
     return () => clearTimeout(timer);
   }, [searchText, statusFilter, moderationType]);
 
+  // Texto-resumo para indicar quantos itens estão na fila atual.
+  // Tecnologias utilizadas: useMemo.
+  // Objetivo: dar visão rápida do volume de moderação na tela.
+  // Observações: muda automaticamente com filtros e tipo de conteúdo.
   const summaryText = useMemo(
     () => `${items.length} ${moderationConfig.summaryLabel} na lista`,
     [items.length, moderationConfig.summaryLabel]
   );
 
+  // Controla a mudança de status do item entre aprovado e rejeitado.
+  // Tecnologias utilizadas: handlers assíncronos e callbacks do serviço de moderação.
+  // Objetivo: aplicar a decisão do administrador sem duplicar telas.
+  // Observações: a rejeição abre modal para registrar feedback antes de concluir.
   const handleSetStatus = async (item, status) => {
     if (status === 'approved') {
       try {
@@ -147,6 +164,10 @@ export default function ModerateComments({ navigation, route }) {
   const [currentRejectItem, setCurrentRejectItem] = useState(null);
   const [rejectFeedback, setRejectFeedback] = useState('');
 
+  // Confirma a rejeição com motivo textual para o autor.
+  // Tecnologias utilizadas: rejectAction e formulário modal controlado por estado.
+  // Objetivo: registrar uma orientação clara antes de rejeitar o conteúdo.
+  // Observações: o modal é limpo ao final para evitar reaproveitamento de texto antigo.
   const handleConfirmReject = async () => {
     if (!currentRejectItem) return;
     try {
@@ -173,6 +194,10 @@ export default function ModerateComments({ navigation, route }) {
       />
 
       <View style={styles.content}>
+        {/* Filtros de busca e status aplicados à fila de moderação. */}
+        {/* Tecnologias utilizadas: TextInput, chips e texto-resumo derivado. */}
+        {/* Objetivo: separar os itens por situação antes de aprovar ou rejeitar. */}
+        {/* Observações: o tipo de conteúdo muda o texto da interface sem duplicar tela. */}
         <View style={styles.filtersWrap}>
           <View style={styles.searchContainer}>
             <Ionicons name="search" size={18} color="#64748b" />
@@ -222,6 +247,10 @@ export default function ModerateComments({ navigation, route }) {
         ) : null}
 
         {!isLoading && !errorMessage ? (
+          {/* Lista de itens a moderar com ações de decisão imediata. */}
+          {/* Tecnologias utilizadas: ScrollView, TouchableOpacity e badges de status. */}
+          {/* Objetivo: revisar cada item e aplicar a decisão com contexto visual. */}
+          {/* Observações: comentários e avaliações compartilham a mesma renderização base. */}
           <ScrollView contentContainerStyle={styles.listContent} showsVerticalScrollIndicator={false}>
             {items.map((item) => {
               const badge = getItemBadgeStyle(item.status);

@@ -25,16 +25,27 @@ const SORT_OPTIONS = [
 	{ label: 'Gênero', value: 'genre' },
 	{ label: 'Título', value: 'title' },
 ];
+
+// Opções de ordenação exibidas no topo do catálogo.
+// Tecnologias utilizadas: arrays estáticos e renderização de chips.
+// Objetivo: permitir trocar rapidamente o critério de organização dos livros.
+// Observações: a lista centralizada evita repetir rótulos pelo componente.
 const HIT_SLOP = { top: 10, bottom: 10, left: 10, right: 10 };
 
-/*
- * Tela Catálogo (BookScreen)
- * - Permite pesquisar e ordenar livros usando `getCatalogBooks`.
- * - Exibe resultados em grade com `BookCard` e trata erros comuns de autorização.
- */
+// Área de toque ampliada para botões de filtros e seleção de livros.
+// Tecnologias utilizadas: propriedade hitSlop do React Native.
+// Objetivo: melhorar a usabilidade em telas menores ou toques imprecisos.
+// Observações: ajuda acessibilidade sem alterar a aparência visual.
 
-// Opções de ordenação apresentadas ao usuário
+// Tela de catálogo de livros.
+// Tecnologias utilizadas: React Native, FlatList, SafeAreaView, serviços de catálogo.
+// Objetivo: permitir busca, ordenação e navegação para detalhes dos livros.
+// Observações: a tela prioriza resposta rápida com debounce e feedback de erro amigável.
 
+// Componente responsável por listar o catálogo e abrir os detalhes do livro.
+// Tecnologias utilizadas: React hooks, Ionicons, MaterialCommunityIcons, LinearGradient.
+// Objetivo: oferecer uma vitrine navegável com pesquisa e ordenação.
+// Observações: o layout em grade melhora a exploração visual do acervo.
 export default function BookScreen({ navigation }) {
 	const insets = useSafeAreaInsets();
 
@@ -44,9 +55,10 @@ export default function BookScreen({ navigation }) {
 	const [isLoading, setIsLoading] = useState(true);
 	const [errorMessage, setErrorMessage] = useState('');
 
-	// Busca livros no backend com debounce (350ms). Trata erros HTTP
-	// comuns (401 = sessão expirada, 403 = sem permissão) exibindo mensagens
-	// amigáveis ao usuário.
+	// Busca o catálogo com debounce para reduzir chamadas enquanto o usuário digita.
+	// Tecnologias utilizadas: useEffect, setTimeout, getCatalogBooks, estados locais.
+	// Objetivo: carregar livros filtrados por texto e ordenação sem travar a interface.
+	// Observações: o tratamento de 401 e 403 evita mensagens genéricas demais.
 	useEffect(() => {
 		let isMounted = true;
 		const timer = setTimeout(async () => {
@@ -81,10 +93,16 @@ export default function BookScreen({ navigation }) {
 		};
 	}, [searchText, sortBy]);
 
+	// Resume a quantidade de itens visíveis no catálogo.
+	// Tecnologias utilizadas: useMemo.
+	// Objetivo: exibir um contador simples para orientar a leitura da lista.
+	// Observações: evita recomputar o texto quando o número de livros não muda.
 	const totalBooksText = useMemo(() => `${books.length} livros`, [books.length]);
 
-	// Navega para a tela de detalhes do livro selecionado. Se a navegação
-	// não estiver disponível, exibe um alerta como fallback.
+	// Abre a tela de detalhes do livro selecionado.
+	// Tecnologias utilizadas: React Navigation e Alert como fallback.
+	// Objetivo: levar o usuário do catálogo para o conteúdo completo do livro.
+	// Observações: o fallback evita falha silenciosa caso a navegação não exista.
 	const handleSelectBook = (book) => {
 		if (navigation && typeof navigation.navigate === 'function') {
 			navigation.navigate('BookDetails', { id: book?.id });
@@ -98,6 +116,10 @@ export default function BookScreen({ navigation }) {
 		<SafeAreaView style={styles.safeArea}>
 			<StatusBar barStyle="light-content" />
 			<View style={styles.container}>
+				{/* Cabeçalho com busca e identidade visual do catálogo. */}
+				{/* Tecnologias utilizadas: LinearGradient, TextInput, ícones e safe area. */}
+				{/* Objetivo: concentrar pesquisa e reforçar a marca do app. */}
+				{/* Observações: o padding considera insets para não colidir com a status bar. */}
 				<LinearGradient
 					colors={['#6B0F2E', '#0a0f1a', '#003D2B']}
 					start={{ x: 0, y: 0 }}
@@ -121,6 +143,10 @@ export default function BookScreen({ navigation }) {
 					</View>
 				</LinearGradient>
 
+				{/* Linha de contexto com total e opções de ordenação. */}
+				{/* Tecnologias utilizadas: useMemo, TouchableOpacity e chips de filtro. */}
+				{/* Objetivo: permitir troca rápida do critério de ordenação. */}
+				{/* Observações: hitSlop amplia a área tocável em dispositivos menores. */}
 				<View style={styles.metaRow}>
 					<Text style={styles.totalBooks}>{totalBooksText}</Text>
 					<View style={styles.sortRow}>
@@ -146,6 +172,10 @@ export default function BookScreen({ navigation }) {
 				</View>
 
 				<View style={styles.contentArea}>
+					{/* Feedback de carregamento, erro e lista principal do catálogo. */}
+					{/* Tecnologias utilizadas: ActivityIndicator, FlatList e renderização condicional. */}
+					{/* Objetivo: mostrar o estado atual da consulta antes de exibir os livros. */}
+					{/* Observações: o estado vazio evita uma tela sem contexto quando não há resultados. */}
 					{isLoading ? (
 						<View style={styles.feedbackContainer}>
 							<ActivityIndicator size="large" color="#0f766e" />

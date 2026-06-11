@@ -8,27 +8,34 @@ import FooterNav from '../../components/FooterNav';
 import { getHomeViewModel, toggleHomeHighlightLike, updateHomeProgress, updateChapterStatus } from '../../services/homeService';
 import { homeStyles as styles, HOME_CHAPTER_ACTIVE_GRADIENT, HOME_CHAPTER_DONE_GRADIENT, HOME_HEADER_GRADIENT, HOME_PROGRESS_GRADIENT } from '../../styles/homeStyles';
 
+// Espaço mínimo de toque para botões e listas da tela.
+// Tecnologias utilizadas: propriedade hitSlop do React Native.
+// Objetivo: facilitar a interação sem alterar o layout visual.
+// Observações: melhora usabilidade e acessibilidade em telas menores.
 const HIT_SLOP = { top: 10, bottom: 10, left: 10, right: 10 };
 
-/*
- * Tela Home
- * - Exibe o Livro do Mês, progresso pessoal, lista de capítulos e destaques da comunidade.
- * - Carrega dados via `getHomeViewModel` e permite ações como curtir destaque,
- *   atualizar progresso e marcar status de capítulos (com updates otimistas).
- */
-
-// Função utilitária: limita um número ao intervalo [0, 1]
+// Limita um valor numérico ao intervalo de 0 a 1.
+// Tecnologias utilizadas: Number.isFinite e Math.min/Math.max.
+// Objetivo: evitar percentuais inválidos nas barras de progresso.
+// Observações: protege a UI contra divisões por zero e dados inconsistentes.
 function clamp01(value) {
     if (!Number.isFinite(value)) return 0;
     return Math.min(1, Math.max(0, value));
 }
 
+// Tela inicial do app com livro do mês, progresso e destaques.
+// Tecnologias utilizadas: React hooks, SafeAreaView, LinearGradient, serviços de home.
+// Objetivo: centralizar a jornada do leitor em um painel visual único.
+// Observações: combina dados carregados do backend com ações rápidas e feedback imediato.
 export default function HomeScreen({ navigation }) {
 	const insets = useSafeAreaInsets();
 
 	const { width: windowWidth, height: windowHeight } = useWindowDimensions();
 
-	// responsividade: celulares pequenos, regulares, grandes
+	// Calcula medidas responsivas conforme largura e orientação da tela.
+	// Tecnologias utilizadas: useWindowDimensions e expressões condicionais.
+	// Objetivo: adaptar capa, texto e espaçamentos a diferentes aparelhos.
+	// Observações: melhora leitura em celulares pequenos e em modo paisagem.
 	const isSmall = windowWidth < 360;
 	const isLarge = windowWidth > 420;
 
@@ -73,13 +80,19 @@ export default function HomeScreen({ navigation }) {
 		weeklyGoal: '1',
 	});
 
+	// Calcula percentuais e rótulos usados nos indicadores da home.
+	// Tecnologias utilizadas: estado derivado e clamp utilitário.
+	// Objetivo: mostrar progresso de leitura de forma segura e consistente.
+	// Observações: usa fallback do livro do mês quando o total do progresso ainda não existe.
 	const effectiveTotalPages = progress.totalPages || bookOfMonth.pages || 0;
 	const percent = clamp01(effectiveTotalPages ? progress.currentPage / effectiveTotalPages : 0);
 	const percentLabel = `${Math.round(percent * 100)}%`;
 	const weeklyPercent = clamp01(progress.weeklyGoal ? progress.weeklyDone / progress.weeklyGoal : 0);
 
-	// Carrega os dados da home (bookOfMonth, progresso, capítulos, destaques)
-	// e monta o estado local a partir do view model fornecido pelo backend.
+	// Carrega o view model da home e distribui seus dados nos estados locais.
+	// Tecnologias utilizadas: useCallback e getHomeViewModel.
+	// Objetivo: montar livro do mês, progresso, capítulos e destaques de uma vez.
+	// Observações: a função é reaproveitada no foco da tela para manter os dados atualizados.
 	const loadHomeData = useCallback(async () => {
 		const viewModel = await getHomeViewModel();
 		if (!viewModel) {
@@ -98,27 +111,47 @@ export default function HomeScreen({ navigation }) {
 		});
 	}, []);
 
+	// Busca os dados na primeira montagem da tela.
+	// Tecnologias utilizadas: useEffect.
+	// Objetivo: exibir conteúdo assim que a home abre.
+	// Observações: evita mostrar cards vazios antes do carregamento.
 	useEffect(() => {
 		loadHomeData();
 	}, [loadHomeData]);
 
+	// Recarrega o conteúdo quando a tela volta ao foco.
+	// Tecnologias utilizadas: listener de navegação.
+	// Objetivo: refletir atualizações feitas em telas irmãs sem refresh manual.
+	// Observações: mantém progresso, capítulos e destaques sincronizados.
 	useEffect(() => {
 		const unsubscribe = navigation.addListener('focus', loadHomeData);
 		return unsubscribe;
 	}, [navigation, loadHomeData]);
 
+	// Abre a tela de detalhes do livro do mês.
+	// Tecnologias utilizadas: React Navigation.
+	// Objetivo: levar o leitor do resumo para a página completa do livro.
+	// Observações: usa o id atual do livro exibido no card principal.
 	const handleOpenBook = () => {
 		if (navigation?.navigate) {
 			navigation.navigate('BookDetails', { id: bookOfMonth.id });
 		}
 	};
 
+	// Abre a discussão vinculada ao livro do mês.
+	// Tecnologias utilizadas: React Navigation.
+	// Objetivo: conectar a home ao fórum do livro em destaque.
+	// Observações: preserva o id do livro para filtrar a discussão correta.
 	const handleOpenDiscussion = () => {
 		if (navigation?.navigate) {
 			navigation.navigate('Discussion', { bookId: bookOfMonth.id });
 		}
 	};
 
+	// Seleciona um capítulo e navega para a discussão correspondente.
+	// Tecnologias utilizadas: Alert e React Navigation.
+	// Objetivo: abrir a thread certa ou bloquear capítulos ainda indisponíveis.
+	// Observações: retorna um alerta quando o capítulo está bloqueado.
 	const handleSelectChapter = (chapter) => {
 		if (statusPillPressRef.current) {
 			return;
@@ -134,8 +167,10 @@ export default function HomeScreen({ navigation }) {
 		}
 	};
 
-	// Alterna o 'like' de um destaque localmente (atualização otimista)
-	// e tenta persistir a ação no backend.
+	// Alterna curtida de destaque com atualização otimista.
+	// Tecnologias utilizadas: useState, toggleHomeHighlightLike e tratamento de erro.
+	// Objetivo: dar resposta imediata ao toque do usuário.
+	// Observações: se o backend falhar, a UI mantém o estado otimista para evitar piscadas.
 	const handleToggleLike = async (highlightId) => {
 		let nextLiked = false;
 
@@ -170,7 +205,10 @@ export default function HomeScreen({ navigation }) {
 		}
 	};
 
-	// Abre o modal para edição do progresso de leitura do usuário.
+	// Abre o modal com os valores atuais do progresso.
+	// Tecnologias utilizadas: estado local e setState.
+	// Objetivo: editar páginas lidas e meta semanal sem navegar para outra tela.
+	// Observações: o draft é copiado do estado principal para evitar edições acidentais.
 	const openProgressModal = () => {
 		setDraftProgress({
 			currentPage: String(progress.currentPage ?? ''),
@@ -181,8 +219,10 @@ export default function HomeScreen({ navigation }) {
 		setIsProgressModalOpen(true);
 	};
 
-	// Valida e persiste o progresso (atualização local otimista,
-	// tenta salvar no backend e mantém o estado local em caso de falha).
+	// Valida e salva o progresso de leitura.
+	// Tecnologias utilizadas: updateHomeProgress, Alert e sanitização numérica.
+	// Objetivo: atualizar o painel de progresso do leitor com dados consistentes.
+	// Observações: faz atualização otimista e limita os valores ao intervalo válido.
 	const saveProgressModal = async () => {
 		const next = {
 			currentPage: Number(draftProgress.currentPage),
@@ -221,14 +261,19 @@ export default function HomeScreen({ navigation }) {
 		}
 	};
 
-	// Modal de status do capítulo
+	// Controla o modal de status do capítulo.
+	// Tecnologias utilizadas: useState e useRef.
+	// Objetivo: permitir marcar capítulos como concluídos, em leitura ou limpos.
+	// Observações: os refs evitam toque duplo no pill de status.
 	const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
 	const [selectedChapter, setSelectedChapter] = useState(null);
 	const statusPillPressRef = useRef(false);
 	const statusPillResetTimeoutRef = useRef(null);
 
-	// Atualiza o status de um capítulo na UI (otimista) e envia a alteração
-	// ao backend. Em caso de erro a UI mantém a atualização otimista.
+	// Atualiza o status do capítulo com feedback otimista.
+	// Tecnologias utilizadas: updateChapterStatus e atualização imutável de estado.
+	// Objetivo: refletir o andamento da leitura sem recarregar a home inteira.
+	// Observações: o texto do status é normalizado para preservar a lógica visual.
 	const handleChangeChapterStatus = async (chapterId, nextStatus) => {
 		const normalizedStatus = String(nextStatus || '').trim();
 		const nextState =
@@ -263,12 +308,18 @@ export default function HomeScreen({ navigation }) {
 		);
 	};
 
-	// Feedback via toast
+	// Estado e controle do toast de feedback.
+	// Tecnologias utilizadas: useState e useRef.
+	// Objetivo: exibir mensagens curtas após ações como salvar ou atualizar.
+	// Observações: o timer é limpo para evitar múltiplos toasts sobrepostos.
 	const [toastMessage, setToastMessage] = useState('');
 	const [toastVisible, setToastVisible] = useState(false);
 	const toastTimeoutRef = useRef(null);
 
-	// Mostra uma mensagem curta (toast) para feedback do usuário.
+	// Exibe uma mensagem curta de feedback na base da tela.
+	// Tecnologias utilizadas: setTimeout e estado local.
+	// Objetivo: informar sucesso ou confirmação sem interromper o fluxo.
+	// Observações: a duração pode ser ajustada conforme a complexidade da ação.
 	const showToast = (message, duration = 2500) => {
 		if (toastTimeoutRef.current) {
 			clearTimeout(toastTimeoutRef.current);
@@ -282,6 +333,10 @@ export default function HomeScreen({ navigation }) {
 	};
 
 	useEffect(() => {
+	// Limpa timers quando a tela é desmontada.
+	// Tecnologias utilizadas: useEffect e cleanup.
+	// Objetivo: evitar vazamento de timers e atualizações em componente desmontado.
+	// Observações: importante para modais e toast controlados por timeout.
 		return () => {
 			if (toastTimeoutRef.current) {
 				clearTimeout(toastTimeoutRef.current);
@@ -289,6 +344,10 @@ export default function HomeScreen({ navigation }) {
 			if (statusPillResetTimeoutRef.current) {
 				clearTimeout(statusPillResetTimeoutRef.current);
 			}
+					{/* Cabeçalho superior com marca, mês atual e navegação rápida. */}
+					{/* Tecnologias utilizadas: LinearGradient, SafeAreaView, ícones e TouchableOpacity. */}
+					{/* Objetivo: contextualizar o livro do mês e dar acesso rápido às ações. */}
+					{/* Observações: o gradiente reforça identidade visual e separa a área principal. */}
 		};
 	}, []);
 
@@ -315,11 +374,19 @@ export default function HomeScreen({ navigation }) {
 			</LinearGradient>
 
 			<View style={styles.container}>
+				{/* Conteúdo principal com livro em destaque, progresso e capítulos. */}
+				{/* Tecnologias utilizadas: ScrollView e cards compostos. */}
+				{/* Objetivo: reunir leitura, acompanhamento e navegação em uma única tela. */}
+				{/* Observações: a rolagem mantém as seções acessíveis em telas menores. */}
 				<ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
 					<View style={styles.sectionHeader}>
 						<Text style={styles.sectionTitle}>Livro do Mês</Text>
 					</View>
 
+					{/* Card principal do livro do mês com chamada para detalhes. */}
+					{/* Tecnologias utilizadas: TouchableOpacity, Image e textos dinâmicos. */}
+					{/* Objetivo: apresentar capa, autor, descrição e metadados do destaque. */}
+					{/* Observações: o clique leva para detalhes completos do livro. */}
 					<TouchableOpacity
 						style={[styles.bookCard, { padding: cardPaddingLandscape }]}
 						activeOpacity={0.9}
@@ -355,6 +422,10 @@ export default function HomeScreen({ navigation }) {
 						</View>
 					</TouchableOpacity>
 
+					{/* Bloco de progresso pessoal do leitor. */}
+					{/* Tecnologias utilizadas: LinearGradient, Text, TouchableOpacity e estados calculados. */}
+					{/* Objetivo: mostrar páginas lidas e meta semanal em formato visual. */}
+					{/* Observações: o botão Atualizar abre um modal para edição controlada. */}
 					<View style={styles.card}>
 						<View style={styles.cardHeaderRow}>
 							<Text style={styles.cardTitle}>Seu Progresso</Text>
@@ -412,6 +483,10 @@ export default function HomeScreen({ navigation }) {
 						</View>
 					</View>
 
+					{/* Lista de capítulos do livro do mês com estados de leitura. */}
+					{/* Tecnologias utilizadas: TouchableOpacity, LinearGradient e badges de status. */}
+					{/* Objetivo: permitir abrir a discussão ou ajustar o status do capítulo. */}
+					{/* Observações: capítulos bloqueados exibem trava e não aceitam navegação. */}
 					<View style={styles.card}>
 						<View style={styles.cardHeaderRow}>
 							<Text style={styles.cardTitle}>Capítulos</Text>
@@ -531,6 +606,10 @@ export default function HomeScreen({ navigation }) {
 						</View>
 					</View>
 
+					{/* Seção de destaques da comunidade com curtidas. */}
+					{/* Tecnologias utilizadas: Ionicons, TouchableOpacity e cards de destaque. */}
+					{/* Objetivo: mostrar contribuições mais relevantes de outros leitores. */}
+					{/* Observações: a ação de curtir usa atualização otimista para resposta imediata. */}
 					<View style={styles.sectionHeader}>
 						<Text style={styles.sectionTitle}>Destaques da Comunidade</Text>
 					</View>
@@ -564,12 +643,20 @@ export default function HomeScreen({ navigation }) {
 				<FooterNav navigation={navigation} activeKey="inicio" />
 			</View>
 
+				{/* Toast flutuante para feedback rápido de ações do usuário. */}
+				{/* Tecnologias utilizadas: View e estado local. */}
+				{/* Objetivo: confirmar mudanças sem bloquear a leitura da página. */}
+				{/* Observações: fica fora do fluxo principal para não deslocar o conteúdo. */}
 				{toastVisible ? (
 					<View style={styles.toastContainer} pointerEvents="none">
 						<Text style={styles.toastText}>{toastMessage}</Text>
 					</View>
 				) : null}
 
+			{/* Modal para editar progresso com validação numérica. */}
+			{/* Tecnologias utilizadas: Modal, TextInput e estados controlados. */}
+			{/* Objetivo: ajustar leitura atual e metas sem sair da home. */}
+			{/* Observações: o campo de total permanece bloqueado para refletir a referência do livro. */}
 			<Modal
 				visible={isProgressModalOpen}
 				transparent
@@ -664,6 +751,10 @@ export default function HomeScreen({ navigation }) {
 				</View>
 			</Modal>
 
+			{/* Modal para atualizar o status de um capítulo. */}
+			{/* Tecnologias utilizadas: Modal, TouchableOpacity e estados locais. */}
+			{/* Objetivo: marcar rapidamente capítulos como concluídos ou em leitura. */}
+			{/* Observações: a ação é confirmada em um modal separado para evitar toques acidentais. */}
 			<Modal
 				visible={isStatusModalOpen}
 				transparent

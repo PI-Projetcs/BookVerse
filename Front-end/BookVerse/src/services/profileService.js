@@ -1,24 +1,20 @@
 import api from './api';
 
-/*
- Serviço: profileService
- Propósito: Fornece chamadas e adaptadores relacionados ao perfil
- do usuário (favoritos, leituras, avaliações, conquistas). Suporta
- modo de teste (mock) para desenvolvimento sem backend.
+// Serviço de perfil do BookVerse.
+// Tecnologias utilizadas: Axios via api, funções puras de normalização e estado mock local.
+// Objetivo: centralizar favoritos, leituras, avaliações, conquistas e dados da conta.
+// Observações: suporta modo de teste sem backend e adapta nomes de campos do servidor.
 
- Principais funções exportadas:
- - getUserProfile()
- - getUserFavorites()
- - addFavoriteBook(bookId)
- - removeFavoriteBook(bookId)
-
- Observações:
- - Quando `NODE_ENV === 'test'` o serviço retorna dados mockados.
- - Normaliza várias variantes de campos vindos do backend.
-*/
-
+// Indica quando o serviço deve operar em modo mock.
+// Tecnologias utilizadas: variável de ambiente do Node.
+// Objetivo: permitir desenvolvimento e testes sem depender da API real.
+// Observações: o comportamento mockado afeta apenas este módulo.
 const isTestMode = process.env.NODE_ENV === 'test';
 
+// Cria um estado inicial simulado para o perfil.
+// Tecnologias utilizadas: objeto literal e listas estáticas.
+// Objetivo: fornecer dados mínimos para a UI funcionar em testes locais.
+// Observações: o catálogo de conquistas mockado ajuda a validar progresso e badges.
 function createMockState() {
   return {
     id: 1,
@@ -52,11 +48,19 @@ function createMockState() {
 
 let mockState = createMockState();
 
+// Converte valores em número com fallback seguro.
+// Tecnologias utilizadas: Number e Number.isFinite.
+// Objetivo: evitar cálculos quebrados em métricas do perfil.
+// Observações: retorna o fallback quando o valor não é numérico.
 function toNumber(value, fallback = 0) {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
+// Normaliza livros favoritos para a UI.
+// Tecnologias utilizadas: leitura defensiva de campos e fallback de texto.
+// Objetivo: exibir livros favoritos com título, autor, gênero e capa consistentes.
+// Observações: aceita chaves em português e inglês.
 function normalizeBook(book = {}) {
   return {
     id: book?.id ?? null,
@@ -68,6 +72,10 @@ function normalizeBook(book = {}) {
   };
 }
 
+// Normaliza registros de leitura do usuário.
+// Tecnologias utilizadas: Number e fallback de campos legados.
+// Objetivo: mostrar livros lidos e progresso em uma forma previsível.
+// Observações: preserva status para a tela de histórico.
 function normalizeReading(reading = {}) {
   return {
     id: reading?.id ?? null,
@@ -79,6 +87,10 @@ function normalizeReading(reading = {}) {
   };
 }
 
+// Normaliza avaliações feitas pelo usuário.
+// Tecnologias utilizadas: coerção numérica e fallback de metadados.
+// Objetivo: apresentar nota, resenha e status de moderação.
+// Observações: inclui feedback do admin quando a avaliação foi rejeitada.
 function normalizeRating(rating = {}) {
   return {
     id: rating?.id ?? null,
@@ -94,6 +106,10 @@ function normalizeRating(rating = {}) {
   };
 }
 
+// Normaliza conquistas para o formato usado no perfil.
+// Tecnologias utilizadas: Number e fallback de campos localizados.
+// Objetivo: mostrar badges e progresso de forma uniforme.
+// Observações: o campo active preserva itens desativados no catálogo.
 function normalizeAchievement(achievement = {}) {
   return {
     id: achievement?.id ?? null,
@@ -105,6 +121,10 @@ function normalizeAchievement(achievement = {}) {
   };
 }
 
+// Sincroniza métricas derivadas do estado mock.
+// Tecnologias utilizadas: arrays e atribuição de objeto.
+// Objetivo: manter stats, destaque e atividade alinhados aos dados simulados.
+// Observações: roda após alterações em favoritos ou leituras no modo de teste.
 function syncMockStats() {
   mockState.stats = {
     livrosLidos: mockState.readBooks.length,
@@ -116,11 +136,19 @@ function syncMockStats() {
   mockState.atividade = [...mockState.readBooks.slice(0, 5)];
 }
 
+// Retorna o perfil simulado já normalizado.
+// Tecnologias utilizadas: syncMockStats e normalizeProfile.
+// Objetivo: alimentar a UI em modo de teste com um objeto único.
+// Observações: útil para desenvolvimento sem backend ativo.
 function getMockProfile() {
   syncMockStats();
   return normalizeProfile(mockState);
 }
 
+// Normaliza o perfil retornado pelo backend.
+// Tecnologias utilizadas: leitura defensiva de payloads e mapeamento de listas.
+// Objetivo: converter o contrato da API em dados prontos para as telas do perfil.
+// Observações: suporta item, usuario/user e múltiplas variantes de coleção.
 function normalizeProfile(payload = {}) {
   const source = payload?.item || payload;
   const usuario = source?.usuario || source?.user || source;
@@ -189,6 +217,10 @@ function normalizeProfile(payload = {}) {
   };
 }
 
+// Busca o perfil do usuário autenticado.
+// Tecnologias utilizadas: api.get e normalizeProfile.
+// Objetivo: alimentar a tela de perfil com dados consistentes.
+// Observações: em modo de teste, devolve dados mockados sem chamar o backend.
 export async function getUserProfile() {
   if (isTestMode) {
     return getMockProfile();
@@ -202,10 +234,18 @@ export async function getUserProfile() {
   }
 }
 
+// Alias de conveniência para o perfil detalhado.
+// Tecnologias utilizadas: reaproveitamento de função exportada.
+// Objetivo: manter compatibilidade com telas que esperam um nome mais descritivo.
+// Observações: hoje delega diretamente para getUserProfile.
 export async function getDetailedUserProfile() {
   return getUserProfile();
 }
 
+// Busca os livros favoritos do usuário.
+// Tecnologias utilizadas: api.get e normalizeBook.
+// Objetivo: alimentar o carrossel de favoritos no perfil.
+// Observações: em teste, retorna o recorte do estado mock.
 export async function getUserFavorites() {
   if (isTestMode) {
     return getMockProfile().favoriteBooks;
@@ -219,6 +259,10 @@ export async function getUserFavorites() {
   }
 }
 
+// Adiciona um livro aos favoritos do usuário.
+// Tecnologias utilizadas: api.post e mutação do estado mock.
+// Objetivo: salvar um livro na lista pessoal de favoritos.
+// Observações: em teste, limita o perfil a até 3 favoritos.
 export async function addFavoriteBook(bookId) {
   if (isTestMode) {
     const parsedId = Number(bookId);
@@ -253,6 +297,10 @@ export async function addFavoriteBook(bookId) {
   }
 }
 
+// Remove um livro dos favoritos.
+// Tecnologias utilizadas: api.delete e atualização do estado mock.
+// Objetivo: permitir limpar a lista de favoritos do perfil.
+// Observações: em teste, a remoção é refletida imediatamente no estado local.
 export async function removeFavoriteBook(bookId) {
   if (isTestMode) {
     const parsedId = Number(bookId);
@@ -268,6 +316,10 @@ export async function removeFavoriteBook(bookId) {
   }
 }
 
+// Busca os livros lidos pelo usuário.
+// Tecnologias utilizadas: api.get e normalizeReading.
+// Objetivo: exibir o histórico de leitura no perfil.
+// Observações: em modo de teste, devolve os dados simulados já normalizados.
 export async function getUserReadBooks() {
   if (isTestMode) {
     return getMockProfile().readBooks;
@@ -281,6 +333,10 @@ export async function getUserReadBooks() {
   }
 }
 
+// Busca as avaliações do usuário.
+// Tecnologias utilizadas: api.get e normalizeRating.
+// Objetivo: listar as últimas resenhas enviadas pelo usuário.
+// Observações: a normalização mantém status e feedback do admin quando existirem.
 export async function getUserRatings() {
   if (isTestMode) {
     return getMockProfile().ratings;
@@ -294,6 +350,10 @@ export async function getUserRatings() {
   }
 }
 
+// Busca as conquistas já desbloqueadas pelo usuário.
+// Tecnologias utilizadas: api.get e normalizeAchievement.
+// Objetivo: alimentar a seção de badges conquistados.
+// Observações: em teste, usa o catálogo mockado para validação da UI.
 export async function getUserAchievements() {
   if (isTestMode) {
     return getMockProfile().achievements;
@@ -307,6 +367,10 @@ export async function getUserAchievements() {
   }
 }
 
+// Busca o catálogo de conquistas disponível para o perfil.
+// Tecnologias utilizadas: api.get, normalizeAchievement e cálculo de progresso.
+// Objetivo: mostrar conquistas em andamento e concluídas.
+// Observações: no modo de teste, calcula progresso com base no estado mockado.
 export async function getAchievementsCatalog() {
   if (isTestMode) {
     const profile = getMockProfile();
@@ -334,6 +398,10 @@ export async function getAchievementsCatalog() {
   }
 }
 
+// Calcula o progresso atual de uma conquista com base no perfil.
+// Tecnologias utilizadas: leitura de stats e listas do perfil.
+// Objetivo: estimar o quanto falta para desbloquear cada conquista.
+// Observações: suporta critérios padrão sem depender de outra chamada à API.
 function getAchievementProgressValue(profile = {}, achievement = {}) {
   const criteriaType = String(achievement?.criteriaType || '').toUpperCase();
   if (criteriaType === 'READ_BOOKS') {
@@ -351,6 +419,10 @@ function getAchievementProgressValue(profile = {}, achievement = {}) {
   return 0;
 }
 
+// Atualiza os dados principais do perfil do usuário.
+// Tecnologias utilizadas: api.put e mutação do estado mock.
+// Objetivo: permitir edição de nome, email, bio e foto de perfil.
+// Observações: o payload converte campos em inglês e português para o mesmo contrato.
 export async function updateUserProfile(profileData) {
   if (isTestMode) {
     mockState.nome = profileData?.name || profileData?.nome || mockState.nome;
@@ -375,6 +447,10 @@ export async function updateUserProfile(profileData) {
   }
 }
 
+// Altera a senha do usuário autenticado.
+// Tecnologias utilizadas: api.post e validação local de senha mínima no modo teste.
+// Objetivo: oferecer atualização segura de credenciais.
+// Observações: em teste, não chama backend e devolve resposta previsível.
 export async function changePassword(currentPassword, newPassword) {
   if (isTestMode) {
     if (!newPassword || String(newPassword).trim().length < 6) {
@@ -400,6 +476,10 @@ export async function changePassword(currentPassword, newPassword) {
   }
 }
 
+// Busca estatísticas resumidas do perfil.
+// Tecnologias utilizadas: api.get e fallback para o estado mockado.
+// Objetivo: alimentar os cards de resumo do perfil.
+// Observações: o backend pode retornar item ou objeto direto.
 export async function getUserStats() {
   if (isTestMode) {
     return getMockProfile().stats;
@@ -413,6 +493,10 @@ export async function getUserStats() {
   }
 }
 
+// Atualiza a foto de perfil via upload multipart.
+// Tecnologias utilizadas: FormData e api.post.
+// Objetivo: permitir troca de avatar no perfil do usuário.
+// Observações: valida a URI antes do upload para evitar requisições vazias.
 export async function updateProfilePicture(imageUri) {
   if (!imageUri) {
     throw new Error('Image URI é obrigatório');
@@ -442,6 +526,10 @@ export async function updateProfilePicture(imageUri) {
   }
 }
 
+// Adiciona uma categoria de preferência ao usuário.
+// Tecnologias utilizadas: api.post e mutação de estado mock.
+// Objetivo: registrar interesses para personalização do perfil.
+// Observações: no modo de teste, evita duplicar categorias já salvas.
 export async function addCategoryPreference(categoryName) {
   if (isTestMode) {
     const normalized = String(categoryName || '').trim();
@@ -462,6 +550,10 @@ export async function addCategoryPreference(categoryName) {
   }
 }
 
+// Remove uma categoria de preferência do usuário.
+// Tecnologias utilizadas: api.delete e mutação de estado mock.
+// Objetivo: manter as preferências do perfil sob controle do usuário.
+// Observações: o nome da categoria é enviado na URL para a API.
 export async function removeCategoryPreference(categoryName) {
   if (isTestMode) {
     const normalized = String(categoryName || '').trim();
@@ -477,6 +569,10 @@ export async function removeCategoryPreference(categoryName) {
   }
 }
 
+// Desativa a própria conta do usuário.
+// Tecnologias utilizadas: api.delete.
+// Objetivo: oferecer exclusão da conta diretamente pelo perfil.
+// Observações: em teste, retorna sucesso imediato para validar o fluxo da UI.
 export async function deactivateOwnAccount() {
   if (isTestMode) {
     return { success: true };

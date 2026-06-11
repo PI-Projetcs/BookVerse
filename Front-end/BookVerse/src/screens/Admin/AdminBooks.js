@@ -21,12 +21,15 @@ import { adminBooksStyles as styles } from '../../styles/adminBooksStyles';
 const COVER_PLACEHOLDER = 'https://placehold.co/180x240/e5e7eb/475569?text=BookV';
 const HIT_SLOP = { top: 10, bottom: 10, left: 10, right: 10 };
 
-/*
- * Tela de gerenciamento de livros (AdminBooks)
- * - Lista livros cadastrados, permite buscar, filtrar por gênero e ações de
- *   editar/excluir/ativar via chamadas ao backend (getAdminBooks, deleteAdminBook).
- */
+// Tela de gestão do catálogo de livros.
+// Tecnologias utilizadas: React Native, FlatList, Ionicons, serviços de livros.
+// Objetivo: listar, buscar, filtrar e atualizar o estado de publicação dos itens.
+// Observações: o estado local espelha o backend para evitar recargas desnecessárias.
 
+// Componente responsável pela manutenção do catálogo no painel admin.
+// Tecnologias utilizadas: React, hooks, navegação e camada de serviço do backend.
+// Objetivo: permitir edição, exclusão e ativação de livros com feedback imediato.
+// Observações: useMemo reduz recomputações nos filtros e nos gêneros exibidos.
 export default function AdminBooks({ navigation }) {
 	const [books, setBooks] = useState([]);
 	const [searchText, setSearchText] = useState('');
@@ -34,6 +37,10 @@ export default function AdminBooks({ navigation }) {
 	const [isLoading, setIsLoading] = useState(true);
 	const [errorMessage, setErrorMessage] = useState('');
 
+	// Carrega a lista administrativa com tratamento de erro e estado de loading.
+	// Tecnologias utilizadas: async/await e serviço getAdminBooks.
+	// Objetivo: sincronizar a tela com os dados do catálogo exibidos no painel.
+	// Observações: o finally garante que o indicador visual seja sempre encerrado.
 	const loadBooks = async () => {
 		try {
 			setIsLoading(true);
@@ -51,11 +58,19 @@ export default function AdminBooks({ navigation }) {
 		loadBooks();
 	}, []);
 
+	// Recarrega os dados ao voltar para a tela para evitar estado desatualizado.
+	// Tecnologias utilizadas: navigation.addListener e cleanup do efeito.
+	// Objetivo: refletir alterações feitas em telas vizinhas como cadastro e edição.
+	// Observações: o listener mantém a lista consistente sem depender de navegação manual.
 	useEffect(() => {
 		const unsubscribe = navigation.addListener('focus', loadBooks);
 		return unsubscribe;
 	}, [navigation]);
 
+	// Calcula os gêneros disponíveis diretamente a partir dos livros carregados.
+	// Tecnologias utilizadas: useMemo, Set e localeCompare.
+	// Objetivo: montar filtros dinâmicos sem repetir categorias iguais.
+	// Observações: a ordenação em pt-BR melhora a leitura da lista de chips.
 	const genreOptions = useMemo(() => {
 		const values = Array.from(new Set(books.map((book) => book.genre).filter(Boolean))).sort((a, b) =>
 			String(a).localeCompare(String(b), 'pt-BR')
@@ -63,6 +78,10 @@ export default function AdminBooks({ navigation }) {
 		return ['Todos', ...values];
 	}, [books]);
 
+	// Aplica busca textual e filtro de gênero sobre a lista carregada.
+	// Tecnologias utilizadas: useMemo, String helpers e Array.filter.
+	// Objetivo: reduzir a lista exibida conforme a intenção do administrador.
+	// Observações: normaliza o texto para tornar a busca mais tolerante a variações.
 	const filteredBooks = useMemo(() => {
 		const query = searchText.trim().toLowerCase();
 		return books.filter((book) => {
@@ -75,10 +94,18 @@ export default function AdminBooks({ navigation }) {
 		});
 	}, [books, genreFilter, searchText]);
 
+	// Abre a tela de cadastro em modo de edição com os dados do livro selecionado.
+	// Tecnologias utilizadas: React Navigation e passagem de parâmetros.
+	// Objetivo: reaproveitar o mesmo formulário para corrigir ou atualizar um item.
+	// Observações: o token evita reaproveitamento de parâmetros antigos na navegação.
 	const handleEdit = (book) => {
 		navigation.navigate('RegisterBook', { bookData: book, editToken: Date.now() });
 	};
 
+	// Confirmação destrutiva antes de remover um livro do catálogo.
+	// Tecnologias utilizadas: Alert, serviço de exclusão e atualização de estado local.
+	// Objetivo: evitar exclusões acidentais com uma etapa explícita de confirmação.
+	// Observações: o estado é filtrado localmente após o backend confirmar a remoção.
 	const handleDelete = (book) => {
 		Alert.alert('Excluir livro', `Deseja excluir "${book?.title || 'este livro'}"?`, [
 			{ text: 'Cancelar', style: 'cancel' },
@@ -97,6 +124,10 @@ export default function AdminBooks({ navigation }) {
 		]);
 	};
 
+	// Alterna a disponibilidade pública do livro sem abrir outra tela.
+	// Tecnologias utilizadas: updateAdminBookStatus e atualização otimista da lista.
+	// Objetivo: ativar ou desativar a exibição do livro de forma direta.
+	// Observações: o alerta cobre falhas de sincronização com o servidor.
 	const handleToggleActive = async (book) => {
 		try {
 			const updated = await updateAdminBookStatus(book.id, !book.active);
@@ -106,6 +137,10 @@ export default function AdminBooks({ navigation }) {
 		}
 	};
 
+	// Renderiza cada card de livro com metadados, status e ações administrativas.
+	// Tecnologias utilizadas: FlatList, Image, Ionicons e botões com feedback visual.
+	// Objetivo: resumir rapidamente o conteúdo e o estado de cada título.
+	// Observações: o card usa chips para leitura rápida e mantém botões com área tocável maior.
 	const renderBookCard = ({ item }) => (
 		(() => {
 			const genreLabel = item.genre || 'Geral';
@@ -196,6 +231,10 @@ export default function AdminBooks({ navigation }) {
 			/>
 
 			<View style={styles.content}>
+				{/* Área de filtros e estatísticas da lista de livros. */}
+				{/* Tecnologias utilizadas: TextInput, TouchableOpacity e chips de gênero. */}
+				{/* Objetivo: localizar títulos e refinar a visualização por categoria. */}
+				{/* Observações: o contador ajuda a entender rapidamente o recorte atual. */}
 				<View style={styles.filtersWrap}>
 					<View style={styles.metaRow}>
 						<View>

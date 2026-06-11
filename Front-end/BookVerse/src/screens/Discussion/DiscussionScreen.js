@@ -17,14 +17,16 @@ import styles from '../../styles/discussionStyles';
 import FooterNav from '../../components/FooterNav';
 import { getBookById, getDiscussions, createChapterComment, createDiscussionForChapter } from '../../services/bookService';
 
+// Espaço mínimo de toque para controles da tela.
+// Tecnologias utilizadas: propriedade hitSlop do React Native.
+// Objetivo: facilitar interação com botões pequenos em telas de discussão.
+// Observações: melhora acessibilidade sem alterar a composição visual.
 const HIT_SLOP = { top: 10, bottom: 10, left: 10, right: 10 };
 
-/*
- * Tela de Discussões
- * - Agrupa capítulos e discussões do livro, mostrando threads de comentários.
- * - Permite filtrar por recentes/populares, expandir tópicos, adicionar comentários
- *   (com criação automática de discussão quando necessário) e atualizar a lista.
- */
+// Tela de discussões do livro.
+// Tecnologias utilizadas: React Native, Expo Vector Icons, LinearGradient, serviços de livro.
+// Objetivo: reunir capítulos, comentários e ações de participação em um único fórum.
+// Observações: a tela combina carregamento inicial, atualização manual e envio com feedback.
 export default function DiscussionScreen({ navigation, route }) {
   const insets = useSafeAreaInsets();
   const bookId = Number(route?.params?.bookId) || 1;
@@ -38,7 +40,10 @@ export default function DiscussionScreen({ navigation, route }) {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
-  // Retorna estilo e rótulo legível a partir do status interno do comentário
+  // Converte o status interno do comentário em rótulo e cores legíveis.
+  // Tecnologias utilizadas: função pura e normalização de string.
+  // Objetivo: exibir o estado de aprovação sem depender de códigos brutos.
+  // Observações: o retorno nulo evita chip visual quando o status é desconhecido.
   const getCommentStatusMeta = (status) => {
     const normalized = String(status || '').toUpperCase();
     if (normalized === 'APPROVED') {
@@ -53,8 +58,10 @@ export default function DiscussionScreen({ navigation, route }) {
     return null;
   };
 
-  // Carrega dados do livro e discussões em paralelo, monta threads
-  // mesclando capítulos existentes com discussões retornadas pelo backend.
+  // Carrega livro e discussões em paralelo e monta as threads da tela.
+  // Tecnologias utilizadas: useEffect, Promise.all e serviços de backend.
+  // Objetivo: juntar capítulos do livro com discussões já existentes.
+  // Observações: o controle de montagem evita atualizar estado após unmount.
   useEffect(() => {
     let isMounted = true;
 
@@ -134,7 +141,10 @@ export default function DiscussionScreen({ navigation, route }) {
     };
   }, [bookId, initialChapterId]);
 
-  // Ordena comentários em cada thread segundo o filtro selecionado
+  // Ordena comentários de cada thread conforme o filtro ativo.
+  // Tecnologias utilizadas: useMemo e Array.sort.
+  // Objetivo: alternar entre comentários recentes e populares sem refazer a carga.
+  // Observações: o array é copiado para evitar mutação do estado original.
   const filteredChapters = useMemo(() => {
     return threads.map((thread) => {
       const sortedComments = [...(thread.comments || [])];
@@ -147,10 +157,18 @@ export default function DiscussionScreen({ navigation, route }) {
     });
   }, [threads, selectedFilter]);
 
+  // Expande ou recolhe uma discussão específica.
+  // Tecnologias utilizadas: setState funcional.
+  // Objetivo: permitir foco em um capítulo por vez sem sair da lista.
+  // Observações: o estado é mantido por thread para preservar a navegação do usuário.
   const toggleThread = (threadId) => {
     setExpandedThreads((prev) => ({ ...prev, [threadId]: !prev[threadId] }));
   };
 
+  // Atualiza manualmente os comentários já carregados na tela.
+  // Tecnologias utilizadas: getDiscussions, Map e atualização imutável de estado.
+  // Objetivo: refletir comentários mais recentes sem recarregar a página inteira.
+  // Observações: threads sem discussionId são preservadas para evitar perda de contexto.
   const handleRefreshComments = async () => {
     try {
       setIsRefreshing(true);
@@ -184,9 +202,10 @@ export default function DiscussionScreen({ navigation, route }) {
     }
   };
 
-  // Adiciona um comentário a uma thread; cria a discussão automaticamente
-  // se ainda não existir. Mostra feedback ao usuário e faz um append
-  // otimista do comentário pendente (status PENDING).
+  // Adiciona um comentário e cria a discussão automaticamente quando necessário.
+  // Tecnologias utilizadas: createDiscussionForChapter, createChapterComment, Alert.
+  // Objetivo: permitir participação mesmo quando o capítulo ainda não possui thread.
+  // Observações: o comentário pendente é inserido de forma otimista após o envio.
   const handleAddComment = async (thread) => {
     const text = (newComments[thread.id] || '').trim();
     if (!text) {
@@ -253,10 +272,14 @@ export default function DiscussionScreen({ navigation, route }) {
 
   return (
     <SafeAreaView style={styles.container}>
-    <StatusBar barStyle="light-content" backgroundColor="#0b1f2a" />
+      {/* Cabeçalho fixo com retorno, atualização e atalho de moderação. */}
+      {/* Tecnologias utilizadas: StatusBar, LinearGradient, Feather e TouchableOpacity. */}
+      {/* Objetivo: dar contexto visual e ações rápidas no topo da discussão. */}
+      {/* Observações: o visual forte ajuda a separar a tela do restante do app. */}
+      <StatusBar barStyle="light-content" backgroundColor="#0b1f2a" />
 
       <LinearGradient
-       colors={['#6B0F2E', '#0a0f1a', '#003D2B']}
+        colors={['#6B0F2E', '#0a0f1a', '#003D2B']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 0 }}
         style={[styles.header, { paddingTop: insets.top + 8 }]}
@@ -304,6 +327,10 @@ export default function DiscussionScreen({ navigation, route }) {
         <Text style={styles.bookSubtitle}>{book?.title || 'Livro do mês'}</Text>
       </LinearGradient>
 
+      {/* Área principal com estados de loading, erro e lista das threads. */}
+      {/* Tecnologias utilizadas: ScrollView, renderização condicional e cards. */}
+      {/* Objetivo: apresentar capítulos, comentários e formulário em uma rolagem única. */}
+      {/* Observações: o estado vazio orienta quando não há discussões disponíveis. */}
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         {isLoading ? (
           <View style={styles.emptyState}>
@@ -330,6 +357,10 @@ export default function DiscussionScreen({ navigation, route }) {
 
           return (
             <View key={chapter.id} style={styles.chapterCard}>
+              {/* Cabeçalho do capítulo com título, descrição e contagem de comentários. */}
+              {/* Tecnologias utilizadas: TouchableOpacity, Feather e textos auxiliares. */}
+              {/* Objetivo: abrir ou fechar a thread sem trocar de tela. */}
+              {/* Observações: o badge numérico ajuda a localizar capítulos mais ativos. */}
               <TouchableOpacity
                 style={styles.chapterHeader}
                 onPress={() => toggleThread(chapter.id)}
@@ -361,6 +392,10 @@ export default function DiscussionScreen({ navigation, route }) {
 
               {isExpanded && (
                 <View style={styles.commentsSection}>
+                  {/* Controle de ordenação da lista de comentários. */}
+                  {/* Tecnologias utilizadas: TouchableOpacity e estados de filtro. */}
+                  {/* Objetivo: alternar entre comentários mais recentes e mais populares. */}
+                  {/* Observações: o destaque visual mostra o filtro ativo sem abrir modal. */}
                   <View style={styles.sortRow}>
                     <Text style={styles.sortLabel}>Ordenar por:</Text>
 
@@ -409,6 +444,10 @@ export default function DiscussionScreen({ navigation, route }) {
                     </TouchableOpacity>
                   </View>
 
+                  {/* Estado vazio da thread quando ainda não há comentários. */}
+                  {/* Tecnologias utilizadas: Icone, textos de apoio e renderização condicional. */}
+                  {/* Objetivo: orientar o usuário a iniciar a discussão. */}
+                  {/* Observações: a mensagem muda conforme a thread já exista ou não. */}
                   {chapter.comments.length === 0 ? (
                     <View style={styles.emptyState}>
                       <Ionicons name="chatbubble-ellipses-outline" size={28} color="#9ca3af" />
@@ -420,8 +459,16 @@ export default function DiscussionScreen({ navigation, route }) {
                       </Text>
                     </View>
                   ) : (
+                    // Lista de comentários já publicados na thread.
+                    // Tecnologias utilizadas: map, Image, Text e chips de status.
+                    // Objetivo: exibir cada mensagem com autor, data e aprovação.
+                    // Observações: o chip de status ajuda a distinguir comentários pendentes.
                     chapter.comments.map((comment) => (
                       <View key={comment.id} style={styles.commentCard}>
+                        {/* Cabeçalho visual de cada comentário com status e autoria. */}
+                        {/* Tecnologias utilizadas: Image, layout em linha e utilitário de status. */}
+                        {/* Objetivo: facilitar a leitura rápida de quem publicou e como está o comentário. */}
+                        {/* Observações: o avatar e a data ajudam a contextualizar a conversa. */}
                         {(() => {
                           const statusMeta = getCommentStatusMeta(comment.status);
                           return (
@@ -458,6 +505,10 @@ export default function DiscussionScreen({ navigation, route }) {
                     ))
                   )}
 
+                  {/* Formulário para publicar um novo comentário na thread. */}
+                  {/* Tecnologias utilizadas: TextInput, TouchableOpacity e LinearGradient. */}
+                  {/* Objetivo: permitir participação direta do leitor na discussão. */}
+                  {/* Observações: o feedback otimista mostra que o envio foi aceito. */}
                   <View style={styles.newCommentForm}>
                     <TextInput
                       style={styles.textInput}

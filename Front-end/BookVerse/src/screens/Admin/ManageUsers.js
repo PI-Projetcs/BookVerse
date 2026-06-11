@@ -28,11 +28,15 @@ const STATUS_FILTERS = [
 ];
 const HIT_SLOP = { top: 10, bottom: 10, left: 10, right: 10 };
 
-/*
- * Tela de gerenciamento de usuários (Admin)
- * - Lista membros, permite busca, filtragem por status e ações de promoção/bloqueio.
- */
+// Tela administrativa de membros e permissões.
+// Tecnologias utilizadas: React Native, Ionicons, serviços admin e navegação.
+// Objetivo: buscar usuários, filtrar status e executar promoção ou bloqueio.
+// Observações: a tela usa debounce simples para evitar chamadas excessivas ao backend.
 
+// Constrói o visual do badge conforme o status do membro.
+// Tecnologias utilizadas: função pura e objetos de estilo inline.
+// Objetivo: destacar rapidamente quem está ativo ou bloqueado.
+// Observações: o retorno inclui cores e rótulo para reaproveitamento no card.
 function getStatusBadgeStyle(status) {
   if (status === 'blocked') {
     return {
@@ -57,6 +61,10 @@ export default function ManageUsers({ navigation }) {
   const [errorMessage, setErrorMessage] = useState('');
   const [roleUpdatingMemberId, setRoleUpdatingMemberId] = useState(null);
 
+  // Carrega membros já filtrados no servidor para reduzir volume de dados.
+  // Tecnologias utilizadas: getAdminMembers e async/await.
+  // Objetivo: refletir a busca e o status selecionado com dados atuais.
+  // Observações: o loading é exibido enquanto a consulta está em andamento.
   const loadMembers = async () => {
     try {
       setIsLoading(true);
@@ -71,12 +79,24 @@ export default function ManageUsers({ navigation }) {
   };
 
   useEffect(() => {
+    // Adia a consulta para absorver digitação rápida sem disparos repetidos.
+    // Tecnologias utilizadas: setTimeout e cleanup do efeito.
+    // Objetivo: reduzir ruído de rede ao filtrar por nome ou email.
+    // Observações: 220ms costuma ser suficiente para busca responsiva.
     const timer = setTimeout(loadMembers, 220);
     return () => clearTimeout(timer);
   }, [searchText, statusFilter]);
 
+  // Texto-resumo para dar contexto ao volume atualmente listado.
+  // Tecnologias utilizadas: useMemo.
+  // Objetivo: apresentar rapidamente quantos membros estão visíveis.
+  // Observações: evita recalcular a frase a cada render sem necessidade.
   const summaryText = useMemo(() => `${members.length} membros listados`, [members.length]);
 
+  // Alterna o status do membro entre ativo e bloqueado.
+  // Tecnologias utilizadas: updateAdminMemberStatus e atualização local de estado.
+  // Objetivo: permitir moderação operacional sem sair da listagem.
+  // Observações: administradores não entram nessa ação para preservar acesso crítico.
   const handleToggleStatus = async (member) => {
     try {
       const nextStatus = member.status === 'active' ? 'blocked' : 'active';
@@ -88,6 +108,10 @@ export default function ManageUsers({ navigation }) {
     }
   };
 
+  // Promove um membro para administrador e mantém a linha sincronizada.
+  // Tecnologias utilizadas: promoteAdminMember, Alert e estado de carregamento por item.
+  // Objetivo: elevar permissões sem recarregar a tela inteira.
+  // Observações: a resposta do backend pode trazer mensagem própria de erro.
   const handleToggleRole = async (member) => {
     if (roleUpdatingMemberId === member.id) {
       return;
@@ -125,6 +149,10 @@ export default function ManageUsers({ navigation }) {
       />
 
       <View style={styles.content}>
+        {/* Área de busca, filtros e contagem resumida de membros. */}
+        {/* Tecnologias utilizadas: TextInput, chips de filtro e texto derivado. */}
+        {/* Objetivo: localizar perfis e separar ativos, bloqueados ou todos. */}
+        {/* Observações: o recorte é enviado ao servidor para manter a tela leve. */}
         <View style={styles.filtersWrap}>
           <View style={styles.searchContainer}>
             <Ionicons name="search" size={18} color="#64748b" />
@@ -174,6 +202,10 @@ export default function ManageUsers({ navigation }) {
         ) : null}
 
         {!isLoading && !errorMessage ? (
+          {/* Lista dos perfis encontrados e suas ações administrativas. */}
+          {/* Tecnologias utilizadas: ScrollView, Image, Touchables e badges. */}
+          {/* Objetivo: exibir status, dados principais e comandos de moderação. */}
+          {/* Observações: a hierarquia visual separa ações de permissão e de bloqueio. */}
           <ScrollView contentContainerStyle={styles.listContent} showsVerticalScrollIndicator={false}>
             {members.map((member) => {
               const badgeStyle = getStatusBadgeStyle(member.status);

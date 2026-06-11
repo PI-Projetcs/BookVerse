@@ -1,26 +1,14 @@
 import api from './api';
 
-/*
- Serviço: adminService
- Propósito: Encapsula endpoints administrativos expostos pelo backend
- (gerenciamento de usuários, moderação de comentários, painel
- administrativo, conquistas). Normaliza respostas e oferece filtros
- utilitários para facilitar a exibição na UI administrativa.
+// Serviço administrativo do BookVerse.
+// Tecnologias utilizadas: Axios via api, funções puras de normalização e filtros locais.
+// Objetivo: centralizar chamadas do painel, moderação e conquistas em uma camada única.
+// Observações: o serviço preserva erros originais para a UI decidir mensagens e fluxos.
 
- Principais funções exportadas:
- - getAdminMembers(params)
- - updateAdminMemberStatus(memberId, nextStatus)
- - promoteAdminMember(memberId)
- - getModerationItems(params)
- - setModerationStatus(itemId, nextStatus)
- - approveComment / rejectComment / approveRating / rejectRating
-
- Observações:
- - Funções lançam erros originais para que a camada de chamada trate
-	 mensagens e fluxos de confirmação.
-*/
-// Serviço admin utiliza APIs do backend via Axios
-
+// Normaliza dados de membros vindos do backend para o formato esperado pela UI.
+// Tecnologias utilizadas: manipulação de objetos, Number e fallback de avatar.
+// Objetivo: unificar nomes, papéis, status e métricas antes da renderização.
+// Observações: o fallback reduz quebra visual quando o backend envia campos incompletos.
 function normalizeMember(member = {}, index = 0) {
 	const backendRole = (member.role || '').toUpperCase();
 	const role = backendRole === 'ADMIN' || backendRole === 'ROLE_ADMIN' ? 'admin' : 'member';
@@ -37,6 +25,10 @@ function normalizeMember(member = {}, index = 0) {
 	};
 }
 
+// Normaliza itens de moderação para comentários e avaliações.
+// Tecnologias utilizadas: arrays, validação simples de status e fallback de textos.
+// Objetivo: padronizar o formato da fila de moderação para a tela administrativa.
+// Observações: a normalização evita ramificações de UI para respostas diferentes do backend.
 function normalizeModerationItem(item = {}, index = 0) {
 	const status = ['pending', 'approved', 'rejected'].includes(item.status)
 		? item.status
@@ -56,6 +48,10 @@ function normalizeModerationItem(item = {}, index = 0) {
 	};
 }
 
+// Normaliza conquistas retornadas pela API para o formato usado nas telas admin.
+// Tecnologias utilizadas: compatibilidade com nomes em camelCase e snake_case.
+// Objetivo: manter edição e listagem de conquistas consistentes na interface.
+// Observações: também consolida critérios múltiplos em criteriaPairs para reaproveitamento.
 function normalizeAchievement(item = {}, index = 0) {
 	const criteriaPairs = [
 		{ criteriaType: item.criteriaType || item.criteria_type, targetValue: Number(item.targetValue ?? item.target_value) || 1 },
@@ -78,6 +74,10 @@ function normalizeAchievement(item = {}, index = 0) {
 	};
 }
 
+// Normaliza o progresso agregado das conquistas.
+// Tecnologias utilizadas: Number e fallback seguro.
+// Objetivo: exibir progresso por conquista em cards e resumos do painel.
+// Observações: mantém a leitura estável mesmo quando o backend omite campos opcionais.
 function normalizeAchievementProgress(item = {}, index = 0) {
 	return {
 		achievementId: Number(item.achievementId ?? item.achievement_id ?? index + 1),
@@ -89,6 +89,10 @@ function normalizeAchievementProgress(item = {}, index = 0) {
 	};
 }
 
+// Filtra membros pelo texto pesquisado e pelo status escolhido.
+// Tecnologias utilizadas: Array.filter e comparação textual case-insensitive.
+// Objetivo: reduzir a lista visível sem depender de nova consulta ao servidor.
+// Observações: o filtro local complementa a busca já enviada na API.
 function filterMembers(items, { query = '', status = 'all' } = {}) {
 	const text = String(query || '').trim().toLowerCase();
 	return items.filter((member) => {
@@ -103,6 +107,10 @@ function filterMembers(items, { query = '', status = 'all' } = {}) {
 	});
 }
 
+// Filtra itens de moderação por texto e status.
+// Tecnologias utilizadas: Array.filter e normalização de string.
+// Objetivo: manter a fila administrativa focada no tipo de item esperado.
+// Observações: a busca considera autor, livro, capítulo, motivo e texto.
 function filterModeration(items, { query = '', status = 'pending' } = {}) {
 	const text = String(query || '').trim().toLowerCase();
 	return items.filter((item) => {
@@ -117,6 +125,10 @@ function filterModeration(items, { query = '', status = 'pending' } = {}) {
 	});
 }
 
+// Busca membros administrativos e aplica o formato esperado pela UI.
+// Tecnologias utilizadas: api.get e normalização local.
+// Objetivo: alimentar a tela de gerenciamento de usuários com dados prontos para exibição.
+// Observações: suporta respostas paginadas ou listas diretas do backend.
 export async function getAdminMembers(params = {}) {
 	try {
 		const response = await api.get('/api/v1/users');
@@ -132,6 +144,10 @@ export async function getAdminMembers(params = {}) {
 	}
 }
 
+// Atualiza o status de bloqueio/ativação de um membro.
+// Tecnologias utilizadas: api.put e normalização de membro.
+// Objetivo: permitir moderação direta de acesso sem sair da lista.
+// Observações: o status é sanitizado antes do envio para evitar valores inválidos.
 export async function updateAdminMemberStatus(memberId, nextStatus) {
 	const status = nextStatus === 'blocked' ? 'blocked' : 'active';
 	try {
@@ -142,6 +158,10 @@ export async function updateAdminMemberStatus(memberId, nextStatus) {
 	}
 }
 
+// Promove um membro para administrador.
+// Tecnologias utilizadas: api.post e normalização de membro.
+// Objetivo: elevar permissões com uma ação administrativa direta.
+// Observações: o fallback garante um papel admin mesmo quando a resposta é mínima.
 export async function promoteAdminMember(memberId) {
 	try {
 		const response = await api.post(`/api/v1/admin/users/${memberId}/promote`);
@@ -151,6 +171,10 @@ export async function promoteAdminMember(memberId) {
 	}
 }
 
+// Busca a fila de moderação de comentários e avaliações.
+// Tecnologias utilizadas: api.get com parâmetros de query e filtro local.
+// Objetivo: carregar a lista usada nas telas de moderação do painel.
+// Observações: o backend recebe status e busca textual para reduzir volume desnecessário.
 export async function getModerationItems(params = {}) {
 	try {
 		const response = await api.get('/api/v1/admin/comments-moderation', {
@@ -171,6 +195,10 @@ export async function getModerationItems(params = {}) {
 	}
 }
 
+// Atualiza o status de um item de moderação de forma genérica.
+// Tecnologias utilizadas: api.post e encodeURIComponent.
+// Objetivo: manter um ponto único para alterar estados pendente, aprovado ou rejeitado.
+// Observações: o id é codificado para evitar problemas com caracteres especiais.
 export async function setModerationStatus(itemId, nextStatus) {
 	const status = ['pending', 'approved', 'rejected'].includes(nextStatus)
 		? nextStatus
@@ -183,6 +211,10 @@ export async function setModerationStatus(itemId, nextStatus) {
 	}
 }
 
+// Aprova um comentário em moderação.
+// Tecnologias utilizadas: api.post e normalização do item retornado.
+// Objetivo: reduzir o comentário a um clique no fluxo administrativo.
+// Observações: o retorno padronizado facilita atualizar a lista sem refetch completo.
 export async function approveComment(commentId) {
 	try {
 		const response = await api.post(`/api/v1/admin/comments-moderation/comments/${encodeURIComponent(String(commentId))}/approve`);
@@ -192,6 +224,10 @@ export async function approveComment(commentId) {
 	}
 }
 
+// Rejeita um comentário e envia feedback ao autor.
+// Tecnologias utilizadas: api.post e payload de feedback.
+// Objetivo: permitir moderação com orientação explícita para o usuário.
+// Observações: o feedback é opcional na API, mas útil para contexto e auditoria.
 export async function rejectComment(commentId, feedback) {
 	try {
 		const response = await api.post(`/api/v1/admin/comments-moderation/comments/${encodeURIComponent(String(commentId))}/reject`, { feedback });
@@ -201,6 +237,10 @@ export async function rejectComment(commentId, feedback) {
 	}
 }
 
+// Aprova uma avaliação em moderação.
+// Tecnologias utilizadas: api.post e normalização do retorno.
+// Objetivo: liberar avaliações que passaram pela revisão do admin.
+// Observações: o tipo 'rating' é preservado para a UI distinguir o conteúdo.
 export async function approveRating(ratingId) {
 	try {
 		const response = await api.post(`/api/v1/admin/comments-moderation/ratings/${encodeURIComponent(String(ratingId))}/approve`);
@@ -210,6 +250,10 @@ export async function approveRating(ratingId) {
 	}
 }
 
+// Rejeita uma avaliação com feedback de moderação.
+// Tecnologias utilizadas: api.post e payload com justificativa.
+// Objetivo: registrar a decisão e orientar o autor sobre a recusa.
+// Observações: o serviço mantém o contrato de status rejeitado para a tela atualizar.
 export async function rejectRating(ratingId, feedback) {
 	try {
 		const response = await api.post(`/api/v1/admin/comments-moderation/ratings/${encodeURIComponent(String(ratingId))}/reject`, { feedback });
@@ -219,7 +263,10 @@ export async function rejectRating(ratingId, feedback) {
 	}
 }
 
-// Armazenamento simulado para o dashboard
+// Base simulada para o dashboard administrativo.
+// Tecnologias utilizadas: objeto estático local.
+// Objetivo: servir como fallback visual durante desenvolvimento ou ausência de API.
+// Observações: o valor não é consumido diretamente quando o endpoint real responde.
 const mockDashboardStore = {
 	totalUsers: 245,
 	totalBooks: 1250,
@@ -231,6 +278,10 @@ const mockDashboardStore = {
 	averageRating: 4.2,
 };
 
+// Normaliza os dados do dashboard administrativo.
+// Tecnologias utilizadas: Number e fallback por campo alternativo.
+// Objetivo: exibir métricas do painel em um formato previsível.
+// Observações: aceita camelCase e snake_case para compatibilidade com o backend.
 function normalizeDashboard(data = {}) {
 	return {
 		totalUsers: Number(data?.totalUsers ?? data?.total_users) || 0,
@@ -244,6 +295,10 @@ function normalizeDashboard(data = {}) {
 	};
 }
 
+// Busca métricas gerais do painel administrativo.
+// Tecnologias utilizadas: api.get e normalização de dashboard.
+// Objetivo: alimentar cards e resumos da tela admin com indicadores consolidados.
+// Observações: a resposta é embrulhada em item para manter um contrato estável.
 export async function getAdminDashboard() {
 	try {
 		const response = await api.get('/api/v1/admin/dashboard');
@@ -255,6 +310,10 @@ export async function getAdminDashboard() {
 	}
 }
 
+// Busca o catálogo de conquistas.
+// Tecnologias utilizadas: api.get e normalizeAchievement.
+// Objetivo: listar conquistas para edição, ativação e remoção.
+// Observações: suporta resposta paginada e lista simples do backend.
 export async function getAchievements() {
 	try {
 		const response = await api.get('/api/v1/achievements');
@@ -269,6 +328,10 @@ export async function getAchievements() {
 	}
 }
 
+// Busca o progresso agregado das conquistas.
+// Tecnologias utilizadas: api.get e normalizeAchievementProgress.
+// Objetivo: mostrar barras, percentuais e contadores de progresso no painel.
+// Observações: aceita tanto array direto quanto conteúdo aninhado em content.
 export async function getAchievementProgress() {
 	try {
 		const response = await api.get('/api/v1/achievements/progress');
@@ -283,6 +346,10 @@ export async function getAchievementProgress() {
 	}
 }
 
+// Cria uma conquista nova no backend.
+// Tecnologias utilizadas: api.post e composição de criteriaPairs.
+// Objetivo: persistir regras de conquista com um ou mais critérios.
+// Observações: o payload aceita nomes legados e transforma o formato para o backend.
 export async function createAchievement(payload = {}) {
 	const criteriaPairs = Array.isArray(payload?.criteriaPairs) && payload.criteriaPairs.length > 0
 		? payload.criteriaPairs
@@ -313,6 +380,10 @@ export async function createAchievement(payload = {}) {
 	}
 }
 
+// Atualiza uma conquista existente.
+// Tecnologias utilizadas: api.put e composição de criteriaPairs.
+// Objetivo: alterar critérios, metas e estado ativo da conquista.
+// Observações: reaproveita a mesma estrutura de criação para manter consistência.
 export async function updateAchievement(achievementId, payload = {}) {
 	const criteriaPairs = Array.isArray(payload?.criteriaPairs) && payload.criteriaPairs.length > 0
 		? payload.criteriaPairs
@@ -343,6 +414,10 @@ export async function updateAchievement(achievementId, payload = {}) {
 	}
 }
 
+// Remove uma conquista do catálogo.
+// Tecnologias utilizadas: api.delete.
+// Objetivo: excluir itens administrativos sem manter estado local adicional.
+// Observações: retorna um objeto de sucesso para padronizar o fluxo de chamada.
 export async function deleteAchievement(achievementId) {
 	try {
 		await api.delete(`/api/v1/achievements/${achievementId}`);
@@ -352,6 +427,10 @@ export async function deleteAchievement(achievementId) {
 	}
 }
 
+// Normaliza estatísticas agregadas de conquistas.
+// Tecnologias utilizadas: Number e fallback de campos alternativos.
+// Objetivo: preparar porcentagens e contagens para cards e relatórios.
+// Observações: a leitura uniforme evita lógica duplicada na UI.
 function normalizeAchievementAggregate(item = {}) {
 	return {
 		achievementId: Number(item.achievementId ?? item.achievement_id) || null,
@@ -363,6 +442,10 @@ function normalizeAchievementAggregate(item = {}) {
 	};
 }
 
+// Busca métricas agregadas das conquistas.
+// Tecnologias utilizadas: api.get e normalizeAchievementAggregate.
+// Objetivo: mostrar quantos usuários atingiram cada conquista.
+// Observações: o retorno é mapeado para simplificar o uso no painel.
 export async function getAchievementsAggregate() {
 	try {
 		const response = await api.get('/api/v1/achievements/aggregate');

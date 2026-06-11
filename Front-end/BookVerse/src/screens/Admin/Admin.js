@@ -8,12 +8,10 @@ import { useAuth } from '../../context/AuthContext';
 
 const HIT_SLOP = { top: 10, bottom: 10, left: 10, right: 10 };
 
-/*
- * Tela do painel Admin
- * - Atalhos para navegação administrativa: gerenciar livros, membros,
- *   moderar comentários e configurar o Livro do Mês.
- * - Fornece ações rápidas para navegar às seções de administração.
- */
+// Tela principal do painel administrativo.
+// Tecnologias utilizadas: React Native, Ionicons, Header, FooterNav, AuthContext.
+// Objetivo: concentrar atalhos para as rotas de gestão mais usadas no app.
+// Observações: o carregamento é leve e o foco é limpo antes de navegar ou sair.
 
 const quickActions = [
   {
@@ -74,9 +72,17 @@ const quickActions = [
   },
 ];
 
+// Componente que reúne os atalhos operacionais do painel admin.
+// Tecnologias utilizadas: React, React Native, useAuth, React Navigation.
+// Objetivo: oferecer uma entrada rápida para tarefas administrativas frequentes.
+// Observações: o fluxo evita manter foco ativo ao trocar de tela ou encerrar sessão.
 export default function Admin({ navigation }) {
   const { signOut } = useAuth();
 
+  // Remove o foco atual do dispositivo antes de executar ações globais.
+  // Tecnologias utilizadas: DOM global quando disponível e API blur dos elementos.
+  // Objetivo: impedir que o teclado ou destaque de foco permaneçam visíveis.
+  // Observações: a checagem de ambiente evita erro em plataformas sem document.
   const blurFocusedElement = () => {
     if (typeof document === 'undefined') {
       return;
@@ -105,6 +111,10 @@ export default function Admin({ navigation }) {
 
       <View style={styles.content}>
         <ScrollView contentContainerStyle={styles.contentInner} showsVerticalScrollIndicator={false}>
+          {/* Bloco de navegação rápida do painel administrativo. */}
+          {/* Tecnologias utilizadas: TouchableOpacity, Ionicons e navegação por rotas. */}
+          {/* Objetivo: abrir as áreas principais sem exigir menus adicionais. */}
+          {/* Observações: hitSlop e accessibilityLabel ajudam toque e acessibilidade. */}
           <View style={styles.actionsCard}>
             <Text style={styles.sectionTitle}>Ações Rápidas</Text>
 

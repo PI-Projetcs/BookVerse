@@ -21,12 +21,15 @@ import { adminBookOfMonthStyles as styles } from '../../styles/adminBookOfMonthS
 const COVER_PLACEHOLDER = 'https://placehold.co/180x240/e5e7eb/475569?text=BookV';
 const HIT_SLOP = { top: 10, bottom: 10, left: 10, right: 10 };
 
-/*
- * Tela de seleção do Livro do Mês (Admin)
- * - Apresenta candidatos do catálogo e permite definir qual será exibido
- *   como destaque na tela inicial dos usuários.
- */
+// Tela administrativa para escolha do livro em destaque.
+// Tecnologias utilizadas: React Native, Ionicons, serviços de livros e home.
+// Objetivo: definir qual título será exibido como Livro do Mês no app.
+// Observações: o estado de seleção é sincronizado com a tela inicial do usuário.
 
+// Componente que controla a vitrine do Livro do Mês.
+// Tecnologias utilizadas: hooks, ScrollView, serviços de catálogo e home view model.
+// Objetivo: listar candidatos ativos e salvar a escolha atual do administrador.
+// Observações: o carregamento paralelo reduz espera entre catálogo e destaque atual.
 export default function BookOfMonth({ navigation }) {
 	const [books, setBooks] = useState([]);
 	const [searchText, setSearchText] = useState('');
@@ -36,6 +39,10 @@ export default function BookOfMonth({ navigation }) {
 	const [isSavingId, setIsSavingId] = useState(null);
 	const [errorMessage, setErrorMessage] = useState('');
 
+	// Busca catálogo e destaque atual em uma única etapa assíncrona.
+	// Tecnologias utilizadas: Promise.all, getAdminBooks e getHomeViewModel.
+	// Objetivo: manter a seleção exibida coerente com o estado real do sistema.
+	// Observações: qualquer erro cai em mensagem amigável para o administrador.
 	const loadData = async () => {
 		try {
 			setIsLoading(true);
@@ -55,6 +62,10 @@ export default function BookOfMonth({ navigation }) {
 		loadData();
 	}, []);
 
+	// Exibe apenas livros ativos e aplica busca por texto livre.
+	// Tecnologias utilizadas: useMemo e filtragem em array.
+	// Objetivo: reduzir ruído na escolha do destaque principal.
+	// Observações: livros inativos são excluídos mesmo quando o termo de busca coincide.
 	const filteredBooks = useMemo(() => {
 		const query = searchText.trim().toLowerCase();
 		const activeBooks = books.filter((book) => book.active !== false);
@@ -67,6 +78,10 @@ export default function BookOfMonth({ navigation }) {
 		);
 	}, [books, searchText]);
 
+	// Persiste a escolha do livro do mês e atualiza o resumo exibido no topo.
+	// Tecnologias utilizadas: updateBookOfMonth e Alert.
+	// Objetivo: refletir rapidamente a nova vitrine para os usuários finais.
+	// Observações: o estado isSavingId evita cliques repetidos no mesmo item.
 	const handleSetBookOfMonth = async (book) => {
 		try {
 			setIsSavingId(book.id);
@@ -94,6 +109,10 @@ export default function BookOfMonth({ navigation }) {
 
 			<View style={styles.content}>
 				<ScrollView contentContainerStyle={styles.contentInner} showsVerticalScrollIndicator={false}>
+					{/* Resumo do destaque atual e campo de busca dos candidatos. */}
+					{/* Tecnologias utilizadas: Text, TextInput, Image e estados derivados. */}
+					{/* Objetivo: identificar rapidamente o livro em destaque e os possíveis substitutos. */}
+					{/* Observações: o placeholder da capa cobre livros sem imagem cadastrada. */}
 					<View style={styles.currentCard}>
 						<Text style={styles.currentTitle}>Livro atual</Text>
 						<Text style={styles.currentSubtitle}>{currentBookTitle}</Text>

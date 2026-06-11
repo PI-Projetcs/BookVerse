@@ -20,12 +20,15 @@ import { loginStyles as styles } from '../../styles/loginStyles';
 
 const HIT_SLOP = { top: 10, bottom: 10, left: 10, right: 10 };
 
-/*
- * Tela de Login/Cadastro
- * - Valida entradas locais, chama `loginUser`/`registerUser` e injeta sessão via `useAuth`.
- * - Usa `extractApiErrorMessage` para mapear erros do backend para mensagens amigáveis.
- */
+// Tela de autenticação com login e cadastro na mesma interface.
+// Tecnologias utilizadas: React Native, Expo LinearGradient, Header, useAuth e serviços de auth.
+// Objetivo: concentrar entrada de conta e criação de usuário em um fluxo único.
+// Observações: a tela prioriza validação local, mensagens claras e alternância por abas.
 
+// Extrai mensagens de erro do backend em formatos diferentes.
+// Tecnologias utilizadas: acesso defensivo a objetos e status HTTP.
+// Objetivo: transformar respostas inconsistentes em feedback compreensível.
+// Observações: o fallback final evita expor erros técnicos ao usuário.
 function extractApiErrorMessage(error, fallbackMessage) {
 	const data = error?.response?.data;
 	const status = Number(error?.response?.status || 0);
@@ -57,10 +60,10 @@ function extractApiErrorMessage(error, fallbackMessage) {
 	return fallbackMessage;
 }
 
-// Validação e extração de mensagens de erro do backend
-// - Normaliza diferentes formatos de resposta (mensagem simples, objeto, lista de erros)
-// - Traduz códigos HTTP específicos (ex.: 403) para mensagens mais claras ao usuário
-
+// Componente principal da tela de login e cadastro.
+// Tecnologias utilizadas: useState, useEffect, Alert, TextInput, React Navigation e AuthContext.
+// Objetivo: validar credenciais, autenticar o usuário e registrar novas contas.
+// Observações: o fluxo reaproveita a mesma sessão após login ou cadastro bem-sucedido.
 export default function LoginScreen({ navigation, route }) {
 	const { signIn } = useAuth();
 	const initialTab = route?.params?.initialTab === 'register' ? 'register' : 'login';
@@ -81,7 +84,10 @@ export default function LoginScreen({ navigation, route }) {
 	const [registerConfirmPassword, setRegisterConfirmPassword] = useState('');
 	const [registerError, setRegisterError] = useState(null);
 
-	// Navegação de teste - substituir por lógica real de autenticação
+	// Atalho temporário para navegação de teste.
+	// Tecnologias utilizadas: React Navigation e Alert.
+	// Objetivo: facilitar depuração durante desenvolvimento local.
+	// Observações: o bloco permanece comentado para não interferir no fluxo real.
 	// const goTo = (routeName) => {
 	// 	if (navigation && typeof navigation.navigate === 'function') {
 	// 		navigation.navigate(routeName);
@@ -94,6 +100,10 @@ export default function LoginScreen({ navigation, route }) {
 		setActiveTab(initialTab);
 	}, [initialTab]);
 
+	// Realiza login após validações básicas do formulário.
+	// Tecnologias utilizadas: loginUser, signIn, Alert e regex de validação.
+	// Objetivo: autenticar o usuário com retorno imediato de erro ou sucesso.
+	// Observações: valida email e senha antes de chamar a API para reduzir requisições inválidas.
 	const handleLogin = async () => {
 		setLoginError(null);
 
@@ -131,11 +141,10 @@ export default function LoginScreen({ navigation, route }) {
 		}
 	};
 
-	// Handler de login
-	// - Valida campos localmente (formato de email e caracteres permitidos na senha)
-	// - Chama `loginUser` do serviço de autenticação e injeta sessão via `useAuth.signIn`
-	// - Mostra mensagens de erro amigáveis extraídas por `extractApiErrorMessage`
-
+	// Cadastra um novo usuário e inicia a sessão automaticamente.
+	// Tecnologias utilizadas: registerUser, signIn, Alert e validações locais.
+	// Objetivo: criar conta com confirmação de senha e feedback claro.
+	// Observações: a senha precisa seguir regras mínimas antes de ir ao backend.
 
 	const handleRegister = async () => {
 		setRegisterError(null);
@@ -183,15 +192,18 @@ export default function LoginScreen({ navigation, route }) {
 		}
 	};
 
-	// Handler de registro
-	// - Valida presença de campos, confirma senha e regras mínimas (ex.: tamanho)
-	// - Realiza chamada a `registerUser` e reusa `signIn` para iniciar sessão automaticamente
-	// - Converte erros do backend usando `extractApiErrorMessage`
-
+	// Indica qual formulário está visível na interface.
+	// Tecnologias utilizadas: estado derivado simples.
+	// Objetivo: simplificar a renderização condicional entre entrar e cadastrar.
+	// Observações: o valor muda com a aba e também com a rota inicial.
 	const isLogin = activeTab === 'login';
 
 	return (
 		<SafeAreaView style={styles.safeArea}>
+			{/* Estrutura principal da tela de autenticação. */}
+			{/* Tecnologias utilizadas: SafeAreaView, KeyboardAvoidingView e ScrollView. */}
+			{/* Objetivo: manter a tela legível e ajustar o conteúdo ao teclado. */}
+			{/* Observações: o comportamento do teclado varia por plataforma. */}
 			<StatusBar barStyle="light-content" />
 			<KeyboardAvoidingView
 				style={styles.flex}
@@ -200,12 +212,20 @@ export default function LoginScreen({ navigation, route }) {
 				<View style={styles.phoneFrame}>
 					<Header />
 
+					{/* Área rolável com abas e formulários de acesso. */}
+					{/* Tecnologias utilizadas: ScrollView, TouchableOpacity e TextInput. */}
+					{/* Objetivo: permitir alternar entre login e cadastro sem sair da página. */}
+					{/* Observações: keyboardShouldPersistTaps evita fechamento indevido do teclado. */}
 					<ScrollView
 						contentContainerStyle={styles.content}
 						keyboardShouldPersistTaps="handled"
 						showsVerticalScrollIndicator={false}
 					>
 						<View style={styles.tabsContainer}>
+							{/* Abas que alternam entre autenticação e cadastro. */}
+							{/* Tecnologias utilizadas: TouchableOpacity e estado de seleção. */}
+							{/* Objetivo: separar visualmente os dois fluxos da tela. */}
+							{/* Observações: accessibilityState ajuda leitores de tela a identificar a aba ativa. */}
 							<TouchableOpacity
 								style={[styles.tabButton, isLogin && styles.tabButtonActive]}
 								onPress={() => setActiveTab('login')}
@@ -229,6 +249,10 @@ export default function LoginScreen({ navigation, route }) {
 						</View>
 
 						{isLogin ? (
+							/* Formulário de entrada com email, senha e ação de login. */
+							{/* Tecnologias utilizadas: TextInput, Ionicons, TouchableOpacity e validações locais. */}
+							{/* Objetivo: autenticar o usuário e abrir a sessão do app. */}
+							{/* Observações: o feedback de erro aparece logo abaixo do email. */}
 							<View style={styles.form}>
 								<Text style={styles.label}>Email</Text>
 								<View style={styles.inputWrapper}>
@@ -289,6 +313,10 @@ export default function LoginScreen({ navigation, route }) {
 								</TouchableOpacity>
 
 								<View style={styles.infoBox}>
+									{/* Credenciais de teste para agilizar a validação local. */}
+									{/* Tecnologias utilizadas: TouchableOpacity e preenchimento programático de estado. */}
+									{/* Objetivo: reduzir atrito durante demonstração e testes manuais. */}
+									{/* Observações: em produção, esse bloco deveria ser removido ou ocultado. */}
 									<Text style={styles.infoTitle}>Credenciais de teste:</Text>
 									<TouchableOpacity 
 										onPress={() => {
@@ -310,6 +338,10 @@ export default function LoginScreen({ navigation, route }) {
 
 							</View>
 						) : (
+							/* Formulário de cadastro com confirmação de senha e criação de conta. */}
+							{/* Tecnologias utilizadas: TextInput, Ionicons, TouchableOpacity e Alert. */}
+							{/* Objetivo: registrar um novo usuário com validação mínima de segurança. */}
+							{/* Observações: o campo de confirmação ajuda a evitar erro de digitação. */}
 							<View style={styles.form}>
 								<Text style={styles.label}>Nome completo</Text>
 								<View style={styles.inputWrapper}>

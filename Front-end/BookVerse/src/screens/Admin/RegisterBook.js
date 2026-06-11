@@ -53,12 +53,15 @@ const EMPTY_FORM = {
 const COVER_PLACEHOLDER = 'https://placehold.co/180x240/e5e7eb/475569?text=BookV';
 const HIT_SLOP = { top: 10, bottom: 10, left: 10, right: 10 };
 
-/*
- * Tela de registro/edição de livros (Admin)
- * - Formulário completo para criar ou atualizar livros, capítulos e metadados.
- * - Valida campos obrigatórios e normaliza capítulos antes de enviar ao backend.
- */
+// Tela de cadastro e edição de livros do painel administrativo.
+// Tecnologias utilizadas: React Native, LinearGradient, Ionicons e serviços de livros.
+// Objetivo: criar ou atualizar livros com metadados, capítulos e status público.
+// Observações: o formulário reutiliza a mesma estrutura para cadastro e edição.
 
+// Cria um capítulo com identificador estável para uso em listas editáveis.
+// Tecnologias utilizadas: funções puras e Date.now para chaves locais.
+// Objetivo: evitar colisão de itens ao adicionar ou mover capítulos.
+// Observações: aceita dados antigos com título em português ou inglês.
 function createChapter(chapter = {}, index = 0) {
   return {
     id: chapter?.id || `chapter-${Date.now()}-${index}`,
@@ -90,6 +93,10 @@ function mapBookToForm(book) {
   };
 }
 
+// Componente que centraliza o formulário completo de livro para o admin.
+// Tecnologias utilizadas: useState, useEffect, ScrollView e navegação com parâmetros.
+// Objetivo: permitir criação, revisão e ajuste fino do catálogo.
+// Observações: a prévia de capa usa fallback para não quebrar a UI sem imagem válida.
 export default function RegisterBook({ navigation, route }) {
   const [form, setForm] = useState(EMPTY_FORM);
   const [editingBookId, setEditingBookId] = useState(null);
@@ -100,6 +107,10 @@ export default function RegisterBook({ navigation, route }) {
   const screenModeLabel = editingBookId ? 'Modo edição' : 'Novo cadastro';
   const previewCoverUrl = form.coverUrl.trim() || COVER_PLACEHOLDER;
 
+  // Sincroniza o formulário quando a tela recebe um livro para edição pela navegação.
+  // Tecnologias utilizadas: useEffect e navigation.setParams.
+  // Objetivo: reaproveitar a mesma tela para atualizar livros existentes.
+  // Observações: o reset dos parâmetros evita reprocessamento do mesmo item.
   useEffect(() => {
     const routeBook = route?.params?.bookData;
     if (!routeBook) {
@@ -116,6 +127,10 @@ export default function RegisterBook({ navigation, route }) {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
 
+  // Atualiza apenas o capítulo selecionado sem alterar o restante da lista.
+  // Tecnologias utilizadas: setState funcional e Array.map.
+  // Objetivo: editar títulos de capítulos de forma isolada.
+  // Observações: o ID local mantém o item estável mesmo após reordenação.
   const handleChapterChange = (chapterId, value) => {
     setForm((prev) => ({
       ...prev,
@@ -132,6 +147,10 @@ export default function RegisterBook({ navigation, route }) {
     }));
   };
 
+  // Remove um capítulo mantendo ao menos um item visível no formulário.
+  // Tecnologias utilizadas: filter e fallback para criação de capítulo vazio.
+  // Objetivo: permitir limpeza de capítulos sem deixar a seção vazia demais.
+  // Observações: o mínimo de um capítulo evita estado inconsistente na UI.
   const removeChapter = (chapterId) => {
     setForm((prev) => {
       const nextChapters = prev.chapters.filter((chapter) => chapter.id !== chapterId);
@@ -142,6 +161,10 @@ export default function RegisterBook({ navigation, route }) {
     });
   };
 
+  // Reorganiza capítulos para cima ou para baixo sem perder conteúdo.
+  // Tecnologias utilizadas: findIndex, splice e cópia do array.
+  // Objetivo: ajustar a ordem exibida no livro antes de salvar.
+  // Observações: as bordas da lista são protegidas para evitar índices inválidos.
   const moveChapter = (chapterId, direction) => {
     setForm((prev) => {
       const currentIndex = prev.chapters.findIndex((chapter) => chapter.id === chapterId);
@@ -162,18 +185,30 @@ export default function RegisterBook({ navigation, route }) {
     });
   };
 
+  // Limpa o formulário e retorna ao estado de novo cadastro.
+  // Tecnologias utilizadas: setState com objeto base do formulário.
+  // Objetivo: descartar rascunhos ao iniciar outro livro.
+  // Observações: também fecha a lista de gêneros para preservar contexto visual.
   const resetForm = () => {
     setForm(EMPTY_FORM);
     setEditingBookId(null);
     setIsGenreListOpen(false);
   };
 
+  // Reaproveita a tela de cadastro para editar um livro já existente.
+  // Tecnologias utilizadas: transformação de dados e controle de estado.
+  // Objetivo: abrir o mesmo formulário com conteúdo pré-preenchido.
+  // Observações: o seletor de gênero é fechado para reduzir ruído visual.
   const handleEdit = (book) => {
     setEditingBookId(book?.id || null);
     setForm(mapBookToForm(book));
     setIsGenreListOpen(false);
   };
 
+  // Valida, normaliza e envia o livro para criação ou atualização.
+  // Tecnologias utilizadas: Alert, updateAdminBook, createAdminBook e console.error.
+  // Objetivo: persistir um livro com campos consistentes e capítulos filtrados.
+  // Observações: a conversão numérica protege contra strings vazias e metadados inválidos.
   const handleSubmit = async () => {
     if (!form.title.trim() || !form.author.trim() || !form.authorBio.trim() || !form.genre.trim()) {
       Alert.alert('Campos obrigatórios', 'Preencha título, autor, sobre o autor e categoria para continuar.');
@@ -237,6 +272,10 @@ export default function RegisterBook({ navigation, route }) {
 
       <View style={styles.content}>
         <ScrollView contentContainerStyle={styles.contentInner} showsVerticalScrollIndicator={false}>
+          {/* Resumo do modo atual e pré-visualização da capa. */}
+          {/* Tecnologias utilizadas: Image, LinearGradient e textos auxiliares. */}
+          {/* Objetivo: orientar o administrador antes de preencher o formulário. */}
+          {/* Observações: o destaque visual reforça se a tela está em edição ou criação. */}
           <View style={styles.summaryCard}>
             <View style={styles.summaryTopRow}>
               <View>

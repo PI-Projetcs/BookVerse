@@ -24,17 +24,21 @@ import {
   removeFavoriteBook,
 } from '../../services/profileService';
 
+// Espaço mínimo de toque para ações e botões pequenos.
+// Tecnologias utilizadas: propriedade hitSlop do React Native.
+// Objetivo: melhorar a interação em listas e atalhos do perfil.
+// Observações: amplia a área clicável sem poluir o layout.
 const HIT_SLOP = { top: 10, bottom: 10, left: 10, right: 10 };
 
-/*
- * Tela de perfil do usuário
- * - Mostra estatísticas, conquistas, livros favoritos e atividades do usuário.
- * - Reage a mudanças de foco da rota para recarregar o perfil e notifica quando
- *   novas conquistas são desbloqueadas.
- */
+// Tela principal do perfil do usuário.
+// Tecnologias utilizadas: React Native, React Navigation, serviços de perfil e autenticação.
+// Objetivo: apresentar estatísticas, favoritos, leitura e conquistas em um painel único.
+// Observações: a tela reage ao foco e notifica quando novas conquistas aparecem.
 
-// Retorna uma label legível para o papel do usuário
-// - Normaliza valores internos ('admin', 'member') para rótulos exibíveis.
+// Converte o papel interno do usuário para um rótulo legível.
+// Tecnologias utilizadas: função pura e normalização de string.
+// Objetivo: exibir o tipo de conta sem expor códigos internos.
+// Observações: o fallback evita rótulo vazio quando o papel é desconhecido.
 function getProfileRoleLabel(role) {
   const normalized = String(role || '').trim().toLowerCase();
   if (normalized === 'admin') return 'Administrador';
@@ -42,19 +46,27 @@ function getProfileRoleLabel(role) {
   return role || 'Leitor(a)';
 }
 
-// Formata números pequenos com padding (ex.: 1 -> '01')
+// Formata números com dois dígitos para manter consistência visual.
+// Tecnologias utilizadas: padStart.
+// Objetivo: exibir métricas em cards com alinhamento uniforme.
+// Observações: usa fallback seguro para valores ausentes ou inválidos.
 function formatNumber(value) {
   return String(Number.isFinite(Number(value)) ? Number(value) : 0).padStart(2, '0');
 }
 
-// Converte valores para número com fallback seguro
+// Converte valores para número com fallback seguro.
+// Tecnologias utilizadas: Number e checagem de finitude.
+// Objetivo: evitar cálculos quebrados em estatísticas e progresso.
+// Observações: centraliza a normalização numérica usada em vários cards.
 function toNumber(value, fallback = 0) {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
-// Calcula o valor atual do progresso de uma conquista com base no perfil
-// - Suporta critérios padrões: READ_BOOKS, RATINGS_CREATED, FAVORITES_ADDED
+// Calcula o progresso de uma conquista com base nas métricas do perfil.
+// Tecnologias utilizadas: leitura de objetos e utilitário toNumber.
+// Objetivo: comparar os critérios cadastrados pelo admin com os dados do usuário.
+// Observações: suporta critérios padrão sem depender de nova chamada ao backend.
 function getAchievementProgressValue(profile, achievement) {
   const criteriaType = String(achievement?.criteriaType || '').toUpperCase();
   if (criteriaType === 'READ_BOOKS') {
@@ -72,7 +84,10 @@ function getAchievementProgressValue(profile, achievement) {
   return 0;
 }
 
-// Componente local: cartão de seção com cabeçalho e ação opcional
+// Cartão genérico de seção com cabeçalho e ação opcional.
+// Tecnologias utilizadas: View, Text e TouchableOpacity.
+// Objetivo: reutilizar o mesmo padrão visual em blocos do perfil.
+// Observações: reduz duplicação e mantém consistência entre as seções.
 function SectionCard({ title, subtitle, actionLabel, onAction, children }) {
   return (
     <View style={screenStyles.sectionCard}>
@@ -92,7 +107,10 @@ function SectionCard({ title, subtitle, actionLabel, onAction, children }) {
   );
 }
 
-// Componente local: um 'pill' estatístico com ícone e valor
+// Cartão estatístico resumido com ícone e valor.
+// Tecnologias utilizadas: Ionicons e componentes de estatística do tema.
+// Objetivo: destacar números importantes do perfil com leitura rápida.
+// Observações: o valor formatado ajuda a manter a grade alinhada.
 function StatPill({ icon, label, value, color = '#7D1F3E' }) {
   return (
     <View style={userStyles.statCard}>
@@ -105,7 +123,10 @@ function StatPill({ icon, label, value, color = '#7D1F3E' }) {
   );
 }
 
-// Componente local: estado vazio reutilizável para listas
+// Estado vazio reutilizável para listas do perfil.
+// Tecnologias utilizadas: Ionicons, Text e View.
+// Objetivo: evitar espaços vazios quando não há dados na seção.
+// Observações: a mensagem contextual orienta o próximo passo do usuário.
 function EmptyState({ icon, title, description }) {
   return (
     <View style={screenStyles.emptyState}>
@@ -116,7 +137,10 @@ function EmptyState({ icon, title, description }) {
   );
 }
 
-// Cartão de favorito exibido na lista de favoritos do usuário
+// Cartão de favorito exibido no carrossel horizontal.
+// Tecnologias utilizadas: TouchableOpacity, Ionicons e textos curtos.
+// Objetivo: mostrar capa, autor e categoria com acesso rápido ao livro.
+// Observações: o botão de remover fica acessível sem quebrar o card inteiro.
 function FavoriteCard({ book, onPress, onRemove }) {
   return (
     <TouchableOpacity style={screenStyles.favoriteCard} onPress={onPress} activeOpacity={0.9}>
@@ -139,7 +163,10 @@ function FavoriteCard({ book, onPress, onRemove }) {
   );
 }
 
-// Linha de leitura (histórico/andamento) exibida na lista
+// Linha compacta com histórico de leitura e progresso.
+// Tecnologias utilizadas: View e textos com indicadores de status.
+// Objetivo: resumir livros lidos sem ocupar muito espaço vertical.
+// Observações: o percentual é limitado para evitar valores fora de faixa.
 function ReadingRow({ item }) {
   const percent = Math.max(0, Math.min(100, Number(item?.progress) || 0));
   return (
@@ -156,7 +183,10 @@ function ReadingRow({ item }) {
   );
 }
 
-// Linha de avaliação com nota e trecho da resenha
+// Linha de avaliação com nota e trecho da resenha.
+// Tecnologias utilizadas: TouchableOpacity, Ionicons e formatação textual.
+// Objetivo: apresentar as avaliações recentes em formato compacto.
+// Observações: o card inteiro é clicável para abrir o livro associado.
 function RatingRow({ item, onPressBook }) {
   return (
     <TouchableOpacity style={screenStyles.ratingCard} onPress={onPressBook} activeOpacity={0.9}>
@@ -175,7 +205,10 @@ function RatingRow({ item, onPressBook }) {
   );
 }
 
-// Badge de conquista resumida
+// Badge simples para conquista desbloqueada.
+// Tecnologias utilizadas: Ionicons, Text e View.
+// Objetivo: listar conquistas obtidas em uma grade curta e visual.
+// Observações: o texto é truncado para preservar o equilíbrio do grid.
 function AchievementBadge({ item }) {
   return (
     <View style={screenStyles.achievementBadge}>
@@ -186,7 +219,10 @@ function AchievementBadge({ item }) {
   );
 }
 
-// Cartão de progresso de conquista com barra e percentual
+// Cartão de progresso de conquista com barra e percentual.
+// Tecnologias utilizadas: cálculos derivados e barra de progresso visual.
+// Objetivo: mostrar quanto falta para completar cada conquista.
+// Observações: o estado concluído recebe destaque próprio para leitura rápida.
 function ProgressAchievementCard({ item, progressValue }) {
   const targetValue = Math.max(1, Number(item?.targetValue) || 1);
   const currentValue = Math.max(0, Number(progressValue) || 0);
@@ -216,10 +252,10 @@ function ProgressAchievementCard({ item, progressValue }) {
   );
 }
 
-// Tela de perfil do usuário
-// - Carrega perfil detalhado e catálogo de conquistas, mostra favoritos,
-//   leituras em andamento e estatísticas.
-// - Recarrega ao focar a rota e notifica quando novas conquistas são desbloqueadas.
+// Tela de perfil do usuário com estatísticas, conquistas e favoritos.
+// Tecnologias utilizadas: useState, useEffect, useCallback, useFocusEffect e serviços de perfil.
+// Objetivo: centralizar a identidade do leitor e seu histórico de uso.
+// Observações: a tela recarrega ao voltar ao foco e compara conquistas para detectar novidades.
 export default function UserScreen({ navigation }) {
   const { session, signOut } = useAuth();
   const [profile, setProfile] = useState(null);
@@ -229,6 +265,10 @@ export default function UserScreen({ navigation }) {
   const [error, setError] = useState(null);
   const previousAchievementIdsRef = React.useRef([]);
 
+  // Carrega o perfil detalhado e o catálogo de conquistas em paralelo.
+  // Tecnologias utilizadas: Promise.all e serviços do perfil.
+  // Objetivo: montar todos os blocos da tela com uma única consulta inicial.
+  // Observações: o estado de erro evita renderização parcial sem contexto.
   const loadProfile = useCallback(async () => {
     try {
       setError(null);
@@ -246,6 +286,10 @@ export default function UserScreen({ navigation }) {
     }
   }, []);
 
+  // Recarrega o perfil quando a tela ganha foco.
+  // Tecnologias utilizadas: useFocusEffect.
+  // Objetivo: manter favoritos, estatísticas e conquistas alinhados com o backend.
+  // Observações: não retorna cleanup porque a função apenas dispara a carga.
   useFocusEffect(
     useCallback(() => {
       loadProfile();
@@ -253,6 +297,10 @@ export default function UserScreen({ navigation }) {
     }, [loadProfile])
   );
 
+  // Detecta novas conquistas comparando o estado atual com o anterior.
+  // Tecnologias utilizadas: useEffect e useRef.
+  // Objetivo: notificar o usuário quando um badge novo é desbloqueado.
+  // Observações: evita alertas repetidos armazenando ids já vistos.
   useEffect(() => {
     const currentIds = Array.isArray(profile?.achievements)
       ? profile.achievements.map((item) => item?.id).filter(Boolean)
@@ -274,15 +322,27 @@ export default function UserScreen({ navigation }) {
     previousAchievementIdsRef.current = currentIds;
   }, [profile?.achievements]);
 
+  // Recarrega o perfil manualmente via pull-to-refresh.
+  // Tecnologias utilizadas: RefreshControl e loadProfile.
+  // Objetivo: permitir atualização rápida sem sair da tela.
+  // Observações: o estado refreshing é encerrado no finally do carregamento.
   const handleRefresh = async () => {
     setRefreshing(true);
     await loadProfile();
   };
 
+  // Encerra a sessão do usuário.
+  // Tecnologias utilizadas: signOut do AuthContext.
+  // Objetivo: oferecer saída rápida da conta no bloco de ações.
+  // Observações: não exige confirmação porque já há ação explícita no botão.
   const handleLogout = async () => {
     await signOut();
   };
 
+  // Inicia o fluxo de exclusão da própria conta com confirmação.
+  // Tecnologias utilizadas: Alert e deactivateOwnAccount.
+  // Objetivo: permitir remoção da conta diretamente pelo perfil.
+  // Observações: o logout após exclusão evita manter sessão inválida.
   const handleDeactivateOwnAccount = () => {
     Alert.alert(
       'Excluir conta',
@@ -305,6 +365,10 @@ export default function UserScreen({ navigation }) {
     );
   };
 
+  // Abre a tela de detalhes do livro a partir do identificador informado.
+  // Tecnologias utilizadas: React Navigation.
+  // Objetivo: conectar favoritos, avaliações e histórico aos detalhes do livro.
+  // Observações: ignora chamadas sem id para evitar navegação inválida.
   const handleOpenBook = (bookId) => {
     if (!bookId) {
       return;
@@ -313,6 +377,10 @@ export default function UserScreen({ navigation }) {
     navigation.navigate('BookDetails', { id: bookId });
   };
 
+  // Remove um livro dos favoritos com confirmação.
+  // Tecnologias utilizadas: Alert e removeFavoriteBook.
+  // Objetivo: controlar a lista de livros fixados no perfil.
+  // Observações: a resposta do backend substitui o perfil local para manter consistência.
   const handleRemoveFavorite = (book) => {
     if (!book?.id) {
       return;
@@ -339,6 +407,10 @@ export default function UserScreen({ navigation }) {
     );
   };
 
+  // Normaliza os blocos derivados usados na renderização.
+  // Tecnologias utilizadas: arrays, Set e cálculos simples.
+  // Objetivo: evitar recomputar a mesma informação várias vezes no JSX.
+  // Observações: prioriza o maior valor entre estatística do backend e listas carregadas.
   const favoriteBooks = profile?.favoriteBooks || [];
   const readBooks = profile?.readBooks || [];
   const ratings = profile?.ratings || [];
@@ -362,6 +434,10 @@ export default function UserScreen({ navigation }) {
 
   return (
     <View style={userStyles.screen}>
+      {/* Cabeçalho fixo do perfil com ação de sair. */}
+      {/* Tecnologias utilizadas: StatusBar, Header e navegação. */}
+      {/* Objetivo: identificar a seção de perfil e oferecer logout imediato. */}
+      {/* Observações: o gradiente mantém a identidade visual do app. */}
       <StatusBar barStyle="light-content" />
       <Header
         title="BookV"
@@ -373,11 +449,19 @@ export default function UserScreen({ navigation }) {
 
       <View style={userStyles.content}>
         {loading ? (
+          /* Estado de carregamento centralizado para o perfil. */}
+          {/* Tecnologias utilizadas: ActivityIndicator e View. */}
+          {/* Objetivo: informar que os dados ainda estão sendo buscados. */}
+          {/* Observações: evita conteúdo parcial e reduz confusão ao abrir a tela. */}
           <View style={screenStyles.centerState}>
             <ActivityIndicator size="large" color="#0f766e" />
             <Text style={screenStyles.centerStateText}>Carregando perfil...</Text>
           </View>
         ) : error ? (
+          /* Estado de erro com ação de tentativa novamente. */}
+          {/* Tecnologias utilizadas: Ionicons, TouchableOpacity e feedback textual. */}
+          {/* Objetivo: dar uma saída clara quando a carga falha. */}
+          {/* Observações: o retry reaproveita a mesma rotina de carregamento. */}
           <View style={screenStyles.centerState}>
             <Ionicons name="alert-circle-outline" size={28} color="#9f1239" />
             <Text style={screenStyles.centerStateText}>{error}</Text>
@@ -386,12 +470,20 @@ export default function UserScreen({ navigation }) {
             </TouchableOpacity>
           </View>
         ) : (
+          /* Conteúdo principal do perfil com scroll e pull-to-refresh. */}
+          {/* Tecnologias utilizadas: ScrollView e RefreshControl. */}
+          {/* Objetivo: reunir estatísticas, favoritos, leituras e conquistas. */}
+          {/* Observações: o refresh manual melhora atualização sem navegar entre telas. */}
           <ScrollView
             contentContainerStyle={userStyles.contentInner}
             showsVerticalScrollIndicator={false}
             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor="#0f766e" />}
           >
             <View style={userStyles.profileCard}>
+              {/* Cartão de identificação do usuário logado. */}
+              {/* Tecnologias utilizadas: avatar, textos e ícone de perfil. */}
+              {/* Objetivo: exibir nome, email e papel do usuário. */}
+              {/* Observações: usa fallback quando o perfil ainda não traz nome ou email. */}
               <View style={[userStyles.avatar, screenStyles.avatarFallback]}>
                 <Ionicons name="person-outline" size={30} color="#ffffff" />
               </View>
@@ -403,6 +495,10 @@ export default function UserScreen({ navigation }) {
             </View>
 
             <View style={userStyles.statsContainer}>
+              {/* Linha de indicadores resumidos do perfil. */}
+              {/* Tecnologias utilizadas: StatPill e dados derivados do perfil. */}
+              {/* Objetivo: mostrar métricas principais em leitura rápida. */}
+              {/* Observações: os valores seguem fonte única para não divergir entre blocos. */}
               <StatPill icon="book-outline" label="Lidos" value={stats.livrosLidos ?? readBooks.length} color="#0f766e" />
               <StatPill icon="bookmark-outline" label="Favoritos" value={stats.favoritos ?? favoriteBooks.length} color="#7D1F3E" />
               <StatPill icon="star-outline" label="Avaliações" value={stats.resenhas ?? ratings.length} color="#B8941F" />
@@ -410,6 +506,10 @@ export default function UserScreen({ navigation }) {
             </View>
 
             <SectionCard title="Conta" subtitle="Ações e atalhos do seu perfil">
+              {/* Ações principais da conta do usuário. */}
+              {/* Tecnologias utilizadas: TouchableOpacity e ícones auxiliares. */}
+              {/* Objetivo: abrir feedbacks, sair ou excluir a conta. */}
+              {/* Observações: ações destrutivas usam cores e confirmação explícita. */}
               <TouchableOpacity
                 style={[screenStyles.actionRow, { marginTop: 4 }]}
                 onPress={() => navigation.navigate('MyModeration')}
@@ -453,6 +553,10 @@ export default function UserScreen({ navigation }) {
             </SectionCard>
 
             <SectionCard title="Favoritos" subtitle="Até 3 livros fixados no seu perfil">
+              {/* Lista horizontal de livros favoritos. */}
+              {/* Tecnologias utilizadas: ScrollView horizontal e FavoriteCard. */}
+              {/* Objetivo: destacar rapidamente os livros mais relevantes para o usuário. */}
+              {/* Observações: o limite de três itens ajuda a manter o bloco enxuto. */}
               {favoriteBooks.length === 0 ? (
                 <EmptyState
                   icon="bookmark-outline"
@@ -474,6 +578,10 @@ export default function UserScreen({ navigation }) {
             </SectionCard>
 
             <SectionCard title="Livros lidos" subtitle="Histórico do que já passou pelo seu perfil">
+              {/* Histórico de livros concluídos ou acompanhados. */}
+              {/* Tecnologias utilizadas: ReadingRow e listas limitadas. */}
+              {/* Objetivo: resumir a trilha de leitura sem ocupar a tela inteira. */}
+              {/* Observações: mostra apenas os primeiros itens para preservar performance visual. */}
               {readBooks.length === 0 ? (
                 <EmptyState
                   icon="book-outline"
@@ -490,6 +598,10 @@ export default function UserScreen({ navigation }) {
             </SectionCard>
 
             <SectionCard title="Avaliações" subtitle="As últimas avaliações publicadas por você">
+              {/* Lista compacta das avaliações recentes. */}
+              {/* Tecnologias utilizadas: RatingRow e navegação para detalhes do livro. */}
+              {/* Objetivo: revisar o que já foi avaliado sem abrir outra área do app. */}
+              {/* Observações: limitar itens evita uma rolagem excessiva. */}
               {ratings.length === 0 ? (
                 <EmptyState
                   icon="star-outline"
@@ -510,6 +622,10 @@ export default function UserScreen({ navigation }) {
             </SectionCard>
 
             <SectionCard title="Conquistas em progresso" subtitle="Veja o que já foi atingido e o que falta para a próxima conquista">
+              {/* Conquistas ainda em andamento com barra de progresso. */}
+              {/* Tecnologias utilizadas: ProgressAchievementCard e cálculo derivado. */}
+              {/* Objetivo: orientar o usuário sobre o que falta para desbloquear badges. */}
+              {/* Observações: o estado vazio muda conforme o catálogo e o progresso real. */}
               {progressAchievements.length === 0 ? (
                 <EmptyState
                   icon="ribbon-outline"
@@ -532,6 +648,10 @@ export default function UserScreen({ navigation }) {
             </SectionCard>
 
             <SectionCard title="Conquistas desbloqueadas" subtitle="Badges desbloqueados no BookVerse">
+              {/* Grade das conquistas já desbloqueadas. */}
+              {/* Tecnologias utilizadas: AchievementBadge e layout em grid. */}
+              {/* Objetivo: exibir o resultado final das metas concluídas. */}
+              {/* Observações: o grid preserva leitura rápida em telas largas e estreitas. */}
               {unlockedAchievements.length === 0 ? (
                 <EmptyState
                   icon="ribbon-outline"
@@ -557,6 +677,10 @@ export default function UserScreen({ navigation }) {
   );
 }
 
+// Estilos específicos de apoio à tela de perfil.
+// Tecnologias utilizadas: StyleSheet e tokens do tema já existentes.
+// Objetivo: complementar o design base com estados vazios, badges e cards especiais.
+// Observações: separar estilos locais ajuda a manter a tela coesa sem alterar o tema global.
 const screenStyles = StyleSheet.create({
   centerState: {
     flex: 1,

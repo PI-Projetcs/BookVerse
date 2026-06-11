@@ -57,12 +57,15 @@ const CRITERIA_OPTIONS = [
 
 const HIT_SLOP = { top: 10, bottom: 10, left: 10, right: 10 };
 
-/*
- * Tela de gerenciamento de conquistas
- * - Permite criar, editar e excluir conquistas, além de visualizar progresso
- *   e estatísticas agregadas por conquista.
- */
+// Tela administrativa de conquistas e critérios de progressão.
+// Tecnologias utilizadas: React Native, Ionicons, Switch, serviços de admin.
+// Objetivo: manter o catálogo de conquistas e acompanhar o progresso dos usuários.
+// Observações: a tela cruza dados do catálogo, progresso e estatísticas agregadas.
 
+// Utilitários de transformação para exibição e persistência de critérios.
+// Tecnologias utilizadas: funções puras e manipulação de objetos/arrays.
+// Objetivo: normalizar conquistas antigas e novas para o mesmo formato de tela.
+// Observações: a conversão evita duplicação de lógica na renderização e no submit.
 function getCriteriaLabel(criteriaType) {
 	return CRITERIA_OPTIONS.find((option) => option.key === criteriaType)?.label || criteriaType;
 }
@@ -122,6 +125,10 @@ function normalizeTargetValue(value) {
 	return Math.max(1, Math.floor(numericValue));
 }
 
+// Componente responsável por criar, editar, filtrar e remover conquistas.
+// Tecnologias utilizadas: useState, useEffect, useMemo e serviços de administração.
+// Objetivo: fornecer um painel completo para regras de engajamento do app.
+// Observações: a validação local reduz requisições inválidas ao backend.
 export default function ManageAchievements({ navigation }) {
 	const [achievements, setAchievements] = useState([]);
 	const [achievementProgress, setAchievementProgress] = useState([]);
@@ -136,6 +143,10 @@ export default function ManageAchievements({ navigation }) {
 	const [isDeletingId, setIsDeletingId] = useState(null);
 	const [errorMessage, setErrorMessage] = useState('');
 
+	// Carrega catálogo, progresso individual e métricas agregadas em paralelo.
+	// Tecnologias utilizadas: Promise.all e funções do adminService.
+	// Objetivo: montar uma visão ampla para edição e acompanhamento de conquistas.
+	// Observações: cada endpoint secundário possui fallback para não travar a tela.
 	const loadAchievements = async () => {
 		try {
 			setIsLoading(true);
@@ -159,11 +170,19 @@ export default function ManageAchievements({ navigation }) {
 		loadAchievements();
 	}, []);
 
+	// Recarrega dados quando a tela volta ao foco para manter a lista atualizada.
+	// Tecnologias utilizadas: navigation.addListener e cleanup do efeito.
+	// Objetivo: refletir mudanças feitas em outras áreas do painel sem recarregar o app.
+	// Observações: isso reduz risco de editar ou excluir itens com estado antigo.
 	useEffect(() => {
 		const unsubscribe = navigation.addListener('focus', loadAchievements);
 		return unsubscribe;
 	}, [navigation]);
 
+	// Aplica busca, filtro por status, filtro por critério e ordenação.
+	// Tecnologias utilizadas: useMemo, Array.filter e localeCompare.
+	// Objetivo: facilitar a descoberta de conquistas em catálogos maiores.
+	// Observações: o resumo por critério também entra na busca textual.
 	const filteredAchievements = useMemo(() => {
 		const query = searchText.trim().toLowerCase();
 		const visible = achievements.filter((achievement) => {
@@ -185,6 +204,10 @@ export default function ManageAchievements({ navigation }) {
 		});
 	}, [achievements, criteriaFilter, searchText, sortOrder, statusFilter]);
 
+	// Descobre quais critérios realmente aparecem no catálogo carregado.
+	// Tecnologias utilizadas: useMemo, Set e flatMap.
+	// Objetivo: evitar filtros vazios quando nenhum item usa um critério específico.
+	// Observações: os chips mostrados acompanham apenas critérios presentes na lista.
 	const visibleCriteriaOptions = useMemo(() => {
 		const criteriaTypes = Array.from(
 			new Set(
@@ -196,6 +219,10 @@ export default function ManageAchievements({ navigation }) {
 		return CRITERIA_OPTIONS.filter((option) => criteriaTypes.includes(option.key));
 	}, [achievements]);
 
+	// Consolida o volume de conquistas ativas e inativas em cartões-resumo.
+	// Tecnologias utilizadas: useMemo e Array.filter.
+	// Objetivo: oferecer leitura rápida do estado geral do catálogo.
+	// Observações: o cálculo é leve e reaproveita a lista já carregada.
 	const stats = useMemo(() => {
 		const activeCount = achievements.filter((achievement) => achievement.active !== false).length;
 		return {
@@ -205,6 +232,10 @@ export default function ManageAchievements({ navigation }) {
 		};
 	}, [achievements]);
 
+	// Indexa progresso por conquista para acesso direto na renderização.
+	// Tecnologias utilizadas: useMemo e Array.reduce.
+	// Objetivo: evitar buscas repetidas dentro de cada card exibido.
+	// Observações: o formato em mapa reduz custo em listas maiores.
 	const progressByAchievementId = useMemo(() => {
 		return achievementProgress.reduce((accumulator, item) => {
 			accumulator[item.achievementId] = item;
@@ -212,6 +243,10 @@ export default function ManageAchievements({ navigation }) {
 		}, {});
 	}, [achievementProgress]);
 
+	// Indexa métricas agregadas por conquista para mostrar cobertura geral.
+	// Tecnologias utilizadas: useMemo e Array.reduce.
+	// Objetivo: exibir quantos usuários já cumprem a meta de cada conquista.
+	// Observações: o mapa facilita a combinação com progresso e filtros.
 	const aggregateByAchievementId = useMemo(() => {
 		return achievementAggregate.reduce((accumulator, item) => {
 			accumulator[item.achievementId] = item;
@@ -219,14 +254,26 @@ export default function ManageAchievements({ navigation }) {
 		}, {});
 	}, [achievementAggregate]);
 
+	// Restaura o formulário para o estado inicial de criação.
+	// Tecnologias utilizadas: setState com objeto compartilhado.
+	// Objetivo: limpar dados antigos ao iniciar um novo cadastro.
+	// Observações: o reset também remove a referência de edição atual.
 	const resetForm = () => {
 		setForm(DEFAULT_FORM);
 	};
 
+	// Coloca uma conquista existente em modo de edição.
+	// Tecnologias utilizadas: transformação de objeto para estado de formulário.
+	// Objetivo: reaproveitar o mesmo formulário para alterar metas e critérios.
+	// Observações: a conversão evita perda de dados já cadastrados no backend.
 	const handleEdit = (achievement) => {
 		setForm(toFormValue(achievement));
 	};
 
+	// Valida o formulário, normaliza metas e envia criação ou atualização.
+	// Tecnologias utilizadas: Alert, serviços createAchievement e updateAchievement.
+	// Objetivo: persistir conquistas com critérios consistentes e feedback claro.
+	// Observações: a validação local reduz erro de payload e melhora a UX.
 	const handleSubmit = async () => {
 		if (!form.name.trim() || !form.description.trim()) {
 			Alert.alert('Campos obrigatórios', 'Preencha nome e descrição para continuar.');
@@ -274,6 +321,10 @@ export default function ManageAchievements({ navigation }) {
 		}
 	};
 
+	// Remove uma conquista com confirmação explícita do administrador.
+	// Tecnologias utilizadas: Alert, deleteAchievement e atualização local de estado.
+	// Objetivo: impedir exclusão acidental de regras já configuradas.
+	// Observações: o formulário é limpo se o item removido estiver em edição.
 	const handleDelete = (achievement) => {
 		Alert.alert('Excluir conquista', `Deseja excluir "${achievement?.name || 'esta conquista'}"?`, [
 			{ text: 'Cancelar', style: 'cancel' },
@@ -298,6 +349,10 @@ export default function ManageAchievements({ navigation }) {
 		]);
 	};
 
+	// Monta cada card com meta, progresso e ações de edição/remoção.
+	// Tecnologias utilizadas: View, TouchableOpacity, ActivityIndicator e chips.
+	// Objetivo: resumir o estado da conquista sem exigir navegação adicional.
+	// Observações: o progresso usa valor normalizado para evitar divisão inválida.
 	const renderAchievement = (achievement) => {
 		const isSelected = form.id === achievement.id;
 		const progress = progressByAchievementId[achievement.id] || null;
@@ -401,6 +456,10 @@ export default function ManageAchievements({ navigation }) {
 
 			<View style={styles.content}>
 				<ScrollView contentContainerStyle={styles.contentInner} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+					{/* Cabeçalho-resumo com totais e estado geral do catálogo. */}
+					{/* Tecnologias utilizadas: cards, badges e contadores derivados. */}
+					{/* Objetivo: dar contexto rápido antes de editar critérios ou metas. */}
+					{/* Observações: a visão consolidada ajuda a perceber se há muitas inativas. */}
 					<View style={styles.card}>
 						<View style={styles.cardHeaderRow}>
 							<View>
@@ -419,6 +478,10 @@ export default function ManageAchievements({ navigation }) {
 					</View>
 
 					<View style={styles.card}>
+						{/* Área de busca e filtros de recorte da lista. */}
+						{/* Tecnologias utilizadas: TextInput, TouchableOpacity e filtros dinâmicos. */}
+						{/* Objetivo: localizar conquistas por texto, status, critério e ordem. */}
+						{/* Observações: os chips são derivados da lista real para evitar opções vazias. */}
 						<Text style={styles.sectionTitle}>Buscar conquistas</Text>
 						<Text style={styles.sectionSubtitle}>Filtre por nome, descrição, critério ou meta.</Text>
 						<View style={{ marginTop: 12 }}>
@@ -515,6 +578,10 @@ export default function ManageAchievements({ navigation }) {
 					</View>
 
 					<View style={styles.formCard}>
+						{/* Formulário de criação e edição da conquista. */}
+						{/* Tecnologias utilizadas: TextInput, Switch, Touchables e validação local. */}
+						{/* Objetivo: definir nome, descrição, critérios e metas do desbloqueio. */}
+						{/* Observações: manter a edição no mesmo componente reduz salto de contexto. */}
 						<Text style={styles.sectionTitle}>{form.id ? 'Editar conquista' : 'Nova conquista'}</Text>
 						<Text style={styles.sectionSubtitle}>Defina nome, descrição, critério e meta para o desbloqueio.</Text>
 
@@ -647,6 +714,10 @@ export default function ManageAchievements({ navigation }) {
 					</View>
 
 					<View style={styles.listCard}>
+						{/* Lista resultante após filtros e ordenação. */}
+						{/* Tecnologias utilizadas: renderização condicional e cards reutilizáveis. */}
+						{/* Objetivo: mostrar o catálogo que será editado ou removido. */}
+						{/* Observações: o estado vazio orienta quando nenhum item atende aos filtros. */}
 						<Text style={styles.sectionTitle}>Conquistas cadastradas</Text>
 						<Text style={styles.sectionSubtitle}>Busque, edite ou remova itens do catálogo.</Text>
 					</View>

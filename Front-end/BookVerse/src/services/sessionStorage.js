@@ -1,19 +1,20 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-/*
- Serviço: sessionStorage
- Propósito: Pequeno adaptador para persistência da sessão do usuário
- usando `AsyncStorage`. Centraliza a chave de armazenamento e fornece
- operações atômicas (get/set/clear) retornando booleanos simples
- para indicar sucesso nas escritas.
+// Adaptador de persistência da sessão do usuário.
+// Tecnologias utilizadas: AsyncStorage e JSON.
+// Objetivo: salvar, ler e remover a sessão de forma centralizada.
+// Observações: o módulo retorna valores simples para facilitar o tratamento na UI.
 
- Observações:
- - Serializa o objeto de sessão em JSON.
- - Trate erros de escrita/leitura no nível da UI quando necessário.
-*/
-
+// Chave única usada para armazenar a sessão no dispositivo.
+// Tecnologias utilizadas: constante local de configuração.
+// Objetivo: evitar duplicação de string espalhada pelo app.
+// Observações: manter a chave centralizada reduz risco de inconsistência entre telas.
 const SESSION_KEY = '@bookverse/session';
 
+// Lê a sessão salva no armazenamento local.
+// Tecnologias utilizadas: AsyncStorage.getItem e JSON.parse.
+// Objetivo: restaurar o usuário logado ao abrir o app.
+// Observações: retorna null quando não houver sessão ou quando a leitura falhar.
 export async function getStoredSession() {
 	try {
 		const raw = await AsyncStorage.getItem(SESSION_KEY);
@@ -27,6 +28,10 @@ export async function getStoredSession() {
 	}
 }
 
+// Persiste a sessão do usuário no dispositivo.
+// Tecnologias utilizadas: AsyncStorage.setItem e JSON.stringify.
+// Objetivo: manter a autenticação após fechar e reabrir o app.
+// Observações: retorna booleano para simplificar o fluxo de confirmação.
 export async function setStoredSession(session) {
 	try {
 		await AsyncStorage.setItem(SESSION_KEY, JSON.stringify(session));
@@ -36,6 +41,10 @@ export async function setStoredSession(session) {
 	}
 }
 
+// Remove a sessão salva no dispositivo.
+// Tecnologias utilizadas: AsyncStorage.removeItem.
+// Objetivo: limpar credenciais locais após logout ou expiração.
+// Observações: retorna booleano para indicar se a limpeza foi concluída.
 export async function clearStoredSession() {
 	try {
 		await AsyncStorage.removeItem(SESSION_KEY);
